@@ -1,26 +1,338 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { Plus, Trash2, FileDown, Scissors, Calculator, Recycle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { optimiser, type Piece, type Strategie } from "@/lib/optimizer";
+import { BarreSchema } from "@/components/BarreSchema";
+import { exporterPDF } from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "Smartcut — Optimisation de découpe linéaire" },
+      {
+        name: "description",
+        content:
+          "Application d'optimisation de mise en barre 1D pour l'atelier : calcul intelligent des coupes, gestion des chutes réutilisables, export PDF.",
+      },
+    ],
+  }),
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+let pieceIdCounter = 0;
+const nextId = () => `p${++pieceIdCounter}`;
+
+function Index() {
+  const [longueurBarre, setLongueurBarre] = useState(6000);
+  const [traitScie, setTraitScie] = useState(3);
+  const [strategie, setStrategie] = useState<Strategie>("max-chutes");
+  const [pieces, setPieces] = useState<Piece[]>([
+    { id: nextId(), nom: "Montant A", longueur: 1200, quantite: 4 },
+    { id: nextId(), nom: "Traverse B", longueur: 800, quantite: 6 },
+    { id: nextId(), nom: "Renfort C", longueur: 450, quantite: 8 },
+  ]);
+  const [resultat, setResultat] = useState<ReturnType<typeof optimiser> | null>(null);
+
+  const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
+
+  const addPiece = () =>
+    setPieces((p) => [...p, { id: nextId(), nom: `Pièce ${p.length + 1}`, longueur: 1000, quantite: 1 }]);
+
+  const removePiece = (id: string) => setPieces((p) => p.filter((x) => x.id !== id));
+
+  const updatePiece = (id: string, patch: Partial<Piece>) =>
+    setPieces((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+
+  const lancer = () => {
+    const r = optimiser(pieces, longueurBarre, traitScie, strategie);
+    setResultat(r);
+    setTimeout(() => {
+      document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  };
+
+  const exporter = () => {
+    if (!resultat) return;
+    exporterPDF(resultat, pieces, longueurBarre, traitScie, strategie);
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Scissors className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold tracking-tight">Smartcut</h1>
+              <p className="text-xs text-muted-foreground">Optimisation de découpe linéaire 1D</p>
+            </div>
+          </div>
+          {resultat && (
+            <Button onClick={exporter} className="gap-2">
+              <FileDown className="h-4 w-4" /> Exporter pour l'atelier
+            </Button>
+          )}
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+        {/* Paramètres */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-base">Paramètres du profilé</CardTitle>
+              <CardDescription>Configuration de la barre brute</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="lb">Longueur de la barre (mm)</Label>
+                <Input
+                  id="lb"
+                  type="number"
+                  value={longueurBarre}
+                  onChange={(e) => setLongueurBarre(Number(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ts">Épaisseur du trait de scie (mm)</Label>
+                <Input
+                  id="ts"
+                  type="number"
+                  value={traitScie}
+                  onChange={(e) => setTraitScie(Number(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Stratégie d'optimisation</Label>
+                <Select value={strategie} onValueChange={(v) => setStrategie(v as Strategie)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="min-barres">Minimum de barres utilisées</SelectItem>
+                    <SelectItem value="max-chutes">Maximiser les grandes chutes réutilisables</SelectItem>
+                    <SelectItem value="tri-simple">Coupes simplifiées / Priorité au tri</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {strategie === "min-barres" &&
+                    "Utilise le moins de barres possible, sans considération pour la taille des chutes."}
+                  {strategie === "max-chutes" &&
+                    "Concentre les pertes pour obtenir des chutes ≥ 500 mm réutilisables."}
+                  {strategie === "tri-simple" &&
+                    "Regroupe les pièces identiques sur les mêmes barres pour faciliter le tri à l'atelier."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-base">Pièces à couper</CardTitle>
+                <CardDescription>Liste des pièces et quantités requises</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={addPiece} className="gap-2">
+                <Plus className="h-4 w-4" /> Ajouter
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Repère</TableHead>
+                    <TableHead className="w-40">Longueur (mm)</TableHead>
+                    <TableHead className="w-32">Quantité</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pieces.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell>
+                        <Input
+                          value={p.nom}
+                          onChange={(e) => updatePiece(p.id, { nom: e.target.value })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={p.longueur}
+                          onChange={(e) =>
+                            updatePiece(p.id, { longueur: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={p.quantite}
+                          onChange={(e) =>
+                            updatePiece(p.id, { quantite: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removePiece(p.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {pieces.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                        Aucune pièce. Cliquez sur « Ajouter » pour commencer.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+
+              <div className="mt-6 flex justify-end">
+                <Button onClick={lancer} size="lg" className="gap-2" disabled={pieces.length === 0}>
+                  <Calculator className="h-4 w-4" /> Lancer l'optimisation
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Résultats */}
+        {resultat && resultat.nbBarres > 0 && (
+          <section id="resultats" className="space-y-6 pt-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard label="Barres utilisées" value={`${resultat.nbBarres}`} hint={`${resultat.longueurTotale} mm au total`} />
+              <StatCard
+                label="Rendement global"
+                value={`${resultat.rendement.toFixed(1)} %`}
+                hint={`${resultat.longueurUtile} mm utiles`}
+                accent="success"
+              />
+              <StatCard
+                label="Chutes totales"
+                value={`${resultat.longueurChutes} mm`}
+                hint={`${resultat.pourcentageChutes.toFixed(1)} % de la matière`}
+              />
+              <StatCard
+                label="Chutes réutilisables"
+                value={`${resultat.longueurChutesReutilisables} mm`}
+                hint={`Déchets : ${resultat.longueurDechets} mm`}
+                accent="warning"
+              />
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Plan de découpe par barre</CardTitle>
+                <CardDescription>
+                  Schéma visuel et instructions de coupe — chutes ≥ 500 mm signalées en orange
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {resultat.barres.map((barre) => (
+                  <div key={barre.index} className="space-y-3 border-b border-border pb-6 last:border-0 last:pb-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold">
+                        Barre n°{barre.index}
+                        <span className="ml-2 font-normal text-muted-foreground">
+                          · {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
+                        </span>
+                      </h3>
+                      {barre.chuteReutilisable ? (
+                        <Badge className="gap-1 bg-[color:var(--color-warning)] text-[color:var(--color-warning-foreground)] hover:bg-[color:var(--color-warning)]">
+                          <Recycle className="h-3 w-3" /> Chute réutilisable
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-muted-foreground">
+                          Déchet
+                        </Badge>
+                      )}
+                    </div>
+
+                    <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
+
+                    <ol className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
+                      {barre.coupes.map((c, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-muted text-[10px] font-semibold text-foreground">
+                            {i + 1}
+                          </span>
+                          <span className="font-medium text-foreground">{c.nom}</span>
+                          <span>— {c.longueur} mm</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {resultat && resultat.nbBarres === 0 && (
+          <Card>
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              Aucune pièce valide à optimiser. Vérifiez que les longueurs ne dépassent pas celle de la barre.
+            </CardContent>
+          </Card>
+        )}
+      </main>
     </div>
   );
 }
 
-function Index() {
-  return <PlaceholderIndex />;
+function StatCard({
+  label,
+  value,
+  hint,
+  accent,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  accent?: "success" | "warning";
+}) {
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+        <div
+          className={
+            "mt-2 text-2xl font-semibold tracking-tight " +
+            (accent === "success"
+              ? "text-[color:var(--color-success)]"
+              : accent === "warning"
+              ? "text-[color:var(--color-warning)]"
+              : "text-foreground")
+          }
+        >
+          {value}
+        </div>
+        {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
+      </CardContent>
+    </Card>
+  );
 }
