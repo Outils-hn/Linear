@@ -50,7 +50,8 @@ export function exporterPDF(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.text(`Longueur de barre : ${longueurBarre} mm`, margin, y);
-  doc.text(`Trait de scie : ${traitScie} mm`, margin + 70, y);
+  y += 4;
+  doc.text(`Trait de scie : ${traitScie} mm`, margin, y);
   y += 4;
   doc.text(`Stratégie : ${STRATEGIE_LABELS[strategie]}`, margin, y);
   y += 8;
@@ -183,23 +184,7 @@ export function exporterPDF(
     // @ts-expect-error
     y = doc.lastAutoTable.finalY + 2;
 
-    // Chute restante
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    if (barre.chuteReutilisable) {
-      doc.setTextColor(180, 120, 0);
-      doc.text(
-        `→ Chute restante : ${barre.chute} mm  ♺ À CONSERVER (≥ ${SEUIL_CHUTE_REUTILISABLE} mm)`,
-        margin,
-        y + 4,
-      );
-    } else {
-      doc.setTextColor(120, 120, 120);
-      doc.text(`→ Chute restante : ${barre.chute} mm  (déchet)`, margin, y + 4);
-    }
-    doc.setTextColor(20, 20, 20);
-    doc.setFont("helvetica", "normal");
-    y += 12;
+    y += 6;
   }
 
   // Pied de page
