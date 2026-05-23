@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { ResultatOptimisation, Piece, Strategie } from "./optimizer";
 import { SEUIL_CHUTE_REUTILISABLE } from "./optimizer";
