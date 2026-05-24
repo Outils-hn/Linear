@@ -214,11 +214,6 @@ export function exporterPDF(
       doc.setFillColor(r, gg, bb);
       doc.rect(x, schemaY, w, schemaH, "F");
 
-      // Texte contrasté à l'intérieur du bloc : nom + longueur
-      // Luminance perçue pour choisir noir ou blanc
-      const luminance = (0.299 * r + 0.587 * gg + 0.114 * bb) / 255;
-      if (luminance > 0.6) doc.setTextColor(20, 20, 20);
-      else doc.setTextColor(255, 255, 255);
       // Texte contrasté à l'intérieur du bloc : nom + longueur, strictement centré
       const luminance = (0.299 * r + 0.587 * gg + 0.114 * bb) / 255;
       if (luminance > 0.6) doc.setTextColor(20, 20, 20);
