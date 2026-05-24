@@ -103,6 +103,36 @@ function Index() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+        {/* Infos projet */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Informations du projet</CardTitle>
+            <CardDescription>
+              Ces informations apparaîtront en haut de la fiche de débit PDF (facultatif).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="chantier">Chantier</Label>
+              <Input
+                id="chantier"
+                placeholder="Ex : Résidence Les Tilleuls"
+                value={chantier}
+                onChange={(e) => setChantier(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="numTache">Numéro de tâche</Label>
+              <Input
+                id="numTache"
+                placeholder="Ex : TSK-2024-128"
+                value={numeroTache}
+                onChange={(e) => setNumeroTache(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Paramètres */}
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-1">
@@ -119,6 +149,19 @@ function Index() {
                   value={longueurBarre}
                   onChange={(e) => setLongueurBarre(Number(e.target.value) || 0)}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ms">Marge de rafraîchissement / sécurité (mm)</Label>
+                <Input
+                  id="ms"
+                  type="number"
+                  value={margeSecurite}
+                  onChange={(e) => setMargeSecurite(Number(e.target.value) || 0)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Longueur utile pour l'optimisation :{" "}
+                  <span className="font-semibold text-foreground">{longueurUtile} mm</span>
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ts">Épaisseur du trait de scie (mm)</Label>
