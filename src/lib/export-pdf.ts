@@ -219,20 +219,16 @@ export function exporterPDF(
       const luminance = (0.299 * r + 0.587 * gg + 0.114 * bb) / 255;
       if (luminance > 0.6) doc.setTextColor(20, 20, 20);
       else doc.setTextColor(255, 255, 255);
-      if (w > 25) {
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.text(c.nom, x + w / 2, schemaY + schemaH / 2 - 0.5, { align: "center" });
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7);
-        doc.text(`${c.longueur} mm`, x + w / 2, schemaY + schemaH / 2 + 3.5, {
-          align: "center",
-        });
-      } else if (w > 10) {
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${c.longueur}`, x + w / 2, schemaY + schemaH / 2 + 1, { align: "center" });
-      }
+      // Toujours afficher nom + longueur sur deux lignes ; on adapte la taille
+      const fs = w > 25 ? 8 : w > 15 ? 7 : w > 8 ? 6 : 5;
+      doc.setFontSize(fs);
+      doc.setFont("helvetica", "bold");
+      doc.text(c.nom, x + w / 2, schemaY + schemaH / 2 - 0.5, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(Math.max(5, fs - 1));
+      doc.text(`${c.longueur} mm`, x + w / 2, schemaY + schemaH / 2 + 3.2, {
+        align: "center",
+      });
 
       cursorMm += c.longueur;
       if (i < barre.coupes.length - 1 && traitScie > 0) {
