@@ -36,7 +36,10 @@ let pieceIdCounter = 0;
 const nextId = () => `p${++pieceIdCounter}`;
 
 function Index() {
+  const [chantier, setChantier] = useState("");
+  const [numeroTache, setNumeroTache] = useState("");
   const [longueurBarre, setLongueurBarre] = useState(6000);
+  const [margeSecurite, setMargeSecurite] = useState(100);
   const [traitScie, setTraitScie] = useState(3);
   const [strategie, setStrategie] = useState<Strategie>("max-chutes");
   const [pieces, setPieces] = useState<Piece[]>([
@@ -47,6 +50,7 @@ function Index() {
   const [resultat, setResultat] = useState<ReturnType<typeof optimiser> | null>(null);
 
   const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
+  const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
 
   const addPiece = () =>
     setPieces((p) => [...p, { id: nextId(), nom: `Pièce ${p.length + 1}`, longueur: 1000, quantite: 1 }]);
@@ -57,7 +61,7 @@ function Index() {
     setPieces((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
 
   const lancer = () => {
-    const r = optimiser(pieces, longueurBarre, traitScie, strategie);
+    const r = optimiser(pieces, longueurUtile, traitScie, strategie);
     setResultat(r);
     setTimeout(() => {
       document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" });
@@ -66,7 +70,14 @@ function Index() {
 
   const exporter = () => {
     if (!resultat) return;
-    exporterPDF(resultat, pieces, longueurBarre, traitScie, strategie);
+    exporterPDF(resultat, pieces, {
+      longueurBarreBrute: longueurBarre,
+      longueurBarreUtile: longueurUtile,
+      margeSecurite,
+      traitScie,
+      strategie,
+      infos: { chantier, numeroTache },
+    });
   };
 
   return (
