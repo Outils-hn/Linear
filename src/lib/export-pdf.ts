@@ -214,21 +214,50 @@ export function exporterPDF(
       doc.setFillColor(r, gg, bb);
       doc.rect(x, schemaY, w, schemaH, "F");
 
-      // Texte contrasté à l'intérieur du bloc : nom + longueur
-      // Luminance perçue pour choisir noir ou blanc
+      // Texte contrasté à l'intérieur du bloc : nom + longueur, strictement centré
       const luminance = (0.299 * r + 0.587 * gg + 0.114 * bb) / 255;
       if (luminance > 0.6) doc.setTextColor(20, 20, 20);
       else doc.setTextColor(255, 255, 255);
-      // Toujours afficher nom + longueur sur deux lignes ; on adapte la taille
-      const fs = w > 25 ? 8 : w > 15 ? 7 : w > 8 ? 6 : 5;
-      doc.setFontSize(fs);
-      doc.setFont("helvetica", "bold");
-      doc.text(c.nom, x + w / 2, schemaY + schemaH / 2 - 0.5, { align: "center" });
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(Math.max(5, fs - 1));
-      doc.text(`${c.longueur} mm`, x + w / 2, schemaY + schemaH / 2 + 3.2, {
-        align: "center",
-      });
+
+      const labelLong = `${c.longueur} mm`;
+      const cx = x + w / 2;
+      const cy = schemaY + schemaH / 2;
+      const maxTextWidth = w - 1.2; // marge interne
+
+      // Cherche la plus grande taille qui rentre horizontalement (nom + longueur)
+      let fsName = 0;
+      for (const candidate of [9, 8, 7, 6, 5, 4]) {
+        doc.setFontSize(candidate);
+        doc.setFont("helvetica", "bold");
+        const wNom = doc.getTextWidth(c.nom);
+        doc.setFont("helvetica", "normal");
+        const wLong = doc.getTextWidth(labelLong);
+        if (wNom <= maxTextWidth && wLong <= maxTextWidth) {
+          fsName = candidate;
+          break;
+        }
+      }
+
+      if (fsName > 0) {
+        // 1 pt ≈ 0.3528 mm — décalage symétrique autour du centre vertical
+        const offset = fsName * 0.3528 * 0.65;
+        doc.setFontSize(fsName);
+        doc.setFont("helvetica", "bold");
+        doc.text(c.nom, cx, cy - offset + 0.5, { align: "center", baseline: "middle" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(Math.max(4, fsName - 1));
+        doc.text(labelLong, cx, cy + offset + 0.5, { align: "center", baseline: "middle" });
+      } else {
+        // Bloc trop étroit : on tente au moins la longueur seule, en plus petit
+        for (const candidate of [5, 4]) {
+          doc.setFontSize(candidate);
+          doc.setFont("helvetica", "bold");
+          if (doc.getTextWidth(labelLong) <= maxTextWidth) {
+            doc.text(labelLong, cx, cy, { align: "center", baseline: "middle" });
+            break;
+          }
+        }
+      }
 
       cursorMm += c.longueur;
       if (i < barre.coupes.length - 1 && traitScie > 0) {
