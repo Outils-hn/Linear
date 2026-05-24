@@ -215,7 +215,10 @@ export function exporterPDF(
       doc.rect(x, schemaY, w, schemaH, "F");
 
       // Texte contrasté à l'intérieur du bloc : nom + longueur
-      doc.setTextColor(255, 255, 255);
+      // Luminance perçue pour choisir noir ou blanc
+      const luminance = (0.299 * r + 0.587 * gg + 0.114 * bb) / 255;
+      if (luminance > 0.6) doc.setTextColor(20, 20, 20);
+      else doc.setTextColor(255, 255, 255);
       if (w > 25) {
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
