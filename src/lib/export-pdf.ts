@@ -1,7 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { ResultatOptimisation, Piece, Strategie } from "./optimizer";
-import { SEUIL_CHUTE_REUTILISABLE } from "./optimizer";
+import type { ResultatOptimisation, Piece, Strategie, BarreOptimisee } from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
 
 const STRATEGIE_LABELS: Record<Strategie, string> = {
@@ -10,13 +9,62 @@ const STRATEGIE_LABELS: Record<Strategie, string> = {
   "tri-simple": "Coupes simplifiées / Priorité au tri",
 };
 
+export interface InfosProjet {
+  chantier?: string;
+  numeroTache?: string;
+}
+
+export interface OptionsExportPDF {
+  longueurBarreBrute: number;
+  longueurBarreUtile: number;
+  margeSecurite: number;
+  traitScie: number;
+  strategie: Strategie;
+  infos: InfosProjet;
+}
+
+interface GroupeBarres {
+  barres: BarreOptimisee[];
+  signature: string;
+  reference: BarreOptimisee;
+}
+
+function signatureBarre(b: BarreOptimisee): string {
+  return (
+    `${b.longueurBarre}|` +
+    b.coupes.map((c) => `${c.pieceId}:${c.longueur}`).join(",") +
+    `|c=${b.chute}`
+  );
+}
+
+function grouperBarresIdentiques(barres: BarreOptimisee[]): GroupeBarres[] {
+  const map = new Map<string, GroupeBarres>();
+  for (const b of barres) {
+    const sig = signatureBarre(b);
+    const g = map.get(sig);
+    if (g) g.barres.push(b);
+    else map.set(sig, { signature: sig, reference: b, barres: [b] });
+  }
+  // tri : par premier index croissant
+  return [...map.values()].sort((a, b) => a.barres[0].index - b.barres[0].index);
+}
+
+function libelleGroupe(g: GroupeBarres): string {
+  if (g.barres.length === 1) return `Barre n°${g.barres[0].index}`;
+  const indices = g.barres.map((b) => b.index).sort((a, b) => a - b);
+  // contigus ?
+  const contigu = indices.every((v, i) => i === 0 || v === indices[i - 1] + 1);
+  if (contigu) return `Barres n°${indices[0]} à n°${indices[indices.length - 1]}`;
+  return `Barres n°${indices.join(", n°")}`;
+}
+
 export function exporterPDF(
   resultat: ResultatOptimisation,
   pieces: Piece[],
-  longueurBarre: number,
-  traitScie: number,
-  strategie: Strategie,
+  options: OptionsExportPDF,
 ) {
+  const { longueurBarreBrute, longueurBarreUtile, margeSecurite, traitScie, strategie, infos } =
+    options;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -25,22 +73,31 @@ export function exporterPDF(
 
   // ====== EN-TÊTE ======
   doc.setFillColor(30, 41, 59);
-  doc.rect(0, 0, pageWidth, 22, "F");
+  doc.rect(0, 0, pageWidth, 28, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text("FICHE DE DÉBIT — Atelier", margin, 14);
-  doc.setFontSize(9);
+  doc.text("FICHE DE DÉBIT — Atelier", margin, 12);
+
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   const date = new Date().toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
-  doc.text(date, pageWidth - margin, 14, { align: "right" });
+  doc.text(date, pageWidth - margin, 12, { align: "right" });
+
+  // Infos projet bien visibles
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  const chantier = infos.chantier?.trim() || "—";
+  const numTache = infos.numeroTache?.trim() || "—";
+  doc.text(`Chantier : ${chantier}`, margin, 22);
+  doc.text(`N° de tâche : ${numTache}`, pageWidth - margin, 22, { align: "right" });
 
   doc.setTextColor(20, 20, 20);
-  let y = 32;
+  let y = 38;
 
   // ====== PARAMÈTRES ======
   doc.setFontSize(11);
@@ -49,10 +106,18 @@ export function exporterPDF(
   y += 5;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Longueur de barre : ${longueurBarre} mm`, margin, y);
+  const ligneLongueur =
+    margeSecurite > 0
+      ? `Longueur de barre : ${longueurBarreBrute} mm (Calculé sur ${longueurBarreUtile} mm après marge)`
+      : `Longueur de barre : ${longueurBarreBrute} mm`;
+  doc.text(ligneLongueur, margin, y);
   y += 4;
   doc.text(`Trait de scie : ${traitScie} mm`, margin, y);
   y += 4;
+  if (margeSecurite > 0) {
+    doc.text(`Marge de rafraîchissement / sécurité : ${margeSecurite} mm`, margin, y);
+    y += 4;
+  }
   doc.text(`Stratégie : ${STRATEGIE_LABELS[strategie]}`, margin, y);
   y += 8;
 
@@ -81,25 +146,50 @@ export function exporterPDF(
   // @ts-expect-error lastAutoTable
   y = doc.lastAutoTable.finalY + 8;
 
-  // ====== DÉTAIL PAR BARRE ======
-  for (const barre of resultat.barres) {
-    if (y > pageHeight - 60) {
+  // ====== DÉTAIL PAR GROUPE DE BARRES ======
+  const groupes = grouperBarresIdentiques(resultat.barres);
+
+  for (const g of groupes) {
+    const barre = g.reference;
+    const qte = g.barres.length;
+
+    if (y > pageHeight - 70) {
       doc.addPage();
       y = margin;
     }
 
+    // Titre du groupe
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(30, 41, 59);
-    doc.text(`Barre n°${barre.index}`, margin, y);
+    doc.text(libelleGroupe(g), margin, y);
+
+    if (qte > 1) {
+      doc.setFontSize(10);
+      doc.setTextColor(220, 38, 38);
+      doc.text(`Quantité : ${qte} barres identiques`, pageWidth - margin, y, {
+        align: "right",
+      });
+    } else {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80, 80, 80);
+      doc.text(
+        `${barre.coupes.length} coupe(s)`,
+        pageWidth - margin,
+        y,
+        { align: "right" },
+      );
+    }
+    y += 5;
+
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(80, 80, 80);
     doc.text(
-      `Longueur : ${barre.longueurBarre} mm  |  ${barre.coupes.length} coupe(s)`,
-      pageWidth - margin,
+      `Longueur utile : ${barre.longueurBarre} mm  |  ${barre.coupes.length} coupe(s) par barre`,
+      margin,
       y,
-      { align: "right" },
     );
     y += 4;
 
@@ -107,11 +197,10 @@ export function exporterPDF(
     const schemaX = margin;
     const schemaY = y;
     const schemaW = pageWidth - 2 * margin;
-    const schemaH = 10;
+    const schemaH = 14;
     let cursorMm = 0;
     const mmToPx = (mm: number) => (mm / barre.longueurBarre) * schemaW;
 
-    // Background
     doc.setFillColor(240, 240, 240);
     doc.rect(schemaX, schemaY, schemaW, schemaH, "F");
 
@@ -120,18 +209,28 @@ export function exporterPDF(
       const w = mmToPx(c.longueur);
       const hex = hexColorForPieceId(c.pieceId, pieceIds);
       const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      doc.setFillColor(r, g, b);
+      const gg = parseInt(hex.slice(3, 5), 16);
+      const bb = parseInt(hex.slice(5, 7), 16);
+      doc.setFillColor(r, gg, bb);
       doc.rect(x, schemaY, w, schemaH, "F");
-      // label
-      if (w > 12) {
-        doc.setTextColor(255, 255, 255);
+
+      // Texte contrasté à l'intérieur du bloc : nom + longueur
+      doc.setTextColor(255, 255, 255);
+      if (w > 25) {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.text(c.nom, x + w / 2, schemaY + schemaH / 2 - 0.5, { align: "center" });
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
-        doc.text(`${c.nom}`, x + w / 2, schemaY + schemaH / 2 + 1, {
+        doc.text(`${c.longueur} mm`, x + w / 2, schemaY + schemaH / 2 + 3.5, {
           align: "center",
         });
+      } else if (w > 10) {
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${c.longueur}`, x + w / 2, schemaY + schemaH / 2 + 1, { align: "center" });
       }
+
       cursorMm += c.longueur;
       if (i < barre.coupes.length - 1 && traitScie > 0) {
         const xt = schemaX + mmToPx(cursorMm);
@@ -145,24 +244,32 @@ export function exporterPDF(
     if (barre.chute > 0) {
       const x = schemaX + mmToPx(cursorMm);
       const w = schemaW - mmToPx(cursorMm);
-      if (barre.chuteReutilisable) {
-        doc.setFillColor(234, 179, 8);
-      } else {
-        doc.setFillColor(180, 180, 180);
-      }
+      if (barre.chuteReutilisable) doc.setFillColor(234, 179, 8);
+      else doc.setFillColor(180, 180, 180);
       doc.rect(x, schemaY, w, schemaH, "F");
-      if (w > 12) {
+      if (w > 14) {
         doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(7);
-        doc.text(`${barre.chute} mm`, x + w / 2, schemaY + schemaH / 2 + 1, {
+        doc.text(`Chute ${barre.chute} mm`, x + w / 2, schemaY + schemaH / 2 + 1, {
           align: "center",
         });
       }
     }
     y += schemaH + 4;
 
-    // Instructions de coupe
+    // Chute textuelle
     doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    const labelChute = barre.chuteReutilisable
+      ? `Chute finale : ${barre.chute} mm  (réutilisable ♺)`
+      : `Chute finale : ${barre.chute} mm  (déchet)`;
+    doc.text(labelChute, margin, y);
+    y += 4;
+
+    // Instructions de coupe
+    doc.setFont("helvetica", "normal");
     const body: string[][] = barre.coupes.map((c, i) => [
       `${i + 1}`,
       c.nom,
@@ -182,9 +289,7 @@ export function exporterPDF(
       },
     });
     // @ts-expect-error
-    y = doc.lastAutoTable.finalY + 2;
-
-    y += 6;
+    y = doc.lastAutoTable.finalY + 8;
   }
 
   // Pied de page
@@ -193,14 +298,21 @@ export function exporterPDF(
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text(
-      `Page ${i} / ${totalPages}`,
-      pageWidth - margin,
-      pageHeight - 8,
-      { align: "right" },
-    );
-    doc.text("Fiche de débit — Optimisation linéaire", margin, pageHeight - 8);
+    doc.text(`Page ${i} / ${totalPages}`, pageWidth - margin, pageHeight - 8, {
+      align: "right",
+    });
+    const pied = [
+      "Fiche de débit — Optimisation linéaire",
+      infos.chantier?.trim() ? `Chantier : ${infos.chantier.trim()}` : null,
+      infos.numeroTache?.trim() ? `Tâche : ${infos.numeroTache.trim()}` : null,
+    ]
+      .filter(Boolean)
+      .join("  ·  ");
+    doc.text(pied, margin, pageHeight - 8);
   }
 
-  doc.save(`fiche-debit-${Date.now()}.pdf`);
+  const slug = (infos.numeroTache?.trim() || infos.chantier?.trim() || `${Date.now()}`)
+    .replace(/[^a-z0-9-_]+/gi, "-")
+    .toLowerCase();
+  doc.save(`fiche-debit-${slug}.pdf`);
 }
