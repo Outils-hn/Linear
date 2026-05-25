@@ -237,7 +237,7 @@ export function exporterPDF(
 
     const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie);
 
-    groupes.forEach((g, gi) => {
+    coupesGroupes.forEach((g, gi) => {
       const x = schemaX + mmToPx(cursorMm);
       const w = mmToPx(g.largeurMm);
       const hex = hexColorForPieceId(g.pieceId, pieceIds);
@@ -295,7 +295,7 @@ export function exporterPDF(
 
       cursorMm += g.largeurMm;
       // Trait de scie entre groupes
-      if (gi < groupes.length - 1 && traitScie > 0) {
+      if (gi < coupesGroupes.length - 1 && traitScie > 0) {
         const xt = schemaX + mmToPx(cursorMm);
         doc.setFillColor(30, 30, 30);
         doc.rect(xt, schemaY, Math.max(0.3, mmToPx(traitScie)), schemaH, "F");
