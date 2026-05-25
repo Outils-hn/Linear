@@ -29,6 +29,37 @@ interface GroupeBarres {
   reference: BarreOptimisee;
 }
 
+interface GroupeCoupe {
+  pieceId: string;
+  nom: string;
+  longueur: number;
+  quantite: number;
+  largeurMm: number; // somme longueurs + traits de scie internes
+}
+
+function grouperCoupesConsecutives(
+  coupes: BarreOptimisee["coupes"],
+  traitScie: number,
+): GroupeCoupe[] {
+  const groupes: GroupeCoupe[] = [];
+  for (const c of coupes) {
+    const last = groupes[groupes.length - 1];
+    if (last && last.pieceId === c.pieceId && last.longueur === c.longueur) {
+      last.quantite += 1;
+      last.largeurMm += (traitScie > 0 ? traitScie : 0) + c.longueur;
+    } else {
+      groupes.push({
+        pieceId: c.pieceId,
+        nom: c.nom,
+        longueur: c.longueur,
+        quantite: 1,
+        largeurMm: c.longueur,
+      });
+    }
+  }
+  return groupes;
+}
+
 function signatureBarre(b: BarreOptimisee): string {
   return (
     `${b.longueurBarre}|` +
@@ -204,36 +235,9 @@ export function exporterPDF(
     doc.setFillColor(240, 240, 240);
     doc.rect(schemaX, schemaY, schemaW, schemaH, "F");
 
-    // Fusion des pièces identiques consécutives
-    type Groupe = {
-      pieceId: string;
-      nom: string;
-      longueur: number;
-      quantite: number;
-      largeurMm: number; // somme longueurs + traits de scie internes
-    };
-    const groupes: Groupe[] = [];
-    for (const c of barre.coupes) {
-      const last = groupes[groupes.length - 1];
-      if (
-        last &&
-        last.pieceId === c.pieceId &&
-        last.longueur === c.longueur
-      ) {
-        last.quantite += 1;
-        last.largeurMm += (traitScie > 0 ? traitScie : 0) + c.longueur;
-      } else {
-        groupes.push({
-          pieceId: c.pieceId,
-          nom: c.nom,
-          longueur: c.longueur,
-          quantite: 1,
-          largeurMm: c.longueur,
-        });
-      }
-    }
+    const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie);
 
-    groupes.forEach((g, gi) => {
+    coupesGroupes.forEach((g, gi) => {
       const x = schemaX + mmToPx(cursorMm);
       const w = mmToPx(g.largeurMm);
       const hex = hexColorForPieceId(g.pieceId, pieceIds);
@@ -291,7 +295,7 @@ export function exporterPDF(
 
       cursorMm += g.largeurMm;
       // Trait de scie entre groupes
-      if (gi < groupes.length - 1 && traitScie > 0) {
+      if (gi < coupesGroupes.length - 1 && traitScie > 0) {
         const xt = schemaX + mmToPx(cursorMm);
         doc.setFillColor(30, 30, 30);
         doc.rect(xt, schemaY, Math.max(0.3, mmToPx(traitScie)), schemaH, "F");
@@ -329,14 +333,15 @@ export function exporterPDF(
 
     // Instructions de coupe
     doc.setFont("helvetica", "normal");
-    const body: string[][] = barre.coupes.map((c, i) => [
+    const body: string[][] = coupesGroupes.map((c, i) => [
       `${i + 1}`,
       c.nom,
       `${c.longueur} mm`,
+      `${c.quantite}`,
     ]);
     autoTable(doc, {
       startY: y,
-      head: [["#", "Pièce", "Longueur de coupe"]],
+      head: [["#", "Pièce", "Longueur de coupe", "Quantité"]],
       body,
       theme: "striped",
       styles: { fontSize: 9 },
@@ -345,6 +350,7 @@ export function exporterPDF(
       columnStyles: {
         0: { cellWidth: 12, halign: "center" },
         2: { cellWidth: 40, halign: "right" },
+        3: { cellWidth: 25, halign: "center" },
       },
     });
     // @ts-expect-error
