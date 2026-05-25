@@ -29,6 +29,37 @@ interface GroupeBarres {
   reference: BarreOptimisee;
 }
 
+interface GroupeCoupe {
+  pieceId: string;
+  nom: string;
+  longueur: number;
+  quantite: number;
+  largeurMm: number; // somme longueurs + traits de scie internes
+}
+
+function grouperCoupesConsecutives(
+  coupes: BarreOptimisee["coupes"],
+  traitScie: number,
+): GroupeCoupe[] {
+  const groupes: GroupeCoupe[] = [];
+  for (const c of coupes) {
+    const last = groupes[groupes.length - 1];
+    if (last && last.pieceId === c.pieceId && last.longueur === c.longueur) {
+      last.quantite += 1;
+      last.largeurMm += (traitScie > 0 ? traitScie : 0) + c.longueur;
+    } else {
+      groupes.push({
+        pieceId: c.pieceId,
+        nom: c.nom,
+        longueur: c.longueur,
+        quantite: 1,
+        largeurMm: c.longueur,
+      });
+    }
+  }
+  return groupes;
+}
+
 function signatureBarre(b: BarreOptimisee): string {
   return (
     `${b.longueurBarre}|` +
