@@ -204,17 +204,46 @@ export function exporterPDF(
     doc.setFillColor(240, 240, 240);
     doc.rect(schemaX, schemaY, schemaW, schemaH, "F");
 
-    barre.coupes.forEach((c, i) => {
+    // Fusion des pièces identiques consécutives
+    type Groupe = {
+      pieceId: string;
+      nom: string;
+      longueur: number;
+      quantite: number;
+      largeurMm: number; // somme longueurs + traits de scie internes
+    };
+    const groupes: Groupe[] = [];
+    for (const c of barre.coupes) {
+      const last = groupes[groupes.length - 1];
+      if (
+        last &&
+        last.pieceId === c.pieceId &&
+        last.longueur === c.longueur
+      ) {
+        last.quantite += 1;
+        last.largeurMm += (traitScie > 0 ? traitScie : 0) + c.longueur;
+      } else {
+        groupes.push({
+          pieceId: c.pieceId,
+          nom: c.nom,
+          longueur: c.longueur,
+          quantite: 1,
+          largeurMm: c.longueur,
+        });
+      }
+    }
+
+    groupes.forEach((g, gi) => {
       const x = schemaX + mmToPx(cursorMm);
-      const w = mmToPx(c.longueur);
-      const hex = hexColorForPieceId(c.pieceId, pieceIds);
+      const w = mmToPx(g.largeurMm);
+      const hex = hexColorForPieceId(g.pieceId, pieceIds);
       const r = parseInt(hex.slice(1, 3), 16);
       const gg = parseInt(hex.slice(3, 5), 16);
       const bb = parseInt(hex.slice(5, 7), 16);
       doc.setFillColor(r, gg, bb);
       doc.rect(x, schemaY, w, schemaH, "F");
 
-      // Texte contrasté centré (H+V) à l'intérieur du bloc
+      // Texte centré
       doc.setTextColor(255, 255, 255);
       const cx = x + w / 2;
       const cy = schemaY + schemaH / 2;
@@ -234,30 +263,25 @@ export function exporterPDF(
       };
 
       if (maxW >= 4) {
-        const nom = c.nom;
-        const lng = `${c.longueur} mm`;
-        // Essai 2 lignes si la hauteur le permet
+        const ligne2 =
+          g.quantite > 1
+            ? `${g.longueur}mm x${g.quantite}`
+            : `${g.longueur} mm`;
         const canTwoLines = schemaH >= 9;
         if (canTwoLines) {
-          const sNom = fitFontSize(nom, "bold", 8, 4);
-          const sLng = fitFontSize(lng, "normal", 7, 4);
+          const sNom = fitFontSize(g.nom, "bold", 8, 4);
+          const sLng = fitFontSize(ligne2, "normal", 7, 4);
           const ptToMm = 0.3528;
           const offNom = (sNom * ptToMm) / 2 + 0.2;
           const offLng = (sLng * ptToMm) / 2 + 0.2;
           doc.setFont("helvetica", "bold");
           doc.setFontSize(sNom);
-          doc.text(nom, cx, cy - offNom, {
-            align: "center",
-            baseline: "middle",
-          });
+          doc.text(g.nom, cx, cy - offNom, { align: "center", baseline: "middle" });
           doc.setFont("helvetica", "normal");
           doc.setFontSize(sLng);
-          doc.text(lng, cx, cy + offLng, {
-            align: "center",
-            baseline: "middle",
-          });
+          doc.text(ligne2, cx, cy + offLng, { align: "center", baseline: "middle" });
         } else {
-          const combo = `${nom} ${lng}`;
+          const combo = `${g.nom} (${ligne2})`;
           const s = fitFontSize(combo, "bold", 7, 4);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(s);
@@ -265,8 +289,9 @@ export function exporterPDF(
         }
       }
 
-      cursorMm += c.longueur;
-      if (i < barre.coupes.length - 1 && traitScie > 0) {
+      cursorMm += g.largeurMm;
+      // Trait de scie entre groupes
+      if (gi < groupes.length - 1 && traitScie > 0) {
         const xt = schemaX + mmToPx(cursorMm);
         doc.setFillColor(30, 30, 30);
         doc.rect(xt, schemaY, Math.max(0.3, mmToPx(traitScie)), schemaH, "F");
