@@ -235,34 +235,7 @@ export function exporterPDF(
     doc.setFillColor(240, 240, 240);
     doc.rect(schemaX, schemaY, schemaW, schemaH, "F");
 
-    // Fusion des pièces identiques consécutives
-    type Groupe = {
-      pieceId: string;
-      nom: string;
-      longueur: number;
-      quantite: number;
-      largeurMm: number; // somme longueurs + traits de scie internes
-    };
-    const groupes: Groupe[] = [];
-    for (const c of barre.coupes) {
-      const last = groupes[groupes.length - 1];
-      if (
-        last &&
-        last.pieceId === c.pieceId &&
-        last.longueur === c.longueur
-      ) {
-        last.quantite += 1;
-        last.largeurMm += (traitScie > 0 ? traitScie : 0) + c.longueur;
-      } else {
-        groupes.push({
-          pieceId: c.pieceId,
-          nom: c.nom,
-          longueur: c.longueur,
-          quantite: 1,
-          largeurMm: c.longueur,
-        });
-      }
-    }
+    const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie);
 
     groupes.forEach((g, gi) => {
       const x = schemaX + mmToPx(cursorMm);
