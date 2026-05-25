@@ -16,7 +16,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { optimiser, type Piece, type Strategie } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
-import { exporterPDF } from "@/lib/export-pdf";
+import {
+  exporterPDF,
+  grouperBarresIdentiques,
+  grouperCoupesConsecutives,
+  libelleGroupe,
+} from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -306,42 +311,59 @@ function Index() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                {resultat.barres.map((barre) => (
-                  <div key={barre.index} className="space-y-3 border-b border-border pb-6 last:border-0 last:pb-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="text-sm font-semibold">
-                        Barre n°{barre.index}
-                        <span className="ml-2 font-normal text-muted-foreground">
-                          · {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
-                        </span>
-                      </h3>
-                      {barre.chuteReutilisable ? (
-                        <Badge className="gap-1 bg-[color:var(--color-warning)] text-[color:var(--color-warning-foreground)] hover:bg-[color:var(--color-warning)]">
-                          <Recycle className="h-3 w-3" /> Chute réutilisable
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-muted-foreground">
-                          Déchet
-                        </Badge>
-                      )}
-                    </div>
-
-                    <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
-
-                    <ol className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
-                      {barre.coupes.map((c, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-muted text-[10px] font-semibold text-foreground">
-                            {i + 1}
+                {grouperBarresIdentiques(resultat.barres).map((groupe) => {
+                  const barre = groupe.reference;
+                  const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie);
+                  const qte = groupe.barres.length;
+                  return (
+                    <div
+                      key={groupe.signature}
+                      className="space-y-3 border-b border-border pb-6 last:border-0 last:pb-0"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-sm font-semibold">
+                          {libelleGroupe(groupe)}
+                          <span className="ml-2 font-normal text-muted-foreground">
+                            · {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
+                            {qte > 1 ? ` · Quantité : ${qte} barres identiques` : ""}
                           </span>
-                          <span className="font-medium text-foreground">{c.nom}</span>
-                          <span>— {c.longueur} mm</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                ))}
+                        </h3>
+                        {barre.chuteReutilisable ? (
+                          <Badge className="gap-1 bg-[color:var(--color-warning)] text-[color:var(--color-warning-foreground)] hover:bg-[color:var(--color-warning)]">
+                            <Recycle className="h-3 w-3" /> Chute réutilisable
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-muted-foreground">
+                            Déchet
+                          </Badge>
+                        )}
+                      </div>
+
+                      <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
+
+                      <ol className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
+                        {coupesGroupes.map((g, i) => (
+                          <li key={i} className="flex items-center gap-2">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-muted text-[10px] font-semibold text-foreground">
+                              {i + 1}
+                            </span>
+                            <span className="font-medium text-foreground">{g.nom}</span>
+                            <span>— {g.longueur} mm</span>
+                            {g.quantite > 1 && (
+                              <span className="text-foreground">× {g.quantite}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+
+                      <p className="text-xs text-muted-foreground">
+                        Chute finale : <span className="font-medium text-foreground">{barre.chute} mm</span>
+                      </p>
+                    </div>
+                  );
+                })}
               </CardContent>
+
             </Card>
           </section>
         )}
