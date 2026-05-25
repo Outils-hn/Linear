@@ -214,49 +214,21 @@ export function exporterPDF(
       doc.setFillColor(r, gg, bb);
       doc.rect(x, schemaY, w, schemaH, "F");
 
-      // Texte contrasté à l'intérieur du bloc : nom + longueur, strictement centré
-      const luminance = (0.299 * r + 0.587 * gg + 0.114 * bb) / 255;
-      if (luminance > 0.6) doc.setTextColor(20, 20, 20);
-      else doc.setTextColor(255, 255, 255);
-
-      const labelLong = `${c.longueur} mm`;
-      const cx = x + w / 2;
-      const cy = schemaY + schemaH / 2;
-      const maxTextWidth = w - 1.2; // marge interne
-
-      // Cherche la plus grande taille qui rentre horizontalement (nom + longueur)
-      let fsName = 0;
-      for (const candidate of [9, 8, 7, 6, 5, 4]) {
-        doc.setFontSize(candidate);
+      // Texte contrasté à l'intérieur du bloc : nom + longueur
+      doc.setTextColor(255, 255, 255);
+      if (w > 25) {
+        doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
-        const wNom = doc.getTextWidth(c.nom);
+        doc.text(c.nom, x + w / 2, schemaY + schemaH / 2 - 0.5, { align: "center" });
         doc.setFont("helvetica", "normal");
-        const wLong = doc.getTextWidth(labelLong);
-        if (wNom <= maxTextWidth && wLong <= maxTextWidth) {
-          fsName = candidate;
-          break;
-        }
-      }
-
-      if (fsName > 0) {
-        // 1 pt ≈ 0.3528 mm — décalage symétrique autour du centre vertical
-        const offset = fsName * 0.3528 * 0.65;
-        doc.setFontSize(fsName);
+        doc.setFontSize(7);
+        doc.text(`${c.longueur} mm`, x + w / 2, schemaY + schemaH / 2 + 3.5, {
+          align: "center",
+        });
+      } else if (w > 10) {
+        doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
-        doc.text(c.nom, cx, cy - offset + 0.5, { align: "center", baseline: "middle" });
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(Math.max(4, fsName - 1));
-        doc.text(labelLong, cx, cy + offset + 0.5, { align: "center", baseline: "middle" });
-      } else {
-        // Bloc trop étroit : on tente au moins la longueur seule, en plus petit
-        for (const candidate of [5, 4]) {
-          doc.setFontSize(candidate);
-          doc.setFont("helvetica", "bold");
-          if (doc.getTextWidth(labelLong) <= maxTextWidth) {
-            doc.text(labelLong, cx, cy, { align: "center", baseline: "middle" });
-            break;
-          }
-        }
+        doc.text(`${c.longueur}`, x + w / 2, schemaY + schemaH / 2 + 1, { align: "center" });
       }
 
       cursorMm += c.longueur;
