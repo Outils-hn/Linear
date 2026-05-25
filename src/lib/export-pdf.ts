@@ -23,11 +23,12 @@ export interface OptionsExportPDF {
   infos: InfosProjet;
 }
 
-interface GroupeBarres {
+export interface GroupeBarres {
   barres: BarreOptimisee[];
   signature: string;
   reference: BarreOptimisee;
 }
+
 
 interface GroupeCoupe {
   pieceId: string;
