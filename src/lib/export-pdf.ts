@@ -241,15 +241,18 @@ export function exporterPDF(
         if (canTwoLines) {
           const sNom = fitFontSize(nom, "bold", 8, 4);
           const sLng = fitFontSize(lng, "normal", 7, 4);
+          const ptToMm = 0.3528;
+          const offNom = (sNom * ptToMm) / 2 + 0.2;
+          const offLng = (sLng * ptToMm) / 2 + 0.2;
           doc.setFont("helvetica", "bold");
           doc.setFontSize(sNom);
-          doc.text(nom, cx, cy - sNom * 0.18, {
+          doc.text(nom, cx, cy - offNom, {
             align: "center",
             baseline: "middle",
           });
           doc.setFont("helvetica", "normal");
           doc.setFontSize(sLng);
-          doc.text(lng, cx, cy + sLng * 0.55, {
+          doc.text(lng, cx, cy + offLng, {
             align: "center",
             baseline: "middle",
           });
