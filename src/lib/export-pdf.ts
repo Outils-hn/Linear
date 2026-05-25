@@ -30,7 +30,7 @@ export interface GroupeBarres {
 }
 
 
-interface GroupeCoupe {
+export interface GroupeCoupe {
   pieceId: string;
   nom: string;
   longueur: number;
@@ -38,7 +38,7 @@ interface GroupeCoupe {
   largeurMm: number; // somme longueurs + traits de scie internes
 }
 
-function grouperCoupesConsecutives(
+export function grouperCoupesConsecutives(
   coupes: BarreOptimisee["coupes"],
   traitScie: number,
 ): GroupeCoupe[] {
@@ -69,7 +69,7 @@ function signatureBarre(b: BarreOptimisee): string {
   );
 }
 
-function grouperBarresIdentiques(barres: BarreOptimisee[]): GroupeBarres[] {
+export function grouperBarresIdentiques(barres: BarreOptimisee[]): GroupeBarres[] {
   const map = new Map<string, GroupeBarres>();
   for (const b of barres) {
     const sig = signatureBarre(b);
@@ -81,7 +81,7 @@ function grouperBarresIdentiques(barres: BarreOptimisee[]): GroupeBarres[] {
   return [...map.values()].sort((a, b) => a.barres[0].index - b.barres[0].index);
 }
 
-function libelleGroupe(g: GroupeBarres): string {
+export function libelleGroupe(g: GroupeBarres): string {
   if (g.barres.length === 1) return `Barre n°${g.barres[0].index}`;
   const indices = g.barres.map((b) => b.index).sort((a, b) => a - b);
   // contigus ?
