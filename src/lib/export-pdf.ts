@@ -214,21 +214,55 @@ export function exporterPDF(
       doc.setFillColor(r, gg, bb);
       doc.rect(x, schemaY, w, schemaH, "F");
 
-      // Texte contrasté à l'intérieur du bloc : nom + longueur
+      // Texte contrasté centré (H+V) à l'intérieur du bloc
       doc.setTextColor(255, 255, 255);
-      if (w > 25) {
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
-        doc.text(c.nom, x + w / 2, schemaY + schemaH / 2 - 0.5, { align: "center" });
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7);
-        doc.text(`${c.longueur} mm`, x + w / 2, schemaY + schemaH / 2 + 3.5, {
-          align: "center",
-        });
-      } else if (w > 10) {
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${c.longueur}`, x + w / 2, schemaY + schemaH / 2 + 1, { align: "center" });
+      const cx = x + w / 2;
+      const cy = schemaY + schemaH / 2;
+      const padding = 1.2;
+      const maxW = Math.max(0, w - padding * 2);
+
+      const fitFontSize = (txt: string, weight: "bold" | "normal", start: number, min: number) => {
+        doc.setFont("helvetica", weight);
+        let size = start;
+        while (size > min) {
+          doc.setFontSize(size);
+          if (doc.getTextWidth(txt) <= maxW) return size;
+          size -= 0.5;
+        }
+        doc.setFontSize(min);
+        return min;
+      };
+
+      if (maxW >= 4) {
+        const nom = c.nom;
+        const lng = `${c.longueur} mm`;
+        // Essai 2 lignes si la hauteur le permet
+        const canTwoLines = schemaH >= 9;
+        if (canTwoLines) {
+          const sNom = fitFontSize(nom, "bold", 8, 4);
+          const sLng = fitFontSize(lng, "normal", 7, 4);
+          const ptToMm = 0.3528;
+          const offNom = (sNom * ptToMm) / 2 + 0.2;
+          const offLng = (sLng * ptToMm) / 2 + 0.2;
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(sNom);
+          doc.text(nom, cx, cy - offNom, {
+            align: "center",
+            baseline: "middle",
+          });
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(sLng);
+          doc.text(lng, cx, cy + offLng, {
+            align: "center",
+            baseline: "middle",
+          });
+        } else {
+          const combo = `${nom} ${lng}`;
+          const s = fitFontSize(combo, "bold", 7, 4);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(s);
+          doc.text(combo, cx, cy, { align: "center", baseline: "middle" });
+        }
       }
 
       cursorMm += c.longueur;
