@@ -333,14 +333,15 @@ export function exporterPDF(
 
     // Instructions de coupe
     doc.setFont("helvetica", "normal");
-    const body: string[][] = barre.coupes.map((c, i) => [
+    const body: string[][] = coupesGroupes.map((c, i) => [
       `${i + 1}`,
       c.nom,
       `${c.longueur} mm`,
+      `${c.quantite}`,
     ]);
     autoTable(doc, {
       startY: y,
-      head: [["#", "Pièce", "Longueur de coupe"]],
+      head: [["#", "Pièce", "Longueur de coupe", "Quantité"]],
       body,
       theme: "striped",
       styles: { fontSize: 9 },
@@ -349,6 +350,7 @@ export function exporterPDF(
       columnStyles: {
         0: { cellWidth: 12, halign: "center" },
         2: { cellWidth: 40, halign: "right" },
+        3: { cellWidth: 25, halign: "center" },
       },
     });
     // @ts-expect-error
