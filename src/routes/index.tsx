@@ -16,7 +16,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { optimiser, type Piece, type Strategie } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
-import { exporterPDF } from "@/lib/export-pdf";
+import {
+  exporterPDF,
+  grouperBarresIdentiques,
+  grouperCoupesConsecutives,
+  libelleGroupe,
+} from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/")({
   component: Index,
