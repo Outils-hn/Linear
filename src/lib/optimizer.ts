@@ -135,10 +135,13 @@ function optimiserMaxChutes(
       used: b.longueurUtilisee,
       kerf: b.longueurTraitsScie,
     }));
-    const aPlacer = [...source.coupes].sort((a, b) => b.longueur - a.longueur);
-    let okTous = true;
+    // Pièces les plus petites d'abord : on les case facilement ailleurs,
+    // ce qui agrandit la chute de la barre source.
+    const aPlacer = [...source.coupes].sort((a, b) => a.longueur - b.longueur);
+    const restant: typeof aPlacer = [];
+    let bouge = false;
     for (const c of aPlacer) {
-      // best-fit
+      // best-fit dans les autres barres
       let meilleur: (typeof simul)[number] | null = null;
       let meilleurReste = Infinity;
       for (const s of simul) {
@@ -151,28 +154,39 @@ function optimiserMaxChutes(
         }
       }
       if (!meilleur) {
-        okTous = false;
-        break;
+        restant.push(c);
+        continue;
       }
       const cout = meilleur.coupes.length > 0 ? traitScie : 0;
       meilleur.coupes.push(c);
       meilleur.used += c.longueur;
       meilleur.kerf += cout;
+      bouge = true;
     }
-    if (okTous) {
-      // Appliquer : reconstruire chaque barre destinataire
+    if (bouge) {
+      // Appliquer aux barres destinataires
       for (const s of simul) {
         s.ref.coupes = s.coupes;
         s.ref.longueurUtilisee = s.used;
         s.ref.longueurTraitsScie = s.kerf;
         s.ref.chute = s.ref.longueurBarre - s.used - s.kerf;
       }
-      // Supprimer la barre source
-      const idx = barres.indexOf(source);
-      barres.splice(idx, 1);
+      if (restant.length === 0) {
+        // Barre source entièrement vidée → on l'enlève
+        const idx = barres.indexOf(source);
+        barres.splice(idx, 1);
+      } else {
+        // Mise à jour partielle de la barre source
+        source.coupes = restant;
+        source.longueurUtilisee = restant.reduce((s, c) => s + c.longueur, 0);
+        source.longueurTraitsScie = Math.max(0, restant.length - 1) * traitScie;
+        source.chute =
+          source.longueurBarre - source.longueurUtilisee - source.longueurTraitsScie;
+      }
       progres = true;
     }
   }
+
 
   // Ré-indexer
   barres.forEach((b, i) => (b.index = i + 1));
