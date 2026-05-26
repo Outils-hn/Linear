@@ -105,37 +105,80 @@ function optimiserMinBarres(
   return barres;
 }
 
-// Best-Fit Decreasing — concentre les pertes pour maximiser grandes chutes
+// Maximiser grandes chutes :
+// 1) FFD pour atteindre le nombre minimal de barres,
+// 2) Post-traitement : on tente de vider la barre la moins remplie en
+//    redistribuant ses pièces dans les autres (best-fit), de manière à
+//    concentrer toute la chute restante sur UNE seule barre.
 function optimiserMaxChutes(
   items: Item[],
   longueurBarre: number,
   traitScie: number,
 ): BarreOptimisee[] {
-  const tri = [...items].sort((a, b) => b.longueur - a.longueur);
-  const barres: BarreOptimisee[] = [];
-  for (const item of tri) {
-    // best-fit : la barre où il rentre le plus serré
-    let meilleur: BarreOptimisee | null = null;
-    let meilleurReste = Infinity;
-    for (const b of barres) {
-      const coutTrait = b.coupes.length > 0 ? traitScie : 0;
-      const espace = b.longueurBarre - b.longueurUtilisee - b.longueurTraitsScie;
-      const reste = espace - item.longueur - coutTrait;
-      if (reste >= 0 && reste < meilleurReste) {
-        meilleur = b;
-        meilleurReste = reste;
+  const barres = optimiserMinBarres(items, longueurBarre, traitScie);
+
+  const espaceRestant = (b: BarreOptimisee) =>
+    b.longueurBarre - b.longueurUtilisee - b.longueurTraitsScie;
+
+  let progres = true;
+  while (progres && barres.length > 1) {
+    progres = false;
+    // Barre avec la chute la plus grande = candidate à vider/consolider
+    const triParChute = [...barres].sort((a, b) => espaceRestant(b) - espaceRestant(a));
+    const source = triParChute[0];
+    // On veut déplacer les pièces de "source" vers les autres barres
+    const autres = barres.filter((b) => b !== source);
+    // Tentative : simuler le placement de chaque coupe de source dans les autres
+    const simul = autres.map((b) => ({
+      ref: b,
+      coupes: [...b.coupes],
+      used: b.longueurUtilisee,
+      kerf: b.longueurTraitsScie,
+    }));
+    const aPlacer = [...source.coupes].sort((a, b) => b.longueur - a.longueur);
+    let okTous = true;
+    for (const c of aPlacer) {
+      // best-fit
+      let meilleur: (typeof simul)[number] | null = null;
+      let meilleurReste = Infinity;
+      for (const s of simul) {
+        const cout = s.coupes.length > 0 ? traitScie : 0;
+        const espace = longueurBarre - s.used - s.kerf;
+        const reste = espace - c.longueur - cout;
+        if (reste >= 0 && reste < meilleurReste) {
+          meilleur = s;
+          meilleurReste = reste;
+        }
       }
+      if (!meilleur) {
+        okTous = false;
+        break;
+      }
+      const cout = meilleur.coupes.length > 0 ? traitScie : 0;
+      meilleur.coupes.push(c);
+      meilleur.used += c.longueur;
+      meilleur.kerf += cout;
     }
-    if (meilleur) {
-      placerSurBarre(meilleur, item, traitScie);
-    } else {
-      const nb = newBarre(barres.length + 1, longueurBarre);
-      placerSurBarre(nb, item, traitScie);
-      barres.push(nb);
+    if (okTous) {
+      // Appliquer : reconstruire chaque barre destinataire
+      for (const s of simul) {
+        s.ref.coupes = s.coupes;
+        s.ref.longueurUtilisee = s.used;
+        s.ref.longueurTraitsScie = s.kerf;
+        s.ref.chute = s.ref.longueurBarre - s.used - s.kerf;
+      }
+      // Supprimer la barre source
+      const idx = barres.indexOf(source);
+      barres.splice(idx, 1);
+      progres = true;
     }
   }
+
+  // Ré-indexer
+  barres.forEach((b, i) => (b.index = i + 1));
   return barres;
 }
+
 
 // Regroupement par pièce identique
 function optimiserTriSimple(
