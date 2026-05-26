@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+
 import { optimiser, type Piece, type Strategie } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
 import {
