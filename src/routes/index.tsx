@@ -207,27 +207,10 @@ function Index() {
                 <CardTitle className="text-base">Pièces à couper</CardTitle>
                 <CardDescription>Liste des pièces et quantités requises</CardDescription>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setPieces([
-                      { id: nextId(), nom: "Montant", longueur: 2150, quantite: 3 },
-                      { id: nextId(), nom: "Traverse H", longueur: 1480, quantite: 5 },
-                      { id: nextId(), nom: "Traverse B", longueur: 920, quantite: 7 },
-                      { id: nextId(), nom: "Renfort", longueur: 640, quantite: 9 },
-                      { id: nextId(), nom: "Cale", longueur: 310, quantite: 12 },
-                      { id: nextId(), nom: "Petit", longueur: 175, quantite: 14 },
-                    ])
-                  }
-                >
-                  Charger un exemple varié
-                </Button>
-                <Button variant="outline" size="sm" onClick={addPiece} className="gap-2">
-                  <Plus className="h-4 w-4" /> Ajouter
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" onClick={addPiece} className="gap-2">
+                <Plus className="h-4 w-4" /> Ajouter
+              </Button>
+
 
             </CardHeader>
             <CardContent>
