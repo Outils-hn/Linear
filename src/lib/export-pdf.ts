@@ -202,18 +202,9 @@ export function exporterPDF(
       doc.text(`Quantité : ${qte} barres identiques`, pageWidth - margin, y, {
         align: "right",
       });
-    } else {
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(80, 80, 80);
-      doc.text(
-        `${barre.coupes.length} coupe(s)`,
-        pageWidth - margin,
-        y,
-        { align: "right" },
-      );
     }
     y += 5;
+
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
@@ -308,8 +299,7 @@ export function exporterPDF(
     if (barre.chute > 0) {
       const x = schemaX + mmToPx(cursorMm);
       const w = schemaW - mmToPx(cursorMm);
-      if (barre.chuteReutilisable) doc.setFillColor(234, 179, 8);
-      else doc.setFillColor(180, 180, 180);
+      doc.setFillColor(180, 180, 180);
       doc.rect(x, schemaY, w, schemaH, "F");
       if (w > 14) {
         doc.setTextColor(255, 255, 255);
@@ -326,11 +316,9 @@ export function exporterPDF(
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    const labelChute = barre.chuteReutilisable
-      ? `Chute finale : ${barre.chute} mm  (réutilisable ♺)`
-      : `Chute finale : ${barre.chute} mm  (déchet)`;
-    doc.text(labelChute, margin, y);
+    doc.text(`Chute finale : ${barre.chute} mm`, margin, y);
     y += 4;
+
 
     // Instructions de coupe
     doc.setFont("helvetica", "normal");

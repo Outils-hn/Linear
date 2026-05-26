@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Trash2, FileDown, Scissors, Calculator, Recycle } from "lucide-react";
+import { Plus, Trash2, FileDown, Scissors, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+
 import { optimiser, type Piece, type Strategie } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
 import {
@@ -328,16 +328,8 @@ function Index() {
                             {qte > 1 ? ` · Quantité : ${qte} barres identiques` : ""}
                           </span>
                         </h3>
-                        {barre.chuteReutilisable ? (
-                          <Badge className="gap-1 bg-[color:var(--color-warning)] text-[color:var(--color-warning-foreground)] hover:bg-[color:var(--color-warning)]">
-                            <Recycle className="h-3 w-3" /> Chute réutilisable
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-muted-foreground">
-                            Déchet
-                          </Badge>
-                        )}
                       </div>
+
 
                       <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
 
