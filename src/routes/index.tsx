@@ -328,16 +328,8 @@ function Index() {
                             {qte > 1 ? ` · Quantité : ${qte} barres identiques` : ""}
                           </span>
                         </h3>
-                        {barre.chuteReutilisable ? (
-                          <Badge className="gap-1 bg-[color:var(--color-warning)] text-[color:var(--color-warning-foreground)] hover:bg-[color:var(--color-warning)]">
-                            <Recycle className="h-3 w-3" /> Chute réutilisable
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-muted-foreground">
-                            Déchet
-                          </Badge>
-                        )}
                       </div>
+
 
                       <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
 
