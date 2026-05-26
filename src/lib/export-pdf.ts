@@ -202,18 +202,9 @@ export function exporterPDF(
       doc.text(`Quantité : ${qte} barres identiques`, pageWidth - margin, y, {
         align: "right",
       });
-    } else {
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(80, 80, 80);
-      doc.text(
-        `${barre.coupes.length} coupe(s)`,
-        pageWidth - margin,
-        y,
-        { align: "right" },
-      );
     }
     y += 5;
+
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
