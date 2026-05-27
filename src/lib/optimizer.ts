@@ -1,8 +1,14 @@
-export type Strategie = "min-barres" | "max-chutes" | "tri-simple";
+export type Strategie = "min-barres" | "priorite-stock";
 
 export interface Piece {
   id: string;
   nom: string;
+  longueur: number;
+  quantite: number;
+}
+
+export interface StockBarre {
+  id: string;
   longueur: number;
   quantite: number;
 }
@@ -15,7 +21,9 @@ export interface CoupePlacee {
 
 export interface BarreOptimisee {
   index: number;
-  longueurBarre: number;
+  longueurBarre: number; // longueur utile (après marge)
+  longueurBrute: number; // longueur réelle de la barre approvisionnée
+  origine: "stock" | "defaut";
   coupes: CoupePlacee[];
   longueurUtilisee: number;
   longueurTraitsScie: number;
@@ -26,6 +34,8 @@ export interface BarreOptimisee {
 export interface ResultatOptimisation {
   barres: BarreOptimisee[];
   nbBarres: number;
+  nbBarresStock: number;
+  nbBarresDefaut: number;
   longueurTotale: number;
   longueurUtile: number;
   longueurChutes: number;
@@ -43,6 +53,12 @@ interface Item {
   longueur: number;
 }
 
+interface PoolBarre {
+  longueurUtile: number;
+  longueurBrute: number;
+  origine: "stock" | "defaut";
+}
+
 function expandPieces(pieces: Piece[]): Item[] {
   const items: Item[] = [];
   for (const p of pieces) {
@@ -53,23 +69,21 @@ function expandPieces(pieces: Piece[]): Item[] {
   return items;
 }
 
-function newBarre(index: number, longueurBarre: number): BarreOptimisee {
+function newBarre(index: number, pool: PoolBarre): BarreOptimisee {
   return {
     index,
-    longueurBarre,
+    longueurBarre: pool.longueurUtile,
+    longueurBrute: pool.longueurBrute,
+    origine: pool.origine,
     coupes: [],
     longueurUtilisee: 0,
     longueurTraitsScie: 0,
-    chute: longueurBarre,
+    chute: pool.longueurUtile,
     chuteReutilisable: false,
   };
 }
 
-function placerSurBarre(
-  barre: BarreOptimisee,
-  item: Item,
-  traitScie: number,
-): boolean {
+function placerSurBarre(barre: BarreOptimisee, item: Item, traitScie: number): boolean {
   const coutTrait = barre.coupes.length > 0 ? traitScie : 0;
   const espaceRestant = barre.longueurBarre - barre.longueurUtilisee - barre.longueurTraitsScie;
   if (item.longueur + coutTrait > espaceRestant) return false;
@@ -80,10 +94,10 @@ function placerSurBarre(
   return true;
 }
 
-// First-Fit Decreasing — minimise les barres
+// FFD classique sur une longueur unique
 function optimiserMinBarres(
   items: Item[],
-  longueurBarre: number,
+  poolDefaut: PoolBarre,
   traitScie: number,
 ): BarreOptimisee[] {
   const tri = [...items].sort((a, b) => b.longueur - a.longueur);
@@ -97,7 +111,7 @@ function optimiserMinBarres(
       }
     }
     if (!place) {
-      const nb = newBarre(barres.length + 1, longueurBarre);
+      const nb = newBarre(barres.length + 1, poolDefaut);
       placerSurBarre(nb, item, traitScie);
       barres.push(nb);
     }
@@ -105,155 +119,117 @@ function optimiserMinBarres(
   return barres;
 }
 
-// Maximiser grandes chutes :
-// 1) FFD pour atteindre le nombre minimal de barres,
-// 2) Post-traitement : on tente de vider la barre la moins remplie en
-//    redistribuant ses pièces dans les autres (best-fit), de manière à
-//    concentrer toute la chute restante sur UNE seule barre.
-function optimiserMaxChutes(
+// Priorité stock : on ouvre les barres dans l'ordre du stock disponible
+// (de la plus grande à la plus petite), puis on complète avec la barre par défaut.
+function optimiserPrioriteStock(
   items: Item[],
-  longueurBarre: number,
+  poolDefaut: PoolBarre,
+  poolsStock: PoolBarre[],
   traitScie: number,
 ): BarreOptimisee[] {
-  const barres = optimiserMinBarres(items, longueurBarre, traitScie);
+  const tri = [...items].sort((a, b) => b.longueur - a.longueur);
+  // File des barres de stock disponibles (grande -> petite)
+  const fileStock = [...poolsStock].sort((a, b) => b.longueurUtile - a.longueurUtile);
+  const barres: BarreOptimisee[] = [];
 
-  const espaceRestant = (b: BarreOptimisee) =>
-    b.longueurBarre - b.longueurUtilisee - b.longueurTraitsScie;
-
-  let progres = true;
-  while (progres && barres.length > 1) {
-    progres = false;
-    // Barre avec la chute la plus grande = candidate à vider/consolider
-    const triParChute = [...barres].sort((a, b) => espaceRestant(b) - espaceRestant(a));
-    const source = triParChute[0];
-    // On veut déplacer les pièces de "source" vers les autres barres
-    const autres = barres.filter((b) => b !== source);
-    // Tentative : simuler le placement de chaque coupe de source dans les autres
-    const simul = autres.map((b) => ({
-      ref: b,
-      coupes: [...b.coupes],
-      used: b.longueurUtilisee,
-      kerf: b.longueurTraitsScie,
-    }));
-    // Pièces les plus petites d'abord : on les case facilement ailleurs,
-    // ce qui agrandit la chute de la barre source.
-    const aPlacer = [...source.coupes].sort((a, b) => a.longueur - b.longueur);
-    const restant: typeof aPlacer = [];
-    let bouge = false;
-    for (const c of aPlacer) {
-      // best-fit dans les autres barres
-      let meilleur: (typeof simul)[number] | null = null;
-      let meilleurReste = Infinity;
-      for (const s of simul) {
-        const cout = s.coupes.length > 0 ? traitScie : 0;
-        const espace = longueurBarre - s.used - s.kerf;
-        const reste = espace - c.longueur - cout;
-        if (reste >= 0 && reste < meilleurReste) {
-          meilleur = s;
-          meilleurReste = reste;
-        }
+  for (const item of tri) {
+    let place = false;
+    for (const b of barres) {
+      if (placerSurBarre(b, item, traitScie)) {
+        place = true;
+        break;
       }
-      if (!meilleur) {
-        restant.push(c);
+    }
+    if (place) continue;
+
+    // Choisir la prochaine barre à ouvrir : priorité au stock
+    let pool: PoolBarre | null = null;
+    while (fileStock.length > 0) {
+      const candidate = fileStock[0];
+      if (item.longueur <= candidate.longueurUtile) {
+        pool = candidate;
+        fileStock.shift();
+        break;
+      }
+      // La pièce ne rentre pas dans cette barre stock : on la garde pour
+      // de plus petites pièces et on essaie la suivante.
+      // Stratégie simple : si la plus grande barre stock ne peut pas la
+      // recevoir, aucune autre ne le pourra non plus (file triée desc).
+      pool = null;
+      break;
+    }
+    if (!pool) {
+      if (item.longueur > poolDefaut.longueurUtile) {
+        // Pièce impossible à placer : on l'ignore (déjà filtrée en amont).
         continue;
       }
-      const cout = meilleur.coupes.length > 0 ? traitScie : 0;
-      meilleur.coupes.push(c);
-      meilleur.used += c.longueur;
-      meilleur.kerf += cout;
-      bouge = true;
+      pool = poolDefaut;
     }
-    if (bouge) {
-      // Appliquer aux barres destinataires
-      for (const s of simul) {
-        s.ref.coupes = s.coupes;
-        s.ref.longueurUtilisee = s.used;
-        s.ref.longueurTraitsScie = s.kerf;
-        s.ref.chute = s.ref.longueurBarre - s.used - s.kerf;
-      }
-      if (restant.length === 0) {
-        // Barre source entièrement vidée → on l'enlève
-        const idx = barres.indexOf(source);
-        barres.splice(idx, 1);
-      } else {
-        // Mise à jour partielle de la barre source
-        source.coupes = restant;
-        source.longueurUtilisee = restant.reduce((s, c) => s + c.longueur, 0);
-        source.longueurTraitsScie = Math.max(0, restant.length - 1) * traitScie;
-        source.chute =
-          source.longueurBarre - source.longueurUtilisee - source.longueurTraitsScie;
-      }
-      progres = true;
-    }
+    const nb = newBarre(barres.length + 1, pool);
+    placerSurBarre(nb, item, traitScie);
+    barres.push(nb);
   }
-
-
-  // Ré-indexer
-  barres.forEach((b, i) => (b.index = i + 1));
   return barres;
 }
 
-
-// Regroupement par pièce identique
-function optimiserTriSimple(
-  items: Item[],
-  longueurBarre: number,
-  traitScie: number,
-): BarreOptimisee[] {
-  // Groupe par pieceId
-  const groupes = new Map<string, Item[]>();
-  for (const it of items) {
-    if (!groupes.has(it.pieceId)) groupes.set(it.pieceId, []);
-    groupes.get(it.pieceId)!.push(it);
-  }
-  // Trie groupes par longueur décroissante
-  const groupesArr = [...groupes.values()].sort(
-    (a, b) => b[0].longueur - a[0].longueur,
-  );
-
-  const barres: BarreOptimisee[] = [];
-  for (const groupe of groupesArr) {
-    for (const item of groupe) {
-      // Cherche d'abord une barre contenant déjà cette pièce
-      let place = false;
-      for (const b of barres) {
-        if (b.coupes.some((c) => c.pieceId === item.pieceId)) {
-          if (placerSurBarre(b, item, traitScie)) {
-            place = true;
-            break;
-          }
-        }
-      }
-      if (place) continue;
-      // Sinon n'importe quelle barre
-      for (const b of barres) {
-        if (placerSurBarre(b, item, traitScie)) {
-          place = true;
-          break;
-        }
-      }
-      if (!place) {
-        const nb = newBarre(barres.length + 1, longueurBarre);
-        placerSurBarre(nb, item, traitScie);
-        barres.push(nb);
-      }
-    }
-  }
-  return barres;
+export interface OptionsOptimisation {
+  longueurBarreUtileDefaut: number;
+  longueurBarreBruteDefaut: number;
+  margeSecurite: number;
+  traitScie: number;
+  strategie: Strategie;
+  stock?: StockBarre[];
 }
 
 export function optimiser(
   pieces: Piece[],
-  longueurBarre: number,
-  traitScie: number,
-  strategie: Strategie,
+  options: OptionsOptimisation,
 ): ResultatOptimisation {
-  const items = expandPieces(pieces).filter((i) => i.longueur > 0 && i.longueur <= longueurBarre);
+  const {
+    longueurBarreUtileDefaut,
+    longueurBarreBruteDefaut,
+    margeSecurite,
+    traitScie,
+    strategie,
+    stock = [],
+  } = options;
+
+  const poolDefaut: PoolBarre = {
+    longueurUtile: longueurBarreUtileDefaut,
+    longueurBrute: longueurBarreBruteDefaut,
+    origine: "defaut",
+  };
+
+  const poolsStock: PoolBarre[] = [];
+  for (const s of stock) {
+    if (s.longueur <= 0 || s.quantite <= 0) continue;
+    const utile = Math.max(0, s.longueur - margeSecurite);
+    for (let i = 0; i < s.quantite; i++) {
+      poolsStock.push({
+        longueurUtile: utile,
+        longueurBrute: s.longueur,
+        origine: "stock",
+      });
+    }
+  }
+
+  const maxBarreUtile = Math.max(
+    longueurBarreUtileDefaut,
+    ...poolsStock.map((p) => p.longueurUtile),
+    0,
+  );
+
+  const items = expandPieces(pieces).filter(
+    (i) => i.longueur > 0 && i.longueur <= maxBarreUtile,
+  );
+
   let barres: BarreOptimisee[] = [];
   if (items.length === 0) {
     return {
       barres: [],
       nbBarres: 0,
+      nbBarresStock: 0,
+      nbBarresDefaut: 0,
       longueurTotale: 0,
       longueurUtile: 0,
       longueurChutes: 0,
@@ -263,15 +239,13 @@ export function optimiser(
       pourcentageChutes: 0,
     };
   }
+
   switch (strategie) {
     case "min-barres":
-      barres = optimiserMinBarres(items, longueurBarre, traitScie);
+      barres = optimiserMinBarres(items, poolDefaut, traitScie);
       break;
-    case "max-chutes":
-      barres = optimiserMaxChutes(items, longueurBarre, traitScie);
-      break;
-    case "tri-simple":
-      barres = optimiserTriSimple(items, longueurBarre, traitScie);
+    case "priorite-stock":
+      barres = optimiserPrioriteStock(items, poolDefaut, poolsStock, traitScie);
       break;
   }
 
@@ -280,7 +254,9 @@ export function optimiser(
   }
 
   const nbBarres = barres.length;
-  const longueurTotale = nbBarres * longueurBarre;
+  const nbBarresStock = barres.filter((b) => b.origine === "stock").length;
+  const nbBarresDefaut = nbBarres - nbBarresStock;
+  const longueurTotale = barres.reduce((s, b) => s + b.longueurBrute, 0);
   const longueurUtile = barres.reduce((s, b) => s + b.longueurUtilisee, 0);
   const longueurChutes = barres.reduce((s, b) => s + b.chute, 0);
   const longueurChutesReutilisables = barres
@@ -293,6 +269,8 @@ export function optimiser(
   return {
     barres,
     nbBarres,
+    nbBarresStock,
+    nbBarresDefaut,
     longueurTotale,
     longueurUtile,
     longueurChutes,
