@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Trash2, FileDown, Scissors, Calculator } from "lucide-react";
+import { Plus, Trash2, FileDown, Scissors, Calculator, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import { optimiser, type Piece, type Strategie } from "@/lib/optimizer";
+import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
 import {
   exporterPDF,
@@ -37,8 +37,10 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-let pieceIdCounter = 0;
-const nextId = () => `p${++pieceIdCounter}`;
+let idCounter = 0;
+const nextId = () => `p${++idCounter}`;
+let stockCounter = 0;
+const nextStockId = () => `s${++stockCounter}`;
 
 function Index() {
   const [chantier, setChantier] = useState("");
@@ -46,7 +48,10 @@ function Index() {
   const [longueurBarre, setLongueurBarre] = useState(6000);
   const [margeSecurite, setMargeSecurite] = useState(100);
   const [traitScie, setTraitScie] = useState(3);
-  const [strategie, setStrategie] = useState<Strategie>("max-chutes");
+  const [strategie, setStrategie] = useState<Strategie>("min-barres");
+  const [stock, setStock] = useState<StockBarre[]>([
+    { id: nextStockId(), longueur: 4200, quantite: 4 },
+  ]);
   const [pieces, setPieces] = useState<Piece[]>([
     { id: nextId(), nom: "Montant A", longueur: 1200, quantite: 4 },
     { id: nextId(), nom: "Traverse B", longueur: 800, quantite: 6 },
@@ -59,14 +64,25 @@ function Index() {
 
   const addPiece = () =>
     setPieces((p) => [...p, { id: nextId(), nom: `Pièce ${p.length + 1}`, longueur: 1000, quantite: 1 }]);
-
   const removePiece = (id: string) => setPieces((p) => p.filter((x) => x.id !== id));
-
   const updatePiece = (id: string, patch: Partial<Piece>) =>
     setPieces((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
 
+  const addStock = () =>
+    setStock((s) => [...s, { id: nextStockId(), longueur: 4000, quantite: 1 }]);
+  const removeStock = (id: string) => setStock((s) => s.filter((x) => x.id !== id));
+  const updateStock = (id: string, patch: Partial<StockBarre>) =>
+    setStock((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+
   const lancer = () => {
-    const r = optimiser(pieces, longueurUtile, traitScie, strategie);
+    const r = optimiser(pieces, {
+      longueurBarreUtileDefaut: longueurUtile,
+      longueurBarreBruteDefaut: longueurBarre,
+      margeSecurite,
+      traitScie,
+      strategie,
+      stock: strategie === "priorite-stock" ? stock : [],
+    });
     setResultat(r);
     setTimeout(() => {
       document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" });
@@ -81,13 +97,13 @@ function Index() {
       margeSecurite,
       traitScie,
       strategie,
+      stock: strategie === "priorite-stock" ? stock : [],
       infos: { chantier, numeroTache },
     });
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -108,7 +124,6 @@ function Index() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
-        {/* Infos projet */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Informations du projet</CardTitle>
@@ -138,16 +153,15 @@ function Index() {
           </CardContent>
         </Card>
 
-        {/* Paramètres */}
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-base">Paramètres du profilé</CardTitle>
-              <CardDescription>Configuration de la barre brute</CardDescription>
+              <CardDescription>Configuration de la barre de base</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="lb">Longueur de la barre (mm)</Label>
+                <Label htmlFor="lb">Longueur de la barre de base (mm)</Label>
                 <Input
                   id="lb"
                   type="number"
@@ -185,17 +199,14 @@ function Index() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="min-barres">Minimum de barres utilisées</SelectItem>
-                    <SelectItem value="max-chutes">Maximiser les grandes chutes réutilisables</SelectItem>
-                    <SelectItem value="tri-simple">Coupes simplifiées / Priorité au tri</SelectItem>
+                    <SelectItem value="priorite-stock">Priorité aux longueurs du stock</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {strategie === "min-barres" &&
-                    "Utilise le moins de barres possible, sans considération pour la taille des chutes."}
-                  {strategie === "max-chutes" &&
-                    "Concentre les pertes pour obtenir des chutes ≥ 500 mm réutilisables."}
-                  {strategie === "tri-simple" &&
-                    "Regroupe les pièces identiques sur les mêmes barres pour faciliter le tri à l'atelier."}
+                    "Utilise le moins de barres possible à partir de la barre de base."}
+                  {strategie === "priorite-stock" &&
+                    "Place d'abord les coupes dans les barres du stock, complète avec la barre de base."}
                 </p>
               </div>
             </CardContent>
@@ -210,8 +221,6 @@ function Index() {
               <Button variant="outline" size="sm" onClick={addPiece} className="gap-2">
                 <Plus className="h-4 w-4" /> Ajouter
               </Button>
-
-
             </CardHeader>
             <CardContent>
               <Table>
@@ -281,11 +290,94 @@ function Index() {
           </Card>
         </div>
 
-        {/* Résultats */}
+        {strategie === "priorite-stock" && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" />
+                <div>
+                  <CardTitle className="text-base">Gestion du stock de barres</CardTitle>
+                  <CardDescription>
+                    Ces barres seront utilisées en priorité. La barre de base ({longueurBarre} mm)
+                    complète si le stock est insuffisant.
+                  </CardDescription>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={addStock} className="gap-2">
+                <Plus className="h-4 w-4" /> Ajouter une ligne
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-56">Longueur de barre (mm)</TableHead>
+                    <TableHead className="w-40">Quantité disponible</TableHead>
+                    <TableHead>Longueur utile après marge</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stock.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={s.longueur}
+                          onChange={(e) =>
+                            updateStock(s.id, { longueur: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={s.quantite}
+                          onChange={(e) =>
+                            updateStock(s.id, { quantite: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {Math.max(0, s.longueur - margeSecurite)} mm
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeStock(s.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {stock.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                        Aucune barre en stock — toutes les coupes utiliseront la barre de base.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
         {resultat && resultat.nbBarres > 0 && (
           <section id="resultats" className="space-y-6 pt-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard label="Barres utilisées" value={`${resultat.nbBarres}`} hint={`${resultat.longueurTotale} mm au total`} />
+              <StatCard
+                label="Barres utilisées"
+                value={`${resultat.nbBarres}`}
+                hint={
+                  strategie === "priorite-stock"
+                    ? `${resultat.nbBarresStock} stock + ${resultat.nbBarresDefaut} base`
+                    : `${resultat.longueurTotale} mm au total`
+                }
+              />
               <StatCard
                 label="Rendement global"
                 value={`${resultat.rendement.toFixed(1)} %`}
@@ -326,12 +418,15 @@ function Index() {
                         <h3 className="text-sm font-semibold">
                           {libelleGroupe(groupe)}
                           <span className="ml-2 font-normal text-muted-foreground">
+                            · {barre.longueurBrute} mm
+                            {barre.longueurBrute !== barre.longueurBarre
+                              ? ` (utile ${barre.longueurBarre} mm)`
+                              : ""}
                             · {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
                             {qte > 1 ? ` · Quantité : ${qte} barres identiques` : ""}
                           </span>
                         </h3>
                       </div>
-
 
                       <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
 
@@ -357,7 +452,6 @@ function Index() {
                   );
                 })}
               </CardContent>
-
             </Card>
           </section>
         )}

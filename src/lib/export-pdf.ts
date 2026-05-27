@@ -1,12 +1,17 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { ResultatOptimisation, Piece, Strategie, BarreOptimisee } from "./optimizer";
+import type {
+  ResultatOptimisation,
+  Piece,
+  Strategie,
+  BarreOptimisee,
+  StockBarre,
+} from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
 
 const STRATEGIE_LABELS: Record<Strategie, string> = {
-  "min-barres": "Minimum de barres utilisées",
-  "max-chutes": "Maximiser les grandes chutes réutilisables",
-  "tri-simple": "Coupes simplifiées / Priorité au tri",
+  "min-barres": "Minimum de barres",
+  "priorite-stock": "Priorité stock",
 };
 
 export interface InfosProjet {
@@ -20,6 +25,7 @@ export interface OptionsExportPDF {
   margeSecurite: number;
   traitScie: number;
   strategie: Strategie;
+  stock?: StockBarre[];
   infos: InfosProjet;
 }
 
@@ -29,13 +35,12 @@ export interface GroupeBarres {
   reference: BarreOptimisee;
 }
 
-
 export interface GroupeCoupe {
   pieceId: string;
   nom: string;
   longueur: number;
   quantite: number;
-  largeurMm: number; // somme longueurs + traits de scie internes
+  largeurMm: number;
 }
 
 export function grouperCoupesConsecutives(
@@ -63,7 +68,7 @@ export function grouperCoupesConsecutives(
 
 function signatureBarre(b: BarreOptimisee): string {
   return (
-    `${b.longueurBarre}|` +
+    `${b.origine}|${b.longueurBrute}|${b.longueurBarre}|` +
     b.coupes.map((c) => `${c.pieceId}:${c.longueur}`).join(",") +
     `|c=${b.chute}`
   );
@@ -77,17 +82,17 @@ export function grouperBarresIdentiques(barres: BarreOptimisee[]): GroupeBarres[
     if (g) g.barres.push(b);
     else map.set(sig, { signature: sig, reference: b, barres: [b] });
   }
-  // tri : par premier index croissant
   return [...map.values()].sort((a, b) => a.barres[0].index - b.barres[0].index);
 }
 
 export function libelleGroupe(g: GroupeBarres): string {
-  if (g.barres.length === 1) return `Barre n°${g.barres[0].index}`;
+  const suffixe = g.reference.origine === "stock" ? " (stock)" : "";
+  if (g.barres.length === 1) return `Barre n°${g.barres[0].index}${suffixe}`;
   const indices = g.barres.map((b) => b.index).sort((a, b) => a - b);
-  // contigus ?
   const contigu = indices.every((v, i) => i === 0 || v === indices[i - 1] + 1);
-  if (contigu) return `Barres n°${indices[0]} à n°${indices[indices.length - 1]}`;
-  return `Barres n°${indices.join(", n°")}`;
+  if (contigu)
+    return `Barres n°${indices[0]} à n°${indices[indices.length - 1]}${suffixe}`;
+  return `Barres n°${indices.join(", n°")}${suffixe}`;
 }
 
 export function exporterPDF(
@@ -95,15 +100,21 @@ export function exporterPDF(
   pieces: Piece[],
   options: OptionsExportPDF,
 ) {
-  const { longueurBarreBrute, longueurBarreUtile, margeSecurite, traitScie, strategie, infos } =
-    options;
+  const {
+    longueurBarreBrute,
+    longueurBarreUtile,
+    margeSecurite,
+    traitScie,
+    strategie,
+    stock,
+    infos,
+  } = options;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
   const pieceIds = pieces.map((p) => p.id);
 
-  // ====== EN-TÊTE ======
   doc.setFillColor(30, 41, 59);
   doc.rect(0, 0, pageWidth, 28, "F");
   doc.setTextColor(255, 255, 255);
@@ -120,7 +131,6 @@ export function exporterPDF(
   });
   doc.text(date, pageWidth - margin, 12, { align: "right" });
 
-  // Infos projet bien visibles
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   const chantier = infos.chantier?.trim() || "—";
@@ -131,7 +141,6 @@ export function exporterPDF(
   doc.setTextColor(20, 20, 20);
   let y = 38;
 
-  // ====== PARAMÈTRES ======
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.text("Paramètres", margin, y);
@@ -140,8 +149,8 @@ export function exporterPDF(
   doc.setFontSize(9);
   const ligneLongueur =
     margeSecurite > 0
-      ? `Longueur de barre : ${longueurBarreBrute} mm (Calculé sur ${longueurBarreUtile} mm après marge)`
-      : `Longueur de barre : ${longueurBarreBrute} mm`;
+      ? `Barre de base : ${longueurBarreBrute} mm (calculé sur ${longueurBarreUtile} mm après marge)`
+      : `Barre de base : ${longueurBarreBrute} mm`;
   doc.text(ligneLongueur, margin, y);
   y += 4;
   doc.text(`Trait de scie : ${traitScie} mm`, margin, y);
@@ -151,9 +160,31 @@ export function exporterPDF(
     y += 4;
   }
   doc.text(`Stratégie : ${STRATEGIE_LABELS[strategie]}`, margin, y);
-  y += 8;
+  y += 4;
 
-  // ====== SYNTHÈSE ======
+  if (strategie === "priorite-stock" && stock && stock.length > 0) {
+    const stockValide = stock.filter((s) => s.longueur > 0 && s.quantite > 0);
+    if (stockValide.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.text("Stock initial disponible :", margin, y);
+      y += 4;
+      doc.setFont("helvetica", "normal");
+      for (const s of stockValide) {
+        doc.text(`• ${s.quantite} × ${s.longueur} mm`, margin + 4, y);
+        y += 4;
+      }
+      doc.setFont("helvetica", "bold");
+      doc.text(
+        `Utilisées : ${resultat.nbBarresStock} barre(s) stock + ${resultat.nbBarresDefaut} barre(s) de base`,
+        margin,
+        y,
+      );
+      y += 4;
+      doc.setFont("helvetica", "normal");
+    }
+  }
+  y += 4;
+
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.text("Synthèse du projet", margin, y);
@@ -178,7 +209,6 @@ export function exporterPDF(
   // @ts-expect-error lastAutoTable
   y = doc.lastAutoTable.finalY + 8;
 
-  // ====== DÉTAIL PAR GROUPE DE BARRES ======
   const groupes = grouperBarresIdentiques(resultat.barres);
 
   for (const g of groupes) {
@@ -190,7 +220,6 @@ export function exporterPDF(
       y = margin;
     }
 
-    // Titre du groupe
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(30, 41, 59);
@@ -205,18 +234,20 @@ export function exporterPDF(
     }
     y += 5;
 
-
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(80, 80, 80);
+    const brutInfo =
+      barre.longueurBrute !== barre.longueurBarre
+        ? ` (barre ${barre.longueurBrute} mm)`
+        : "";
     doc.text(
-      `Longueur utile : ${barre.longueurBarre} mm  |  ${barre.coupes.length} coupe(s) par barre`,
+      `Longueur utile : ${barre.longueurBarre} mm${brutInfo}  |  ${barre.coupes.length} coupe(s) par barre`,
       margin,
       y,
     );
     y += 4;
 
-    // Schéma graphique
     const schemaX = margin;
     const schemaY = y;
     const schemaW = pageWidth - 2 * margin;
@@ -229,17 +260,16 @@ export function exporterPDF(
 
     const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie);
 
-    coupesGroupes.forEach((g, gi) => {
+    coupesGroupes.forEach((gp, gi) => {
       const x = schemaX + mmToPx(cursorMm);
-      const w = mmToPx(g.largeurMm);
-      const hex = hexColorForPieceId(g.pieceId, pieceIds);
+      const w = mmToPx(gp.largeurMm);
+      const hex = hexColorForPieceId(gp.pieceId, pieceIds);
       const r = parseInt(hex.slice(1, 3), 16);
       const gg = parseInt(hex.slice(3, 5), 16);
       const bb = parseInt(hex.slice(5, 7), 16);
       doc.setFillColor(r, gg, bb);
       doc.rect(x, schemaY, w, schemaH, "F");
 
-      // Texte centré
       doc.setTextColor(255, 255, 255);
       const cx = x + w / 2;
       const cy = schemaY + schemaH / 2;
@@ -260,24 +290,22 @@ export function exporterPDF(
 
       if (maxW >= 4) {
         const ligne2 =
-          g.quantite > 1
-            ? `${g.longueur}mm x${g.quantite}`
-            : `${g.longueur} mm`;
+          gp.quantite > 1 ? `${gp.longueur}mm x${gp.quantite}` : `${gp.longueur} mm`;
         const canTwoLines = schemaH >= 9;
         if (canTwoLines) {
-          const sNom = fitFontSize(g.nom, "bold", 8, 4);
+          const sNom = fitFontSize(gp.nom, "bold", 8, 4);
           const sLng = fitFontSize(ligne2, "normal", 7, 4);
           const ptToMm = 0.3528;
           const offNom = (sNom * ptToMm) / 2 + 0.2;
           const offLng = (sLng * ptToMm) / 2 + 0.2;
           doc.setFont("helvetica", "bold");
           doc.setFontSize(sNom);
-          doc.text(g.nom, cx, cy - offNom, { align: "center", baseline: "middle" });
+          doc.text(gp.nom, cx, cy - offNom, { align: "center", baseline: "middle" });
           doc.setFont("helvetica", "normal");
           doc.setFontSize(sLng);
           doc.text(ligne2, cx, cy + offLng, { align: "center", baseline: "middle" });
         } else {
-          const combo = `${g.nom} (${ligne2})`;
+          const combo = `${gp.nom} (${ligne2})`;
           const s = fitFontSize(combo, "bold", 7, 4);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(s);
@@ -285,8 +313,7 @@ export function exporterPDF(
         }
       }
 
-      cursorMm += g.largeurMm;
-      // Trait de scie entre groupes
+      cursorMm += gp.largeurMm;
       if (gi < coupesGroupes.length - 1 && traitScie > 0) {
         const xt = schemaX + mmToPx(cursorMm);
         doc.setFillColor(30, 30, 30);
@@ -295,7 +322,6 @@ export function exporterPDF(
       }
     });
 
-    // Chute
     if (barre.chute > 0) {
       const x = schemaX + mmToPx(cursorMm);
       const w = schemaW - mmToPx(cursorMm);
@@ -312,15 +338,12 @@ export function exporterPDF(
     }
     y += schemaH + 4;
 
-    // Chute textuelle
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.text(`Chute finale : ${barre.chute} mm`, margin, y);
     y += 4;
 
-
-    // Instructions de coupe
     doc.setFont("helvetica", "normal");
     const body: string[][] = coupesGroupes.map((c, i) => [
       `${i + 1}`,
@@ -346,7 +369,6 @@ export function exporterPDF(
     y = doc.lastAutoTable.finalY + 8;
   }
 
-  // Pied de page
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
