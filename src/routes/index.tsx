@@ -458,6 +458,9 @@ function Index() {
                             {g.quantite > 1 && (
                               <span className="text-foreground">× {g.quantite}</span>
                             )}
+                            <span className="ml-auto font-semibold text-foreground">
+                              Repère : {g.reperes.join(" / ")} mm
+                            </span>
                           </li>
                         ))}
                       </ol>
