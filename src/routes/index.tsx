@@ -311,14 +311,18 @@ function Index() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-56">Longueur de barre (mm)</TableHead>
-                    <TableHead className="w-40">Quantité disponible</TableHead>
-                    <TableHead>Longueur utile après marge</TableHead>
+                    <TableHead className="w-48">Longueur de barre (mm)</TableHead>
+                    <TableHead className="w-32">Quantité</TableHead>
+                    <TableHead className="w-40">Appliquer la marge</TableHead>
+                    <TableHead>Longueur utile</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {stock.map((s) => (
+                  {stock.map((s) => {
+                    const margeOn = s.appliquerMarge !== false;
+                    const utile = Math.max(0, s.longueur - (margeOn ? margeSecurite : 0));
+                    return (
                     <TableRow key={s.id}>
                       <TableCell>
                         <Input
@@ -338,8 +342,19 @@ function Index() {
                           }
                         />
                       </TableCell>
+                      <TableCell>
+                        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Checkbox
+                            checked={margeOn}
+                            onCheckedChange={(v) =>
+                              updateStock(s.id, { appliquerMarge: v === true })
+                            }
+                          />
+                          {margeOn ? `−${margeSecurite} mm` : "Aucune"}
+                        </label>
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {Math.max(0, s.longueur - margeSecurite)} mm
+                        {utile} mm
                       </TableCell>
                       <TableCell>
                         <Button
@@ -352,10 +367,11 @@ function Index() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {stock.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
                         Aucune barre en stock — toutes les coupes utiliseront la barre de base.
                       </TableCell>
                     </TableRow>
