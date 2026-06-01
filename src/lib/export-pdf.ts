@@ -354,7 +354,24 @@ export function exporterPDF(
         });
       }
     }
-    y += schemaH + 4;
+
+    // Repères cumulés sous la barre (graduations)
+    const reperesBarre = calculerReperes(barre.coupes, traitScie);
+    const tickY = schemaY + schemaH;
+    doc.setDrawColor(60, 60, 60);
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.5);
+    let lastLabelX = -Infinity;
+    reperesBarre.forEach((r) => {
+      const xr = schemaX + mmToPx(r);
+      doc.line(xr, tickY, xr, tickY + 1.6);
+      if (xr - lastLabelX >= 8) {
+        doc.text(`${r}`, xr, tickY + 4.2, { align: "center" });
+        lastLabelX = xr;
+      }
+    });
+    y += schemaH + 7;
 
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
