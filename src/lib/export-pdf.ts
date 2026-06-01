@@ -368,10 +368,11 @@ export function exporterPDF(
       c.nom,
       `${c.longueur} mm`,
       `${c.quantite}`,
+      c.reperes.join(" / "),
     ]);
     autoTable(doc, {
       startY: y,
-      head: [["#", "Pièce", "Longueur de coupe", "Quantité"]],
+      head: [["#", "Pièce", "Longueur de coupe", "Quantité", "Repère cumulé (mm)"]],
       body,
       theme: "striped",
       styles: { fontSize: 9 },
@@ -379,8 +380,9 @@ export function exporterPDF(
       margin: { left: margin, right: margin },
       columnStyles: {
         0: { cellWidth: 12, halign: "center" },
-        2: { cellWidth: 40, halign: "right" },
-        3: { cellWidth: 25, halign: "center" },
+        2: { cellWidth: 36, halign: "right" },
+        3: { cellWidth: 20, halign: "center" },
+        4: { halign: "right", fontStyle: "bold" },
       },
     });
     // @ts-expect-error
