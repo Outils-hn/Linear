@@ -11,6 +11,7 @@ export interface StockBarre {
   id: string;
   longueur: number;
   quantite: number;
+  appliquerMarge?: boolean;
 }
 
 export interface CoupePlacee {
