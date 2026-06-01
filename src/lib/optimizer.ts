@@ -204,7 +204,8 @@ export function optimiser(
   const poolsStock: PoolBarre[] = [];
   for (const s of stock) {
     if (s.longueur <= 0 || s.quantite <= 0) continue;
-    const utile = Math.max(0, s.longueur - margeSecurite);
+    const marge = s.appliquerMarge === false ? 0 : margeSecurite;
+    const utile = Math.max(0, s.longueur - marge);
     for (let i = 0; i < s.quantite; i++) {
       poolsStock.push({
         longueurUtile: utile,
