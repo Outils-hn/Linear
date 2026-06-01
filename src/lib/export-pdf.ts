@@ -43,16 +43,32 @@ export interface GroupeCoupe {
   largeurMm: number;
 }
 
+export function calculerReperes(
+  coupes: BarreOptimisee["coupes"],
+  traitScie: number,
+): number[] {
+  const reperes: number[] = [];
+  let pos = 0;
+  coupes.forEach((c, i) => {
+    if (i > 0 && traitScie > 0) pos += traitScie;
+    pos += c.longueur;
+    reperes.push(pos);
+  });
+  return reperes;
+}
+
 export function grouperCoupesConsecutives(
   coupes: BarreOptimisee["coupes"],
   traitScie: number,
-): GroupeCoupe[] {
-  const groupes: GroupeCoupe[] = [];
-  for (const c of coupes) {
+): (GroupeCoupe & { reperes: number[] })[] {
+  const groupes: (GroupeCoupe & { reperes: number[] })[] = [];
+  const reperesAll = calculerReperes(coupes, traitScie);
+  coupes.forEach((c, idx) => {
     const last = groupes[groupes.length - 1];
     if (last && last.pieceId === c.pieceId && last.longueur === c.longueur) {
       last.quantite += 1;
       last.largeurMm += (traitScie > 0 ? traitScie : 0) + c.longueur;
+      last.reperes.push(reperesAll[idx]);
     } else {
       groupes.push({
         pieceId: c.pieceId,
@@ -60,9 +76,10 @@ export function grouperCoupesConsecutives(
         longueur: c.longueur,
         quantite: 1,
         largeurMm: c.longueur,
+        reperes: [reperesAll[idx]],
       });
     }
-  }
+  });
   return groupes;
 }
 
