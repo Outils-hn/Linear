@@ -170,7 +170,8 @@ export function exporterPDF(
       y += 4;
       doc.setFont("helvetica", "normal");
       for (const s of stockValide) {
-        doc.text(`• ${s.quantite} × ${s.longueur} mm`, margin + 4, y);
+        const suffixe = s.appliquerMarge === false ? " (sans marge)" : "";
+        doc.text(`• ${s.quantite} × ${s.longueur} mm${suffixe}`, margin + 4, y);
         y += 4;
       }
       doc.setFont("helvetica", "bold");
