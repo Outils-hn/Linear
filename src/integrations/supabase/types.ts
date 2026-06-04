@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      projects: {
+        Row: {
+          chantier: string
+          client: string
+          created_at: string
+          date_projet: string
+          id: string
+          longueur_barre: number
+          marge_securite: number
+          numero_tache: string
+          pieces: Json
+          stock: Json
+          strategie: string
+          trait_scie: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chantier?: string
+          client?: string
+          created_at?: string
+          date_projet?: string
+          id?: string
+          longueur_barre?: number
+          marge_securite?: number
+          numero_tache?: string
+          pieces?: Json
+          stock?: Json
+          strategie?: string
+          trait_scie?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chantier?: string
+          client?: string
+          created_at?: string
+          date_projet?: string
+          id?: string
+          longueur_barre?: number
+          marge_securite?: number
+          numero_tache?: string
+          pieces?: Json
+          stock?: Json
+          strategie?: string
+          trait_scie?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
