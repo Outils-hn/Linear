@@ -17,6 +17,8 @@ const STRATEGIE_LABELS: Record<Strategie, string> = {
 export interface InfosProjet {
   chantier?: string;
   numeroTache?: string;
+  client?: string;
+  date?: string;
 }
 
 export interface OptionsExportPDF {
@@ -141,7 +143,8 @@ export function exporterPDF(
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const date = new Date().toLocaleDateString("fr-FR", {
+  const dateSrc = infos.date ? new Date(infos.date) : new Date();
+  const date = (isNaN(dateSrc.getTime()) ? new Date() : dateSrc).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -152,8 +155,14 @@ export function exporterPDF(
   doc.setFont("helvetica", "bold");
   const chantier = infos.chantier?.trim() || "—";
   const numTache = infos.numeroTache?.trim() || "—";
+  const clientStr = infos.client?.trim();
   doc.text(`Chantier : ${chantier}`, margin, 22);
   doc.text(`N° de tâche : ${numTache}`, pageWidth - margin, 22, { align: "right" });
+  if (clientStr) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`Client : ${clientStr}`, margin, 27);
+  }
 
   doc.setTextColor(20, 20, 20);
   let y = 38;

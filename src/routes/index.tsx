@@ -246,8 +246,8 @@ function App({ userEmail }: { userEmail: string }) {
       marge_securite: margeSecurite,
       trait_scie: traitScie,
       strategie,
-      pieces: pieces as unknown as object,
-      stock: stock as unknown as object,
+      pieces: pieces as unknown as import("@/integrations/supabase/types").Json,
+      stock: stock as unknown as import("@/integrations/supabase/types").Json,
     };
     if (currentProjectId) {
       const { error } = await supabase
