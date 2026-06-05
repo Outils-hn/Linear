@@ -46,7 +46,7 @@ export function AuthForm() {
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Scissors className="h-5 w-5" />
           </div>
-          <CardTitle className="mt-2">Smartcut</CardTitle>
+          <CardTitle className="mt-2">Optibarre</CardTitle>
           <CardDescription>Connectez-vous pour accéder à vos projets de débit</CardDescription>
         </CardHeader>
         <CardContent>
