@@ -52,7 +52,7 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Smartcut — Optimisation de découpe linéaire" },
+      { title: "Optibarre — Optimisation de découpe linéaire" },
       {
         name: "description",
         content:
@@ -331,7 +331,7 @@ function App({ userEmail }: { userEmail: string }) {
               <Scissors className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-base font-semibold tracking-tight">Smartcut</h1>
+              <h1 className="text-base font-semibold tracking-tight">Optibarre</h1>
               <p className="text-xs text-muted-foreground">Optimisation de découpe linéaire 1D</p>
             </div>
           </div>
