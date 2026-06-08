@@ -380,7 +380,7 @@ export function exporterPDF(
         lastLabelX = xr;
       }
     });
-    y += schemaH + 7;
+    y += schemaH + 12;
 
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
