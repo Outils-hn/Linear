@@ -1,38 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  Trash2,
-  FileDown,
-  Scissors,
-  Calculator,
-  Package,
-  LogOut,
-  History,
-  Save,
-  FilePlus,
-} from "lucide-react";
+import { Plus, Trash2, FileDown, Scissors, Calculator, Package, LogOut, History, Save, FilePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import type { Session } from "@supabase/supabase-js";
 
@@ -40,19 +16,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/AuthForm";
 import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
-import {
-  exporterPDF,
-  grouperBarresIdentiques,
-  grouperCoupesConsecutives,
-  libelleGroupe,
-} from "@/lib/export-pdf";
+import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/")({
   component: Index,
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Optibarre — Optimisation de découpe linéaire" },
+      { title: "Optibarre — Optimisation" },
       {
         name: "description",
         content:
@@ -123,9 +94,7 @@ function App({ userEmail }: { userEmail: string }) {
   const [margeSecurite, setMargeSecurite] = useState(100);
   const [traitScie, setTraitScie] = useState(3);
   const [strategie, setStrategie] = useState<Strategie>("min-barres");
-  const [stock, setStock] = useState<StockBarre[]>([
-    { id: nextStockId(), longueur: 4200, quantite: 4 },
-  ]);
+  const [stock, setStock] = useState<StockBarre[]>([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
   const [resultat, setResultat] = useState<ReturnType<typeof optimiser> | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
@@ -137,10 +106,7 @@ function App({ userEmail }: { userEmail: string }) {
   const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
 
   const loadProjects = async () => {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
     if (error) {
       toast.error("Impossible de charger l'historique : " + error.message);
       return;
@@ -158,8 +124,7 @@ function App({ userEmail }: { userEmail: string }) {
   const updatePiece = (id: string, patch: Partial<Piece>) =>
     setPieces((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
 
-  const addStock = () =>
-    setStock((s) => [...s, { id: nextStockId(), longueur: 4000, quantite: 1 }]);
+  const addStock = () => setStock((s) => [...s, { id: nextStockId(), longueur: 4000, quantite: 1 }]);
   const removeStock = (id: string) => setStock((s) => s.filter((x) => x.id !== id));
   const updateStock = (id: string, patch: Partial<StockBarre>) =>
     setStock((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
@@ -220,9 +185,7 @@ function App({ userEmail }: { userEmail: string }) {
     setTraitScie(3);
     setStrategie("min-barres");
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
-    setPieces([
-      { id: nextId(), nom: "Pièce 1", longueur: 1000, quantite: 1 },
-    ]);
+    setPieces([{ id: nextId(), nom: "Pièce 1", longueur: 1000, quantite: 1 }]);
     setResultat(null);
     toast.success("Nouveau projet prêt");
   };
@@ -250,21 +213,14 @@ function App({ userEmail }: { userEmail: string }) {
       stock: stock as unknown as import("@/integrations/supabase/types").Json,
     };
     if (currentProjectId) {
-      const { error } = await supabase
-        .from("projects")
-        .update(payload)
-        .eq("id", currentProjectId);
+      const { error } = await supabase.from("projects").update(payload).eq("id", currentProjectId);
       if (error) {
         toast.error("Erreur de sauvegarde : " + error.message);
       } else {
         toast.success("Projet mis à jour");
       }
     } else {
-      const { data, error } = await supabase
-        .from("projects")
-        .insert(payload)
-        .select()
-        .single();
+      const { data, error } = await supabase.from("projects").insert(payload).select().single();
       if (error) {
         toast.error("Erreur de sauvegarde : " + error.message);
       } else if (data) {
@@ -345,9 +301,7 @@ function App({ userEmail }: { userEmail: string }) {
               <SheetContent side="right" className="w-full sm:max-w-md">
                 <SheetHeader>
                   <SheetTitle>Mes projets / Historique</SheetTitle>
-                  <SheetDescription>
-                    Cliquez sur un projet pour le recharger et relancer le calcul.
-                  </SheetDescription>
+                  <SheetDescription>Cliquez sur un projet pour le recharger et relancer le calcul.</SheetDescription>
                 </SheetHeader>
                 <div className="mt-4 space-y-2 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 140px)" }}>
                   {projects.length === 0 && (
@@ -363,13 +317,8 @@ function App({ userEmail }: { userEmail: string }) {
                         (currentProjectId === p.id ? "border-primary bg-accent/40" : "")
                       }
                     >
-                      <button
-                        onClick={() => chargerProjet(p)}
-                        className="flex-1 text-left"
-                      >
-                        <div className="text-sm font-semibold">
-                          {p.chantier || "Projet sans nom"}
-                        </div>
+                      <button onClick={() => chargerProjet(p)} className="flex-1 text-left">
+                        <div className="text-sm font-semibold">{p.chantier || "Projet sans nom"}</div>
                         <div className="text-xs text-muted-foreground">
                           {p.numero_tache && <span>Tâche {p.numero_tache} · </span>}
                           {p.client && <span>{p.client} · </span>}
@@ -456,12 +405,7 @@ function App({ userEmail }: { userEmail: string }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={dateProjet}
-                onChange={(e) => setDateProjet(e.target.value)}
-              />
+              <Input id="date" type="date" value={dateProjet} onChange={(e) => setDateProjet(e.target.value)} />
             </div>
           </CardContent>
         </Card>
@@ -516,8 +460,7 @@ function App({ userEmail }: { userEmail: string }) {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {strategie === "min-barres" &&
-                    "Utilise le moins de barres possible à partir de la barre de base."}
+                  {strategie === "min-barres" && "Utilise le moins de barres possible à partir de la barre de base."}
                   {strategie === "priorite-stock" &&
                     "Place d'abord les coupes dans les barres du stock, complète avec la barre de base."}
                 </p>
@@ -549,27 +492,20 @@ function App({ userEmail }: { userEmail: string }) {
                   {pieces.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell>
-                        <Input
-                          value={p.nom}
-                          onChange={(e) => updatePiece(p.id, { nom: e.target.value })}
-                        />
+                        <Input value={p.nom} onChange={(e) => updatePiece(p.id, { nom: e.target.value })} />
                       </TableCell>
                       <TableCell>
                         <Input
                           type="number"
                           value={p.longueur}
-                          onChange={(e) =>
-                            updatePiece(p.id, { longueur: Number(e.target.value) || 0 })
-                          }
+                          onChange={(e) => updatePiece(p.id, { longueur: Number(e.target.value) || 0 })}
                         />
                       </TableCell>
                       <TableCell>
                         <Input
                           type="number"
                           value={p.quantite}
-                          onChange={(e) =>
-                            updatePiece(p.id, { quantite: Number(e.target.value) || 0 })
-                          }
+                          onChange={(e) => updatePiece(p.id, { quantite: Number(e.target.value) || 0 })}
                         />
                       </TableCell>
                       <TableCell>
@@ -611,8 +547,8 @@ function App({ userEmail }: { userEmail: string }) {
                 <div>
                   <CardTitle className="text-base">Gestion du stock de barres</CardTitle>
                   <CardDescription>
-                    Ces barres seront utilisées en priorité. La barre de base ({longueurBarre} mm)
-                    complète si le stock est insuffisant.
+                    Ces barres seront utilisées en priorité. La barre de base ({longueurBarre} mm) complète si le stock
+                    est insuffisant.
                   </CardDescription>
                 </div>
               </div>
@@ -641,27 +577,21 @@ function App({ userEmail }: { userEmail: string }) {
                           <Input
                             type="number"
                             value={s.longueur}
-                            onChange={(e) =>
-                              updateStock(s.id, { longueur: Number(e.target.value) || 0 })
-                            }
+                            onChange={(e) => updateStock(s.id, { longueur: Number(e.target.value) || 0 })}
                           />
                         </TableCell>
                         <TableCell>
                           <Input
                             type="number"
                             value={s.quantite}
-                            onChange={(e) =>
-                              updateStock(s.id, { quantite: Number(e.target.value) || 0 })
-                            }
+                            onChange={(e) => updateStock(s.id, { quantite: Number(e.target.value) || 0 })}
                           />
                         </TableCell>
                         <TableCell>
                           <label className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Checkbox
                               checked={margeOn}
-                              onCheckedChange={(v) =>
-                                updateStock(s.id, { appliquerMarge: v === true })
-                              }
+                              onCheckedChange={(v) => updateStock(s.id, { appliquerMarge: v === true })}
                             />
                             {margeOn ? `−${margeSecurite} mm` : "Aucune"}
                           </label>
@@ -746,10 +676,8 @@ function App({ userEmail }: { userEmail: string }) {
                           {libelleGroupe(groupe)}
                           <span className="ml-2 font-normal text-muted-foreground">
                             · {barre.longueurBrute} mm
-                            {barre.longueurBrute !== barre.longueurBarre
-                              ? ` (utile ${barre.longueurBarre} mm)`
-                              : ""}
-                            · {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
+                            {barre.longueurBrute !== barre.longueurBarre ? ` (utile ${barre.longueurBarre} mm)` : ""}·{" "}
+                            {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
                             {qte > 1 ? ` · Quantité : ${qte} barres identiques` : ""}
                           </span>
                         </h3>
@@ -765,9 +693,7 @@ function App({ userEmail }: { userEmail: string }) {
                             </span>
                             <span className="font-medium text-foreground">{g.nom}</span>
                             <span>— {g.longueur} mm</span>
-                            {g.quantite > 1 && (
-                              <span className="text-foreground">× {g.quantite}</span>
-                            )}
+                            {g.quantite > 1 && <span className="text-foreground">× {g.quantite}</span>}
                             <span className="ml-auto font-semibold text-foreground">
                               Repère : {g.reperes.join(" / ")} mm
                             </span>
@@ -819,8 +745,8 @@ function StatCard({
             (accent === "success"
               ? "text-[color:var(--color-success)]"
               : accent === "warning"
-              ? "text-[color:var(--color-warning)]"
-              : "text-foreground")
+                ? "text-[color:var(--color-warning)]"
+                : "text-foreground")
           }
         >
           {value}
