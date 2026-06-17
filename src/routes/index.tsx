@@ -103,7 +103,7 @@ function Index() {
   );
 }
 
-function App({ userEmail }: { userEmail: string }) {
+function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMode: boolean; onExitGuest: () => void }) {
   const [chantier, setChantier] = useState("");
   const [numeroTache, setNumeroTache] = useState("");
   const [client, setClient] = useState("");
