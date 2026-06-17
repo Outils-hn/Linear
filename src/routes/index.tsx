@@ -301,9 +301,9 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
   return (
     <div className="min-h-screen bg-background">
       {guestMode && (
-        <div className="border-b border-[hsl(28_60%_45%)]/40 bg-[hsl(28_55%_18%)]/60">
-          <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-2 text-xs sm:text-sm text-[hsl(28_85%_75%)]">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-[hsl(28_85%_65%)]" />
+        <div className="border-b border-primary/30 bg-primary/10">
+          <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-2 text-xs sm:text-sm text-primary">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-primary" />
             <p className="flex-1">
               <span className="font-semibold">Mode invité actif :</span>{" "}
               Vos projets ne seront pas sauvegardés. Créez un compte gratuit pour enregistrer votre historique et vos stocks.
@@ -312,7 +312,7 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
               variant="outline"
               size="sm"
               onClick={onExitGuest}
-              className="h-7 border-[hsl(28_60%_45%)]/60 bg-transparent text-[hsl(28_85%_75%)] hover:bg-[hsl(28_60%_45%)]/20 hover:text-[hsl(28_85%_85%)]"
+              className="h-7 border-primary/50 bg-transparent text-primary hover:bg-primary/20 hover:text-primary"
             >
               <LogIn className="mr-1 h-3 w-3" /> Créer un compte
             </Button>
