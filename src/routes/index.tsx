@@ -62,6 +62,7 @@ const DEFAULT_PIECES: Piece[] = [
 function Index() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [guestMode, setGuestMode] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -70,6 +71,7 @@ function Index() {
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
+      if (s) setGuestMode(false);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -81,8 +83,14 @@ function Index() {
       </div>
     );
   }
-  if (!session) return <AuthForm />;
-  return <App userEmail={session.user.email ?? ""} />;
+  if (!session && !guestMode) return <AuthForm onGuest={() => setGuestMode(true)} />;
+  return (
+    <App
+      userEmail={session?.user.email ?? ""}
+      guestMode={!session}
+      onExitGuest={() => setGuestMode(false)}
+    />
+  );
 }
 
 function App({ userEmail }: { userEmail: string }) {
