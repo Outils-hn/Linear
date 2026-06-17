@@ -110,7 +110,7 @@ export function AuthForm({ onGuest }: { onGuest?: () => void }) {
                 type="button"
                 variant="outline"
                 onClick={onGuest}
-                className="w-full border-[hsl(28_60%_45%)]/40 text-[hsl(28_70%_55%)] hover:bg-[hsl(28_60%_45%)]/10 hover:text-[hsl(28_70%_60%)]"
+                className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
               >
                 Continuer en tant qu'invité
               </Button>
