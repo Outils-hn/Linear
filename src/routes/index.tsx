@@ -134,8 +134,8 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
   };
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (!guestMode) loadProjects();
+  }, [guestMode]);
 
   const addPiece = () =>
     setPieces((p) => [...p, { id: nextId(), nom: `Pièce ${p.length + 1}`, longueur: 1000, quantite: 1 }]);
