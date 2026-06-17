@@ -299,6 +299,25 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
 
   return (
     <div className="min-h-screen bg-background">
+      {guestMode && (
+        <div className="border-b border-[hsl(28_60%_45%)]/40 bg-[hsl(28_55%_18%)]/60">
+          <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-2 text-xs sm:text-sm text-[hsl(28_85%_75%)]">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-[hsl(28_85%_65%)]" />
+            <p className="flex-1">
+              <span className="font-semibold">Mode invité actif :</span>{" "}
+              Vos projets ne seront pas sauvegardés. Créez un compte gratuit pour enregistrer votre historique et vos stocks.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExitGuest}
+              className="h-7 border-[hsl(28_60%_45%)]/60 bg-transparent text-[hsl(28_85%_75%)] hover:bg-[hsl(28_60%_45%)]/20 hover:text-[hsl(28_85%_85%)]"
+            >
+              <LogIn className="mr-1 h-3 w-3" /> Créer un compte
+            </Button>
+          </div>
+        </div>
+      )}
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -311,60 +330,68 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <History className="h-4 w-4" /> Mes projets
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:max-w-md">
-                <SheetHeader>
-                  <SheetTitle>Mes projets / Historique</SheetTitle>
-                  <SheetDescription>Cliquez sur un projet pour le recharger et relancer le calcul.</SheetDescription>
-                </SheetHeader>
-                <div className="mt-4 space-y-2 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 140px)" }}>
-                  {projects.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      Aucun projet sauvegardé pour l'instant.
-                    </p>
-                  )}
-                  {projects.map((p) => (
-                    <div
-                      key={p.id}
-                      className={
-                        "group flex items-start justify-between gap-2 rounded-md border border-border p-3 transition hover:bg-accent " +
-                        (currentProjectId === p.id ? "border-primary bg-accent/40" : "")
-                      }
-                    >
-                      <button onClick={() => chargerProjet(p)} className="flex-1 text-left">
-                        <div className="text-sm font-semibold">{p.chantier || "Projet sans nom"}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {p.numero_tache && <span>Tâche {p.numero_tache} · </span>}
-                          {p.client && <span>{p.client} · </span>}
-                          {new Date(p.created_at).toLocaleDateString("fr-FR", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </div>
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => supprimerProjet(p.id)}
-                        className="text-muted-foreground hover:text-destructive"
+            {!guestMode && (
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <History className="h-4 w-4" /> Mes projets
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-md">
+                  <SheetHeader>
+                    <SheetTitle>Mes projets / Historique</SheetTitle>
+                    <SheetDescription>Cliquez sur un projet pour le recharger et relancer le calcul.</SheetDescription>
+                  </SheetHeader>
+                  <div className="mt-4 space-y-2 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 140px)" }}>
+                    {projects.length === 0 && (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        Aucun projet sauvegardé pour l'instant.
+                      </p>
+                    )}
+                    {projects.map((p) => (
+                      <div
+                        key={p.id}
+                        className={
+                          "group flex items-start justify-between gap-2 rounded-md border border-border p-3 transition hover:bg-accent " +
+                          (currentProjectId === p.id ? "border-primary bg-accent/40" : "")
+                        }
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </SheetContent>
-            </Sheet>
+                        <button onClick={() => chargerProjet(p)} className="flex-1 text-left">
+                          <div className="text-sm font-semibold">{p.chantier || "Projet sans nom"}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {p.numero_tache && <span>Tâche {p.numero_tache} · </span>}
+                            {p.client && <span>{p.client} · </span>}
+                            {new Date(p.created_at).toLocaleDateString("fr-FR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </div>
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => supprimerProjet(p.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            )}
             <Button variant="outline" size="sm" onClick={nouveauProjet} className="gap-2">
               <FilePlus className="h-4 w-4" /> Nouveau
             </Button>
-            <Button variant="outline" size="sm" onClick={sauvegarder} disabled={saving} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={guestMode ? () => setGuestPromptOpen(true) : sauvegarder}
+              disabled={saving}
+              className="gap-2"
+            >
               <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Sauvegarder"}
             </Button>
             {resultat && (
@@ -372,17 +399,46 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
                 <FileDown className="h-4 w-4" /> PDF atelier
               </Button>
             )}
-            <div className="ml-2 hidden text-xs text-muted-foreground sm:block">{userEmail}</div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={deconnexion}
-              title="Déconnexion"
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            {!guestMode && <div className="ml-2 hidden text-xs text-muted-foreground sm:block">{userEmail}</div>}
+            {guestMode ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onExitGuest}
+                title="Se connecter"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogIn className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={deconnexion}
+                title="Déconnexion"
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
           </div>
+      <AlertDialog open={guestPromptOpen} onOpenChange={setGuestPromptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Créez un compte pour sauvegarder</AlertDialogTitle>
+            <AlertDialogDescription>
+              Pour sauvegarder ce projet, veuillez créer un compte en 30 secondes. Votre historique et vos stocks seront alors conservés en toute sécurité.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Plus tard</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setGuestPromptOpen(false); onExitGuest(); }}>
+              Créer un compte
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+        </div>
         </div>
       </header>
 
