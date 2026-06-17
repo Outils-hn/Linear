@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Scissors } from "lucide-react";
+import { LinearMark } from "@/components/LinearMark";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,13 +41,15 @@ export function AuthForm({ onGuest }: { onGuest?: () => void }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Scissors className="h-5 w-5" />
-          </div>
-          <CardTitle className="mt-2">Optibarre</CardTitle>
-          <CardDescription>Connectez-vous pour accéder à vos projets de débit</CardDescription>
+      <Card className="w-full max-w-md border-border/60 bg-card/90 shadow-2xl shadow-black/40">
+        <CardHeader className="items-center text-center">
+          <LinearMark size={44} className="mx-auto" />
+          <CardTitle className="mt-3 font-display text-2xl font-bold uppercase tracking-[0.28em]">
+            Linear
+          </CardTitle>
+          <CardDescription className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Atelier · Optimisation de débit 1D
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin">
@@ -108,7 +110,7 @@ export function AuthForm({ onGuest }: { onGuest?: () => void }) {
                 type="button"
                 variant="outline"
                 onClick={onGuest}
-                className="w-full border-[hsl(28_60%_45%)]/40 text-[hsl(28_70%_55%)] hover:bg-[hsl(28_60%_45%)]/10 hover:text-[hsl(28_70%_60%)]"
+                className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
               >
                 Continuer en tant qu'invité
               </Button>

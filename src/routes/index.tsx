@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, FileDown, Scissors, Calculator, Package, LogOut, History, Save, FilePlus, AlertTriangle, LogIn } from "lucide-react";
+import { Plus, Trash2, FileDown, Calculator, Package, LogOut, History, Save, FilePlus, AlertTriangle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/AuthForm";
 import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
+import { LinearMark } from "@/components/LinearMark";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/")({
@@ -300,9 +301,9 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
   return (
     <div className="min-h-screen bg-background">
       {guestMode && (
-        <div className="border-b border-[hsl(28_60%_45%)]/40 bg-[hsl(28_55%_18%)]/60">
-          <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-2 text-xs sm:text-sm text-[hsl(28_85%_75%)]">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-[hsl(28_85%_65%)]" />
+        <div className="border-b border-primary/30 bg-primary/10">
+          <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-2 text-xs sm:text-sm text-primary">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-primary" />
             <p className="flex-1">
               <span className="font-semibold">Mode invité actif :</span>{" "}
               Vos projets ne seront pas sauvegardés. Créez un compte gratuit pour enregistrer votre historique et vos stocks.
@@ -311,22 +312,24 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
               variant="outline"
               size="sm"
               onClick={onExitGuest}
-              className="h-7 border-[hsl(28_60%_45%)]/60 bg-transparent text-[hsl(28_85%_75%)] hover:bg-[hsl(28_60%_45%)]/20 hover:text-[hsl(28_85%_85%)]"
+              className="h-7 border-primary/50 bg-transparent text-primary hover:bg-primary/20 hover:text-primary"
             >
               <LogIn className="mr-1 h-3 w-3" /> Créer un compte
             </Button>
           </div>
         </div>
       )}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold tracking-tight">Optibarre</h1>
-              <p className="text-xs text-muted-foreground">Optimisation de découpe linéaire 1D</p>
+            <LinearMark size={34} />
+            <div className="leading-tight">
+              <h1 className="font-display text-lg font-bold uppercase tracking-[0.22em] text-foreground">
+                Linear
+              </h1>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+                Optimisation de découpe 1D
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
