@@ -119,6 +119,7 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [guestPromptOpen, setGuestPromptOpen] = useState(false);
 
   const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
   const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
