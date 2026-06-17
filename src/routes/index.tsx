@@ -1,6 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, FileDown, Calculator, Package, LogOut, History, Save, FilePlus, AlertTriangle, LogIn } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  FileDown,
+  Calculator,
+  Package,
+  LogOut,
+  History,
+  Save,
+  FilePlus,
+  AlertTriangle,
+  LogIn,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +46,7 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Optibarre — Optimisation" },
+      { title: "Linear ·" },
       {
         name: "description",
         content:
@@ -95,16 +107,18 @@ function Index() {
     );
   }
   if (!session && !guestMode) return <AuthForm onGuest={() => setGuestMode(true)} />;
-  return (
-    <App
-      userEmail={session?.user.email ?? ""}
-      guestMode={!session}
-      onExitGuest={() => setGuestMode(false)}
-    />
-  );
+  return <App userEmail={session?.user.email ?? ""} guestMode={!session} onExitGuest={() => setGuestMode(false)} />;
 }
 
-function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMode: boolean; onExitGuest: () => void }) {
+function App({
+  userEmail,
+  guestMode,
+  onExitGuest,
+}: {
+  userEmail: string;
+  guestMode: boolean;
+  onExitGuest: () => void;
+}) {
   const [chantier, setChantier] = useState("");
   const [numeroTache, setNumeroTache] = useState("");
   const [client, setClient] = useState("");
@@ -305,8 +319,8 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
           <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-2 text-xs sm:text-sm text-primary">
             <AlertTriangle className="h-4 w-4 shrink-0 text-primary" />
             <p className="flex-1">
-              <span className="font-semibold">Mode invité actif :</span>{" "}
-              Vos projets ne seront pas sauvegardés. Créez un compte gratuit pour enregistrer votre historique et vos stocks.
+              <span className="font-semibold">Mode invité actif :</span> Vos projets ne seront pas sauvegardés. Créez un
+              compte gratuit pour enregistrer votre historique et vos stocks.
             </p>
             <Button
               variant="outline"
@@ -324,9 +338,7 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
           <div className="flex items-center gap-3">
             <LinearMark size={34} />
             <div className="leading-tight">
-              <h1 className="font-display text-lg font-bold uppercase tracking-[0.22em] text-foreground">
-                Linear
-              </h1>
+              <h1 className="font-display text-lg font-bold uppercase tracking-[0.22em] text-foreground">Linear</h1>
               <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
                 Optimisation de découpe 1D
               </p>
@@ -432,12 +444,18 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
           <AlertDialogHeader>
             <AlertDialogTitle>Créez un compte pour sauvegarder</AlertDialogTitle>
             <AlertDialogDescription>
-              Pour sauvegarder ce projet, veuillez créer un compte en 30 secondes. Votre historique et vos stocks seront alors conservés en toute sécurité.
+              Pour sauvegarder ce projet, veuillez créer un compte en 30 secondes. Votre historique et vos stocks seront
+              alors conservés en toute sécurité.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Plus tard</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setGuestPromptOpen(false); onExitGuest(); }}>
+            <AlertDialogAction
+              onClick={() => {
+                setGuestPromptOpen(false);
+                onExitGuest();
+              }}
+            >
               Créer un compte
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -753,8 +771,9 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
                           {libelleGroupe(groupe)}
                           <span className="ml-2 font-normal text-muted-foreground">
                             · {barre.longueurBrute} mm
-                            {barre.longueurBrute !== barre.longueurBarre ? ` (utile ${barre.longueurBarre} mm)` : ""}·{" "}
-                            {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
+                            {barre.longueurBrute !== barre.longueurBarre
+                              ? ` (utile ${barre.longueurBarre} mm)`
+                              : ""}· {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
                             {qte > 1 ? ` · Quantité : ${qte} barres identiques` : ""}
                           </span>
                         </h3>
