@@ -318,15 +318,17 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
           </div>
         </div>
       )}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Scissors className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold tracking-tight">Optibarre</h1>
-              <p className="text-xs text-muted-foreground">Optimisation de découpe linéaire 1D</p>
+            <LinearMark size={34} />
+            <div className="leading-tight">
+              <h1 className="font-display text-lg font-bold uppercase tracking-[0.22em] text-foreground">
+                Linear
+              </h1>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+                Optimisation de découpe 1D
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
