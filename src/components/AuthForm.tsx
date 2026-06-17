@@ -94,6 +94,29 @@ export function AuthForm({ onGuest }: { onGuest?: () => void }) {
               </TabsContent>
             ))}
           </Tabs>
+          {onGuest && (
+            <div className="mt-6 space-y-3">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase tracking-wider">
+                  <span className="bg-card px-2 text-muted-foreground">ou</span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onGuest}
+                className="w-full border-[hsl(28_60%_45%)]/40 text-[hsl(28_70%_55%)] hover:bg-[hsl(28_60%_45%)]/10 hover:text-[hsl(28_70%_60%)]"
+              >
+                Continuer en tant qu'invité
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                Aucun projet ne sera sauvegardé en mode invité.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
