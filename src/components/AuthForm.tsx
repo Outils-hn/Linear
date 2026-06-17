@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Scissors } from "lucide-react";
+import { LinearMark } from "@/components/LinearMark";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
