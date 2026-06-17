@@ -422,6 +422,8 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
               </Button>
             )}
           </div>
+        </div>
+      </header>
       <AlertDialog open={guestPromptOpen} onOpenChange={setGuestPromptOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -438,9 +440,6 @@ function App({ userEmail, guestMode, onExitGuest }: { userEmail: string; guestMo
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-        </div>
-        </div>
-      </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <Card>
