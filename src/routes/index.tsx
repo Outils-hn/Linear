@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/AuthForm";
 import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
+import { LinearMark } from "@/components/LinearMark";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/")({
