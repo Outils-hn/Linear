@@ -39,6 +39,7 @@ import { AuthForm } from "@/components/AuthForm";
 import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
 import { LinearMark } from "@/components/LinearMark";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/")({
@@ -414,7 +415,8 @@ function App({
                 <FileDown className="h-4 w-4" /> PDF atelier
               </Button>
             )}
-            {!guestMode && <div className="ml-2 hidden text-xs text-muted-foreground sm:block">{userEmail}</div>}
+            <ThemeToggle className="text-muted-foreground hover:text-foreground" />
+            {!guestMode && <div className="ml-1 hidden text-xs text-muted-foreground sm:block">{userEmail}</div>}
             {guestMode ? (
               <Button
                 variant="ghost"
