@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { LinearMark } from "@/components/LinearMark";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,8 +41,12 @@ export function AuthForm({ onGuest }: { onGuest?: () => void }) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md border-border/60 bg-card/90 shadow-2xl shadow-black/40">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle className="text-muted-foreground hover:text-foreground" />
+      </div>
+      <Card className="w-full max-w-md border-border bg-card shadow-xl">
+
         <CardHeader className="items-center text-center">
           <LinearMark size={44} className="mx-auto" />
           <CardTitle className="mt-3 font-display text-2xl font-bold uppercase tracking-[0.28em]">
