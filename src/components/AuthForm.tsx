@@ -1,43 +1,38 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User, Plus, Trash2 } from "lucide-react";
+import { listProfiles, deleteProfile, type ProfileMeta } from "@/lib/local-store";
 
-export function AuthForm({ onGuest }: { onGuest?: () => void }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+export function AuthForm({ onSelect }: { onSelect: (profileId: string) => void }) {
+  const [profiles, setProfiles] = useState<ProfileMeta[]>([]);
+  const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
 
-  const submit = async (mode: "signin" | "signup", e: FormEvent) => {
+  useEffect(() => {
+    setProfiles(listProfiles());
+  }, []);
+
+  const refresh = () => setProfiles(listProfiles());
+
+  const create = (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setInfo(null);
-    try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        setInfo("Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse.");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur d'authentification");
-    } finally {
-      setLoading(false);
+    const name = newName.trim();
+    if (!name) {
+      setError("Indiquez un nom de profil ou de poste de travail.");
+      return;
     }
+    setError(null);
+    onSelect(name);
+  };
+
+  const remove = (id: string) => {
+    deleteProfile(id);
+    refresh();
   };
 
   return (
@@ -46,7 +41,6 @@ export function AuthForm({ onGuest }: { onGuest?: () => void }) {
         <ThemeToggle className="text-muted-foreground hover:text-foreground" />
       </div>
       <Card className="w-full max-w-md border-border bg-card shadow-xl">
-
         <CardHeader className="items-center text-center">
           <LinearMark size={44} className="mx-auto" />
           <CardTitle className="mt-3 font-display text-2xl font-bold uppercase tracking-[0.28em]">
@@ -56,74 +50,71 @@ export function AuthForm({ onGuest }: { onGuest?: () => void }) {
             Atelier · Optimisation de débit 1D
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Connexion</TabsTrigger>
-              <TabsTrigger value="signup">Inscription</TabsTrigger>
-            </TabsList>
-            {(["signin", "signup"] as const).map((mode) => (
-              <TabsContent key={mode} value={mode}>
-                <form onSubmit={(e) => submit(mode, e)} className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <Label htmlFor={`email-${mode}`}>Email</Label>
-                    <Input
-                      id={`email-${mode}`}
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Profil de travail</p>
+            <p className="text-sm text-foreground/90">
+              Choisissez un profil existant ou créez un nouveau poste. Tous les projets sont conservés localement
+              sur ce navigateur, sans aucun compte ni connexion.
+            </p>
+          </div>
+
+          {profiles.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Profils existants
+              </Label>
+              <div className="space-y-1.5">
+                {profiles.map((p) => (
+                  <div
+                    key={p.id}
+                    className="group flex items-center gap-2 rounded-md border border-border bg-background/40 p-2 transition hover:border-primary/50"
+                  >
+                    <button
+                      onClick={() => onSelect(p.id)}
+                      className="flex flex-1 items-center gap-3 text-left"
+                    >
+                      <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <User className="h-4 w-4" />
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-medium text-foreground">{p.name}</span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {p.projectCount} projet{p.projectCount > 1 ? "s" : ""}
+                        </span>
+                      </span>
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => remove(p.id)}
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      title="Supprimer ce profil et tous ses projets"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`password-${mode}`}>Mot de passe</Label>
-                    <Input
-                      id={`password-${mode}`}
-                      type="password"
-                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                      required
-                      minLength={6}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
-                  {error && <p className="text-sm text-destructive">{error}</p>}
-                  {info && <p className="text-sm text-muted-foreground">{info}</p>}
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading
-                      ? "Veuillez patienter…"
-                      : mode === "signin"
-                      ? "Se connecter"
-                      : "Créer mon compte"}
-                  </Button>
-                </form>
-              </TabsContent>
-            ))}
-          </Tabs>
-          {onGuest && (
-            <div className="mt-6 space-y-3">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase tracking-wider">
-                  <span className="bg-card px-2 text-muted-foreground">ou</span>
-                </div>
+                ))}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onGuest}
-                className="w-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
-              >
-                Continuer en tant qu'invité
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Aucun projet ne sera sauvegardé en mode invité.
-              </p>
             </div>
           )}
+
+          <form onSubmit={create} className="space-y-3 border-t border-border pt-4">
+            <Label htmlFor="profile-name" className="text-xs uppercase tracking-wider text-muted-foreground">
+              Nouveau profil
+            </Label>
+            <Input
+              id="profile-name"
+              placeholder="Ex : Atelier — Poste 1, Jean, Menuiserie…"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              autoFocus
+            />
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full gap-2">
+              <Plus className="h-4 w-4" /> Créer et entrer
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
