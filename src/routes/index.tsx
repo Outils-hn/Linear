@@ -10,8 +10,6 @@ import {
   History,
   Save,
   FilePlus,
-  AlertTriangle,
-  LogIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,25 +20,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import type { Session } from "@supabase/supabase-js";
 
-import { supabase } from "@/integrations/supabase/client";
 import { AuthForm } from "@/components/AuthForm";
 import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
+import {
+  ensureProfile,
+  getActiveProfile,
+  setActiveProfile,
+  listProjects,
+  upsertProject,
+  deleteProject,
+  type LocalProject,
+} from "@/lib/local-store";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -62,21 +57,6 @@ const nextId = () => `p${++idCounter}`;
 let stockCounter = 0;
 const nextStockId = () => `s${++stockCounter}`;
 
-interface ProjectRow {
-  id: string;
-  chantier: string;
-  numero_tache: string;
-  client: string;
-  date_projet: string;
-  longueur_barre: number;
-  marge_securite: number;
-  trait_scie: number;
-  strategie: string;
-  pieces: unknown;
-  stock: unknown;
-  created_at: string;
-}
-
 const DEFAULT_PIECES: Piece[] = [
   { id: "p-default-1", nom: "Montant A", longueur: 1200, quantite: 4 },
   { id: "p-default-2", nom: "Traverse B", longueur: 800, quantite: 6 },
@@ -84,42 +64,37 @@ const DEFAULT_PIECES: Piece[] = [
 ];
 
 function Index() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [guestMode, setGuestMode] = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setAuthLoading(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      if (s) setGuestMode(false);
-    });
-    return () => sub.subscription.unsubscribe();
+    setProfileId(getActiveProfile());
+    setReady(true);
   }, []);
 
-  if (authLoading) {
+  const selectProfile = (name: string) => {
+    const id = ensureProfile(name);
+    setActiveProfile(id);
+    setProfileId(id);
+  };
+
+  const exitProfile = () => {
+    setActiveProfile(null);
+    setProfileId(null);
+  };
+
+  if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
         Chargement…
       </div>
     );
   }
-  if (!session && !guestMode) return <AuthForm onGuest={() => setGuestMode(true)} />;
-  return <App userEmail={session?.user.email ?? ""} guestMode={!session} onExitGuest={() => setGuestMode(false)} />;
+  if (!profileId) return <AuthForm onSelect={selectProfile} />;
+  return <App profileId={profileId} onExitProfile={exitProfile} />;
 }
 
-function App({
-  userEmail,
-  guestMode,
-  onExitGuest,
-}: {
-  userEmail: string;
-  guestMode: boolean;
-  onExitGuest: () => void;
-}) {
+function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: () => void }) {
   const [chantier, setChantier] = useState("");
   const [numeroTache, setNumeroTache] = useState("");
   const [client, setClient] = useState("");
@@ -132,26 +107,19 @@ function App({
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
   const [resultat, setResultat] = useState<ReturnType<typeof optimiser> | null>(null);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [projects, setProjects] = useState<LocalProject[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [guestPromptOpen, setGuestPromptOpen] = useState(false);
 
   const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
   const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
 
-  const loadProjects = async () => {
-    const { data, error } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
-    if (error) {
-      toast.error("Impossible de charger l'historique : " + error.message);
-      return;
-    }
-    setProjects((data ?? []) as ProjectRow[]);
-  };
+  const refreshProjects = () => setProjects(listProjects(profileId));
 
   useEffect(() => {
-    if (!guestMode) loadProjects();
-  }, [guestMode]);
+    refreshProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId]);
 
   const addPiece = () =>
     setPieces((p) => [...p, { id: nextId(), nom: `Pièce ${p.length + 1}`, longueur: 1000, quantite: 1 }]);
@@ -225,49 +193,33 @@ function App({
     toast.success("Nouveau projet prêt");
   };
 
-  const sauvegarder = async () => {
+  const sauvegarder = () => {
     setSaving(true);
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
-    if (!userId) {
+    try {
+      const saved = upsertProject(profileId, {
+        id: currentProjectId,
+        chantier,
+        numero_tache: numeroTache,
+        client,
+        date_projet: dateProjet,
+        longueur_barre: longueurBarre,
+        marge_securite: margeSecurite,
+        trait_scie: traitScie,
+        strategie,
+        pieces,
+        stock,
+      });
+      setCurrentProjectId(saved.id);
+      refreshProjects();
+      toast.success(currentProjectId ? "Projet mis à jour" : "Projet sauvegardé localement");
+    } catch (e) {
+      toast.error("Erreur de sauvegarde : " + (e instanceof Error ? e.message : "inconnue"));
+    } finally {
       setSaving(false);
-      toast.error("Session expirée");
-      return;
     }
-    const payload = {
-      user_id: userId,
-      chantier,
-      numero_tache: numeroTache,
-      client,
-      date_projet: dateProjet,
-      longueur_barre: longueurBarre,
-      marge_securite: margeSecurite,
-      trait_scie: traitScie,
-      strategie,
-      pieces: pieces as unknown as import("@/integrations/supabase/types").Json,
-      stock: stock as unknown as import("@/integrations/supabase/types").Json,
-    };
-    if (currentProjectId) {
-      const { error } = await supabase.from("projects").update(payload).eq("id", currentProjectId);
-      if (error) {
-        toast.error("Erreur de sauvegarde : " + error.message);
-      } else {
-        toast.success("Projet mis à jour");
-      }
-    } else {
-      const { data, error } = await supabase.from("projects").insert(payload).select().single();
-      if (error) {
-        toast.error("Erreur de sauvegarde : " + error.message);
-      } else if (data) {
-        setCurrentProjectId(data.id);
-        toast.success("Projet sauvegardé");
-      }
-    }
-    setSaving(false);
-    await loadProjects();
   };
 
-  const chargerProjet = (proj: ProjectRow) => {
+  const chargerProjet = (proj: LocalProject) => {
     setCurrentProjectId(proj.id);
     setChantier(proj.chantier);
     setNumeroTache(proj.numero_tache);
@@ -298,42 +250,15 @@ function App({
     }, 80);
   };
 
-  const supprimerProjet = async (id: string) => {
-    const { error } = await supabase.from("projects").delete().eq("id", id);
-    if (error) {
-      toast.error("Suppression impossible : " + error.message);
-      return;
-    }
+  const supprimerProjet = (id: string) => {
+    deleteProject(profileId, id);
     if (currentProjectId === id) setCurrentProjectId(null);
+    refreshProjects();
     toast.success("Projet supprimé");
-    await loadProjects();
-  };
-
-  const deconnexion = async () => {
-    await supabase.auth.signOut();
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {guestMode && (
-        <div className="border-b border-primary/30 bg-primary/10">
-          <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-2 text-xs sm:text-sm text-primary">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-primary" />
-            <p className="flex-1">
-              <span className="font-semibold">Mode invité actif :</span> Vos projets ne seront pas sauvegardés. Créez un
-              compte gratuit pour enregistrer votre historique et vos stocks.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExitGuest}
-              className="h-7 border-primary/50 bg-transparent text-primary hover:bg-primary/20 hover:text-primary"
-            >
-              <LogIn className="mr-1 h-3 w-3" /> Créer un compte
-            </Button>
-          </div>
-        </div>
-      )}
       <header className="border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
@@ -346,68 +271,62 @@ function App({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!guestMode && (
-              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <History className="h-4 w-4" /> Mes projets
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:max-w-md">
-                  <SheetHeader>
-                    <SheetTitle>Mes projets / Historique</SheetTitle>
-                    <SheetDescription>Cliquez sur un projet pour le recharger et relancer le calcul.</SheetDescription>
-                  </SheetHeader>
-                  <div className="mt-4 space-y-2 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 140px)" }}>
-                    {projects.length === 0 && (
-                      <p className="py-8 text-center text-sm text-muted-foreground">
-                        Aucun projet sauvegardé pour l'instant.
-                      </p>
-                    )}
-                    {projects.map((p) => (
-                      <div
-                        key={p.id}
-                        className={
-                          "group flex items-start justify-between gap-2 rounded-md border border-border p-3 transition hover:bg-accent " +
-                          (currentProjectId === p.id ? "border-primary bg-accent/40" : "")
-                        }
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <History className="h-4 w-4" /> Mes projets
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md">
+                <SheetHeader>
+                  <SheetTitle>Mes projets / Historique</SheetTitle>
+                  <SheetDescription>
+                    Projets enregistrés localement sous le profil « {profileId} ». Cliquez pour recharger.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4 space-y-2 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 140px)" }}>
+                  {projects.length === 0 && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      Aucun projet sauvegardé pour l'instant.
+                    </p>
+                  )}
+                  {projects.map((p) => (
+                    <div
+                      key={p.id}
+                      className={
+                        "group flex items-start justify-between gap-2 rounded-md border border-border p-3 transition hover:bg-accent " +
+                        (currentProjectId === p.id ? "border-primary bg-accent/40" : "")
+                      }
+                    >
+                      <button onClick={() => chargerProjet(p)} className="flex-1 text-left">
+                        <div className="text-sm font-semibold">{p.chantier || "Projet sans nom"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {p.numero_tache && <span>Tâche {p.numero_tache} · </span>}
+                          {p.client && <span>{p.client} · </span>}
+                          {new Date(p.created_at).toLocaleDateString("fr-FR", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => supprimerProjet(p.id)}
+                        className="text-muted-foreground hover:text-destructive"
                       >
-                        <button onClick={() => chargerProjet(p)} className="flex-1 text-left">
-                          <div className="text-sm font-semibold">{p.chantier || "Projet sans nom"}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {p.numero_tache && <span>Tâche {p.numero_tache} · </span>}
-                            {p.client && <span>{p.client} · </span>}
-                            {new Date(p.created_at).toLocaleDateString("fr-FR", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </div>
-                        </button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => supprimerProjet(p.id)}
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </SheetContent>
-              </Sheet>
-            )}
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </SheetContent>
+            </Sheet>
             <Button variant="outline" size="sm" onClick={nouveauProjet} className="gap-2">
               <FilePlus className="h-4 w-4" /> Nouveau
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={guestMode ? () => setGuestPromptOpen(true) : sauvegarder}
-              disabled={saving}
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={sauvegarder} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Sauvegarder"}
             </Button>
             {resultat && (
@@ -416,53 +335,19 @@ function App({
               </Button>
             )}
             <ThemeToggle className="text-muted-foreground hover:text-foreground" />
-            {!guestMode && <div className="ml-1 hidden text-xs text-muted-foreground sm:block">{userEmail}</div>}
-            {guestMode ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onExitGuest}
-                title="Se connecter"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <LogIn className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={deconnexion}
-                title="Déconnexion"
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            )}
+            <div className="ml-1 hidden text-xs text-muted-foreground sm:block">{profileId}</div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onExitProfile}
+              title="Changer de profil"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
-      <AlertDialog open={guestPromptOpen} onOpenChange={setGuestPromptOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Créez un compte pour sauvegarder</AlertDialogTitle>
-            <AlertDialogDescription>
-              Pour sauvegarder ce projet, veuillez créer un compte en 30 secondes. Votre historique et vos stocks seront
-              alors conservés en toute sécurité.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Plus tard</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setGuestPromptOpen(false);
-                onExitGuest();
-              }}
-            >
-              Créer un compte
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
         <Card>
