@@ -188,8 +188,8 @@ function solveCuttingStockBnB(
   capacity: number,
   kerf: number,
   upperBound: number,
-  maxNodes = 5_000_000,
-  maxMs = 4000,
+  maxNodes = 1_000_000,
+  maxMs = 800,
 ): BnBResult {
   const n = lengths.length;
   let best = upperBound;
