@@ -455,17 +455,39 @@ function optimiserMinBarres(
   // éviter une explosion combinatoire (rare en pratique).
   if (uniqueLens.length > 8) return ffd;
 
-  const result = solveCuttingStockBnB(
+  // 2a) Solveur "subset-LP" : trouve souvent l'optimum exact très vite.
+  let bestBars: number[][] = [];
+  let bestCount = ffd.length;
+
+  const subset = solveCuttingStockSubset(
     uniqueLens,
     demands,
     capacity,
     traitScie,
-    ffd.length, // borne supérieure initiale
+    ffd.length,
   );
+  if (subset && subset.total < bestCount) {
+    bestBars = subset.bars;
+    bestCount = subset.total;
+  }
 
-  if (!result.bars || result.bars.length === 0 || result.bestFound >= ffd.length) {
+  // 2b) Branch-and-bound, avec la meilleure borne supérieure trouvée.
+  const bnb = solveCuttingStockBnB(
+    uniqueLens,
+    demands,
+    capacity,
+    traitScie,
+    bestCount,
+  );
+  if (bnb.bars && bnb.bars.length > 0 && bnb.bestFound < bestCount) {
+    bestBars = bnb.bars;
+    bestCount = bnb.bestFound;
+  }
+
+  if (bestBars.length === 0 || bestCount >= ffd.length) {
     return ffd;
   }
+  const result = { bars: bestBars };
 
   // 3) Reconstruire les BarreOptimisee à partir de la séquence de patrons.
   const queues = new Map<number, Item[]>();
