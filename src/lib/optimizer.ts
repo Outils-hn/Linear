@@ -580,6 +580,8 @@ export interface OptionsOptimisation {
   traitScie: number;
   strategie: Strategie;
   stock?: StockBarre[];
+  /** Mode Ultra (SmartCut) : active le solveur cutting-stock avancé. Sinon FFD rapide. */
+  modeUltra?: boolean;
 }
 
 export function optimiser(
@@ -593,6 +595,7 @@ export function optimiser(
     traitScie,
     strategie,
     stock = [],
+    modeUltra = false,
   } = options;
 
   const poolDefaut: PoolBarre = {
@@ -644,7 +647,9 @@ export function optimiser(
 
   switch (strategie) {
     case "min-barres":
-      barres = optimiserMinBarres(items, poolDefaut, traitScie);
+      barres = modeUltra
+        ? optimiserMinBarres(items, poolDefaut, traitScie)
+        : optimiserFFD(items, poolDefaut, traitScie);
       break;
     case "priorite-stock":
       barres = optimiserPrioriteStock(items, poolDefaut, poolsStock, traitScie);

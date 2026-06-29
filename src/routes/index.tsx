@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
@@ -103,6 +104,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [margeSecurite, setMargeSecurite] = useState(100);
   const [traitScie, setTraitScie] = useState(3);
   const [strategie, setStrategie] = useState<Strategie>("min-barres");
+  const [modeUltra, setModeUltra] = useState(false);
   const [stock, setStock] = useState<StockBarre[]>([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
   const [resultat, setResultat] = useState<ReturnType<typeof optimiser> | null>(null);
@@ -154,6 +156,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       traitScie: ts,
       strategie: st,
       stock: st === "priorite-stock" ? s : [],
+      modeUltra,
     });
   };
 
@@ -512,14 +515,35 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 </TableBody>
               </Table>
 
-              <div className="mt-6 flex justify-end">
-                <Button onClick={lancer} size="lg" className="gap-2" disabled={pieces.length === 0}>
+              <div className="mt-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <label
+                  htmlFor="mode-ultra"
+                  className="flex flex-1 cursor-pointer items-start gap-3 rounded-md border border-border bg-muted/40 p-3"
+                >
+                  <Switch id="mode-ultra" checked={modeUltra} onCheckedChange={setModeUltra} />
+                  <span className="flex flex-col">
+                    <span className="text-sm font-medium text-foreground">
+                      🚀 Mode Optimisation Ultra <span className="text-primary">(SmartCut)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Prend 2 secondes de plus mais teste des milliers de combinaisons pour
+                      économiser un maximum de barres.
+                    </span>
+                  </span>
+                </label>
+                <Button
+                  onClick={lancer}
+                  size="lg"
+                  className="gap-2 sm:self-end"
+                  disabled={pieces.length === 0}
+                >
                   <Calculator className="h-4 w-4" /> Lancer l'optimisation
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
+
 
         {strategie === "priorite-stock" && (
           <Card>
