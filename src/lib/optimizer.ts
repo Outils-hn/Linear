@@ -580,6 +580,8 @@ export interface OptionsOptimisation {
   traitScie: number;
   strategie: Strategie;
   stock?: StockBarre[];
+  /** Mode Ultra (SmartCut) : active le solveur cutting-stock avancé. Sinon FFD rapide. */
+  modeUltra?: boolean;
 }
 
 export function optimiser(
