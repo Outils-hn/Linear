@@ -156,6 +156,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       traitScie: ts,
       strategie: st,
       stock: st === "priorite-stock" ? s : [],
+      modeUltra,
     });
   };
 
