@@ -236,6 +236,46 @@ export function exporterPDF(
   // @ts-expect-error lastAutoTable
   y = doc.lastAutoTable.finalY + 8;
 
+  // ---- Récapitulatif des pièces demandées ----
+  const piecesValides = pieces.filter((p) => p.quantite > 0 && p.longueur > 0);
+  if (piecesValides.length > 0) {
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(20, 20, 20);
+    doc.text("Récapitulatif des pièces demandées", margin, y);
+    y += 3;
+    const totalPieces = piecesValides.reduce((s, p) => s + p.quantite, 0);
+    autoTable(doc, {
+      startY: y,
+      head: [["Repère", "Longueur (mm)", "Quantité requise"]],
+      body: piecesValides.map((p) => [p.nom, `${p.longueur}`, `${p.quantite}`]),
+      foot: [["Total", "", `${totalPieces}`]],
+      theme: "grid",
+      styles: { fontSize: 9, lineColor: [200, 200, 200], lineWidth: 0.1 },
+      headStyles: {
+        fillColor: [241, 245, 249],
+        textColor: [30, 41, 59],
+        fontStyle: "bold",
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+      },
+      footStyles: {
+        fillColor: [248, 250, 252],
+        textColor: [30, 41, 59],
+        fontStyle: "bold",
+      },
+      columnStyles: {
+        0: { cellWidth: "auto" },
+        1: { cellWidth: 36, halign: "right" },
+        2: { cellWidth: 36, halign: "center" },
+      },
+      margin: { left: margin, right: margin },
+    });
+    // @ts-expect-error lastAutoTable
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+
   const groupes = grouperBarresIdentiques(resultat.barres);
 
   for (const g of groupes) {
