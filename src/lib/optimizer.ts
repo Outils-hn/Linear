@@ -647,7 +647,9 @@ export function optimiser(
 
   switch (strategie) {
     case "min-barres":
-      barres = optimiserMinBarres(items, poolDefaut, traitScie);
+      barres = modeUltra
+        ? optimiserMinBarres(items, poolDefaut, traitScie)
+        : optimiserFFD(items, poolDefaut, traitScie);
       break;
     case "priorite-stock":
       barres = optimiserPrioriteStock(items, poolDefaut, poolsStock, traitScie);
