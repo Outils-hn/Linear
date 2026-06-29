@@ -515,14 +515,35 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 </TableBody>
               </Table>
 
-              <div className="mt-6 flex justify-end">
-                <Button onClick={lancer} size="lg" className="gap-2" disabled={pieces.length === 0}>
+              <div className="mt-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <label
+                  htmlFor="mode-ultra"
+                  className="flex flex-1 cursor-pointer items-start gap-3 rounded-md border border-border bg-muted/40 p-3"
+                >
+                  <Switch id="mode-ultra" checked={modeUltra} onCheckedChange={setModeUltra} />
+                  <span className="flex flex-col">
+                    <span className="text-sm font-medium text-foreground">
+                      🚀 Mode Optimisation Ultra <span className="text-primary">(SmartCut)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Prend 2 secondes de plus mais teste des milliers de combinaisons pour
+                      économiser un maximum de barres.
+                    </span>
+                  </span>
+                </label>
+                <Button
+                  onClick={lancer}
+                  size="lg"
+                  className="gap-2 sm:self-end"
+                  disabled={pieces.length === 0}
+                >
                   <Calculator className="h-4 w-4" /> Lancer l'optimisation
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
+
 
         {strategie === "priorite-stock" && (
           <Card>
