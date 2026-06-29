@@ -249,6 +249,183 @@ function solveCuttingStockBnB(
   };
 }
 
+// ------------------------------------------------------------------
+// Solveur "subset-LP" : énumère TOUS les patrons faisables, puis pour
+// chaque sous-ensemble de taille = nb de types de pièces, résout le
+// système linéaire et garde la solution entière non-négative qui
+// minimise le nombre total de barres. C'est l'approche classique de
+// génération de colonnes en cutting-stock 1D — exacte quand il existe
+// une solution-vertex correspondant aux demandes exactes.
+// ------------------------------------------------------------------
+
+function enumAllPatterns(
+  lengths: number[],
+  capacity: number,
+  kerf: number,
+  maxCounts: number[],
+): number[][] {
+  const n = lengths.length;
+  const out: number[][] = [];
+  const cur = new Array(n).fill(0);
+  function rec(idx: number, usedLen: number, count: number) {
+    if (idx === n) {
+      if (count > 0) out.push([...cur]);
+      return;
+    }
+    const maxC = maxCounts[idx];
+    for (let c = 0; c <= maxC; c++) {
+      let addLen = 0;
+      if (c > 0) addLen = c * lengths[idx] + (count > 0 ? c : c - 1) * kerf;
+      if (usedLen + addLen > capacity) break;
+      cur[idx] = c;
+      rec(idx + 1, usedLen + addLen, count + c);
+    }
+    cur[idx] = 0;
+  }
+  rec(0, 0, 0);
+  return out;
+}
+
+// Résolution Gauss-Jordan pour petits systèmes n x n. Renvoie null si
+// singulier ou si la solution n'est pas entière non-négative (tolérance).
+function solveLinearSystem(A: number[][], b: number[]): number[] | null {
+  const n = A.length;
+  const M: number[][] = A.map((row, i) => [...row, b[i]]);
+  for (let col = 0; col < n; col++) {
+    // pivot
+    let piv = col;
+    for (let r = col + 1; r < n; r++) {
+      if (Math.abs(M[r][col]) > Math.abs(M[piv][col])) piv = r;
+    }
+    if (Math.abs(M[piv][col]) < 1e-9) return null;
+    [M[col], M[piv]] = [M[piv], M[col]];
+    const pivVal = M[col][col];
+    for (let c = col; c <= n; c++) M[col][c] /= pivVal;
+    for (let r = 0; r < n; r++) {
+      if (r === col) continue;
+      const factor = M[r][col];
+      if (factor === 0) continue;
+      for (let c = col; c <= n; c++) M[r][c] -= factor * M[col][c];
+    }
+  }
+  const x = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const v = M[i][n];
+    const rounded = Math.round(v);
+    if (Math.abs(v - rounded) > 1e-6) return null;
+    if (rounded < 0) return null;
+    x[i] = rounded;
+  }
+  return x;
+}
+
+interface SubsetResult {
+  bars: number[][]; // séquence de patrons utilisés (répétés selon multiplicités)
+  total: number;
+}
+
+function solveCuttingStockSubset(
+  lengths: number[],
+  demands: number[],
+  capacity: number,
+  kerf: number,
+  upperBound: number,
+  maxMs = 3000,
+): SubsetResult | null {
+  const n = lengths.length;
+  const patterns = enumAllPatterns(lengths, capacity, kerf, demands);
+  if (patterns.length === 0) return null;
+  const deadline = Date.now() + maxMs;
+  let best = upperBound;
+  let bestBars: number[][] | null = null;
+
+  // Indices triés : on essaie d'abord les patrons les plus remplis pour
+  // resserrer la borne rapidement.
+  const order = patterns
+    .map((p, i) => ({ i, fill: patternFill(p, lengths, kerf) }))
+    .sort((a, b) => b.fill - a.fill)
+    .map((o) => o.i);
+
+  // Cas k=1 : un seul patron couvre toute la demande.
+  for (const i of order) {
+    const p = patterns[i];
+    let mult = -1;
+    let ok = true;
+    for (let t = 0; t < n; t++) {
+      if (demands[t] === 0) continue;
+      if (p[t] === 0) {
+        ok = false;
+        break;
+      }
+      const m = demands[t] / p[t];
+      if (m !== Math.floor(m)) {
+        ok = false;
+        break;
+      }
+      if (mult === -1) mult = m;
+      else if (mult !== m) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok && mult >= 0 && mult < best) {
+      best = mult;
+      bestBars = new Array(mult).fill(0).map(() => [...p]);
+    }
+  }
+
+  // Cas k = n : sous-ensembles de taille n (système carré).
+  // Pour limiter le combinatoire on plafonne le nombre de patrons examinés.
+  const MAX_PATS = 60;
+  const pool = order.slice(0, Math.min(order.length, MAX_PATS));
+
+  function combine(size: number, start: number, picked: number[]) {
+    if (Date.now() > deadline) return;
+    if (picked.length === size) {
+      // Construire A (n x size) puis résoudre
+      const A: number[][] = [];
+      for (let t = 0; t < n; t++) {
+        const row: number[] = [];
+        for (const pi of picked) row.push(patterns[pi][t]);
+        A.push(row);
+      }
+      const x = solveLinearSystem(A, demands);
+      if (x) {
+        const total = x.reduce((s, v) => s + v, 0);
+        if (total < best) {
+          best = total;
+          const bars: number[][] = [];
+          for (let k = 0; k < picked.length; k++) {
+            for (let r = 0; r < x[k]; r++) bars.push([...patterns[picked[k]]]);
+          }
+          bestBars = bars;
+        }
+      }
+      return;
+    }
+    for (let i = start; i < pool.length; i++) {
+      picked.push(pool[i]);
+      combine(size, i + 1, picked);
+      picked.pop();
+      if (Date.now() > deadline) return;
+    }
+  }
+
+  // On teste les tailles 2..n (et n+1 si possible) pour couvrir aussi les
+  // cas où une base de taille < n suffit (demande nulle pour un type).
+  const activeTypes = demands.filter((d) => d > 0).length;
+  const maxSize = Math.min(n, activeTypes);
+  for (let size = 2; size <= maxSize; size++) {
+    combine(size, 0, []);
+    if (Date.now() > deadline) break;
+  }
+
+  if (!bestBars) return null;
+  return { bars: bestBars, total: best };
+}
+
+
+
 function optimiserMinBarres(
   items: Item[],
   poolDefaut: PoolBarre,
