@@ -95,8 +95,8 @@ function placerSurBarre(barre: BarreOptimisee, item: Item, traitScie: number): b
   return true;
 }
 
-// FFD classique sur une longueur unique
-function optimiserMinBarres(
+// FFD classique sur une longueur unique (sert de borne supérieure / fallback)
+function optimiserFFD(
   items: Item[],
   poolDefaut: PoolBarre,
   traitScie: number,
@@ -105,17 +105,218 @@ function optimiserMinBarres(
   const barres: BarreOptimisee[] = [];
   for (const item of tri) {
     let place = false;
+    // Best-Fit Decreasing : on choisit la barre qui laissera le moins de chute
+    let meilleur: BarreOptimisee | null = null;
+    let meilleurReste = Infinity;
     for (const b of barres) {
-      if (placerSurBarre(b, item, traitScie)) {
-        place = true;
-        break;
+      const coutTrait = b.coupes.length > 0 ? traitScie : 0;
+      const reste = b.longueurBarre - b.longueurUtilisee - b.longueurTraitsScie;
+      const apres = reste - item.longueur - coutTrait;
+      if (apres >= 0 && apres < meilleurReste) {
+        meilleur = b;
+        meilleurReste = apres;
       }
+    }
+    if (meilleur && placerSurBarre(meilleur, item, traitScie)) {
+      place = true;
     }
     if (!place) {
       const nb = newBarre(barres.length + 1, poolDefaut);
       placerSurBarre(nb, item, traitScie);
       barres.push(nb);
     }
+  }
+  return barres;
+}
+
+// ------------------------------------------------------------------
+// Solveur "cutting-stock" par branch-and-bound sur patrons de coupe.
+// Utilisé quand toutes les barres ont la même longueur utile
+// (cas standard "min-barres" sans stock multi-longueurs).
+// ------------------------------------------------------------------
+
+interface BnBResult {
+  bars: number[][]; // séquence de patrons (un par barre), chaque patron = nb pièces par longueur unique
+  bestFound: number;
+  exhaustive: boolean;
+}
+
+function enumPatterns(
+  lengths: number[],
+  capacity: number,
+  kerf: number,
+  maxCounts: number[],
+  pivot: number,
+): number[][] {
+  const n = lengths.length;
+  const out: number[][] = [];
+  const cur = new Array(n).fill(0);
+  function rec(idx: number, usedLen: number, count: number) {
+    if (idx === n) {
+      if (count > 0) out.push([...cur]);
+      return;
+    }
+    const minC = idx === pivot ? 1 : 0;
+    const maxC = idx < pivot ? 0 : maxCounts[idx];
+    for (let c = minC; c <= maxC; c++) {
+      let addLen = 0;
+      if (c > 0) addLen = c * lengths[idx] + (count > 0 ? c : c - 1) * kerf;
+      if (usedLen + addLen > capacity) break;
+      cur[idx] = c;
+      rec(idx + 1, usedLen + addLen, count + c);
+    }
+    cur[idx] = 0;
+  }
+  rec(0, 0, 0);
+  return out;
+}
+
+function patternFill(p: number[], lengths: number[], kerf: number): number {
+  let total = 0;
+  let count = 0;
+  for (let i = 0; i < p.length; i++) {
+    total += p[i] * lengths[i];
+    count += p[i];
+  }
+  if (count > 1) total += (count - 1) * kerf;
+  return total;
+}
+
+function solveCuttingStockBnB(
+  lengths: number[], // triées desc
+  demands: number[],
+  capacity: number,
+  kerf: number,
+  upperBound: number,
+  maxNodes = 200_000,
+  maxMs = 1500,
+): BnBResult {
+  const n = lengths.length;
+  let best = upperBound;
+  let bestBars: number[][] | null = null;
+  const stack: number[][] = [];
+  let nodes = 0;
+  const deadline = Date.now() + maxMs;
+  let exhaustive = true;
+
+  function dfs(remaining: number[], barsSoFar: number) {
+    if (nodes > maxNodes || Date.now() > deadline) {
+      exhaustive = false;
+      return;
+    }
+    nodes++;
+    if (barsSoFar >= best) return;
+
+    // pivot = première longueur restante (la plus grande)
+    let pivot = -1;
+    for (let i = 0; i < n; i++) {
+      if (remaining[i] > 0) {
+        pivot = i;
+        break;
+      }
+    }
+    if (pivot === -1) {
+      best = barsSoFar;
+      bestBars = stack.map((p) => [...p]);
+      return;
+    }
+
+    // Lower bound : longueur totale restante / capacité
+    let lenRem = 0;
+    for (let i = 0; i < n; i++) lenRem += remaining[i] * lengths[i];
+    const lb = Math.ceil(lenRem / capacity);
+    if (barsSoFar + lb >= best) return;
+
+    const patterns = enumPatterns(lengths, capacity, kerf, remaining, pivot);
+    // Trier : patrons les plus remplis d'abord (resserre la borne supérieure)
+    patterns.sort((a, b) => patternFill(b, lengths, kerf) - patternFill(a, lengths, kerf));
+
+    for (const p of patterns) {
+      stack.push(p);
+      const newRem = remaining.slice();
+      for (let i = 0; i < n; i++) newRem[i] -= p[i];
+      dfs(newRem, barsSoFar + 1);
+      stack.pop();
+      if (nodes > maxNodes || Date.now() > deadline) return;
+    }
+  }
+
+  dfs(demands.slice(), 0);
+  return {
+    bars: bestBars ?? [],
+    bestFound: best,
+    exhaustive,
+  };
+}
+
+function optimiserMinBarres(
+  items: Item[],
+  poolDefaut: PoolBarre,
+  traitScie: number,
+): BarreOptimisee[] {
+  // 1) Solution de base (BFD) qui servira aussi de borne supérieure.
+  const ffd = optimiserFFD(items, poolDefaut, traitScie);
+
+  // 2) Regrouper les items par longueur unique pour le solveur de patrons.
+  //    On garde une file par longueur pour préserver les noms / pieceId.
+  const byLen = new Map<number, Item[]>();
+  for (const it of items) {
+    if (it.longueur <= 0) continue;
+    const arr = byLen.get(it.longueur) ?? [];
+    arr.push(it);
+    byLen.set(it.longueur, arr);
+  }
+  const uniqueLens = [...byLen.keys()].sort((a, b) => b - a);
+  if (uniqueLens.length === 0) return ffd;
+
+  // Le solveur de patrons suppose une seule longueur utile : la barre par défaut.
+  // (Le mode "priorité stock" gère les longueurs multiples séparément.)
+  const capacity = poolDefaut.longueurUtile;
+  const demands = uniqueLens.map((L) => byLen.get(L)!.length);
+
+  // Garde-fou : si trop de longueurs distinctes, on s'en tient au FFD/BFD pour
+  // éviter une explosion combinatoire (rare en pratique).
+  if (uniqueLens.length > 8) return ffd;
+
+  const result = solveCuttingStockBnB(
+    uniqueLens,
+    demands,
+    capacity,
+    traitScie,
+    ffd.length, // borne supérieure initiale
+  );
+
+  if (!result.bars || result.bars.length === 0 || result.bestFound >= ffd.length) {
+    return ffd;
+  }
+
+  // 3) Reconstruire les BarreOptimisee à partir de la séquence de patrons.
+  const queues = new Map<number, Item[]>();
+  for (const L of uniqueLens) queues.set(L, [...byLen.get(L)!]);
+
+  const barres: BarreOptimisee[] = [];
+  result.bars.forEach((pattern, idx) => {
+    const b = newBarre(idx + 1, poolDefaut);
+    // Construire la liste des coupes (longueurs décroissantes pour l'esthétique)
+    const coupes: Item[] = [];
+    for (let i = 0; i < uniqueLens.length; i++) {
+      const L = uniqueLens[i];
+      const count = pattern[i];
+      const q = queues.get(L)!;
+      for (let k = 0; k < count; k++) {
+        const it = q.shift();
+        if (it) coupes.push(it);
+      }
+    }
+    for (const it of coupes) placerSurBarre(b, it, traitScie);
+    barres.push(b);
+  });
+
+  // Sécurité : si toutes les pièces ne sont pas placées (bug de reconstruction),
+  // on retombe sur le FFD.
+  const placedCount = barres.reduce((s, b) => s + b.coupes.length, 0);
+  if (placedCount !== items.filter((i) => i.longueur > 0 && i.longueur <= capacity).length) {
+    return ffd;
   }
   return barres;
 }
