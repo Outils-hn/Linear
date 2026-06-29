@@ -595,6 +595,7 @@ export function optimiser(
     traitScie,
     strategie,
     stock = [],
+    modeUltra = false,
   } = options;
 
   const poolDefaut: PoolBarre = {
