@@ -692,21 +692,30 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
 
                       <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
 
-                      <ol className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-3">
-                        {coupesGroupes.map((g, i) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-muted text-[10px] font-semibold text-foreground">
-                              {i + 1}
-                            </span>
-                            <span className="font-medium text-foreground">{g.nom}</span>
-                            <span>— {g.longueur} mm</span>
-                            {g.quantite > 1 && <span className="text-foreground">× {g.quantite}</span>}
-                            <span className="ml-auto font-semibold text-foreground">
-                              Repère : {g.reperes.join(" / ")} mm
-                            </span>
-                          </li>
-                        ))}
-                      </ol>
+                      <div className="overflow-hidden rounded-md border border-border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                              <TableHead className="w-12 text-center text-xs font-semibold text-foreground">#</TableHead>
+                              <TableHead className="text-xs font-semibold text-foreground">Pièce</TableHead>
+                              <TableHead className="w-40 text-center text-xs font-semibold text-foreground">Longueur de coupe (mm)</TableHead>
+                              <TableHead className="w-24 text-center text-xs font-semibold text-foreground">Quantité</TableHead>
+                              <TableHead className="w-56 text-center text-xs font-semibold text-foreground">Repère cumulé (mm)</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {coupesGroupes.map((g, i) => (
+                              <TableRow key={i}>
+                                <TableCell className="text-center text-xs font-semibold text-foreground">{i + 1}</TableCell>
+                                <TableCell className="text-xs font-medium text-foreground">{g.nom}</TableCell>
+                                <TableCell className="text-center text-xs tabular-nums">{g.longueur}</TableCell>
+                                <TableCell className="text-center text-xs tabular-nums">{g.quantite}</TableCell>
+                                <TableCell className="text-center text-xs tabular-nums">{g.reperes.join(" / ")}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
 
                       <p className="text-xs text-muted-foreground">
                         Chute finale : <span className="font-medium text-foreground">{barre.chute} mm</span>
