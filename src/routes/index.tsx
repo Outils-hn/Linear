@@ -351,7 +351,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
             <Button variant="outline" size="sm" onClick={nouveauProjet} className="gap-2">
               <FilePlus className="h-4 w-4" /> Nouveau
             </Button>
-            <Button variant="outline" size="sm" onClick={sauvegarder} disabled={saving} className="gap-2">
+            <Button variant="outline" size="sm" onClick={ouvrirSauvegarde} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Sauvegarder"}
             </Button>
             {resultat && (
