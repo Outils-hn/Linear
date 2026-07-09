@@ -200,12 +200,19 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     toast.success("Nouveau projet prêt");
   };
 
-  const sauvegarder = () => {
+  const ouvrirSauvegarde = () => {
+    const base = (chantier || "Projet sans nom").trim();
+    setNewProjectName(currentProjectId ? `${base} (Copie)` : base);
+    setSaveMode(currentProjectId ? "choice" : "new");
+    setSaveDialogOpen(true);
+  };
+
+  const persister = (opts: { id: string | null; chantierOverride?: string }) => {
     setSaving(true);
     try {
       const saved = upsertProject(profileId, {
-        id: currentProjectId,
-        chantier,
+        id: opts.id,
+        chantier: opts.chantierOverride ?? chantier,
         numero_tache: numeroTache,
         client,
         date_projet: dateProjet,
@@ -217,13 +224,24 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
         stock,
       });
       setCurrentProjectId(saved.id);
+      if (opts.chantierOverride !== undefined) setChantier(opts.chantierOverride);
       refreshProjects();
-      toast.success(currentProjectId ? "Projet mis à jour" : "Projet sauvegardé localement");
+      toast.success(opts.id ? "Projet mis à jour" : "Nouveau projet enregistré");
+      setSaveDialogOpen(false);
     } catch (e) {
       toast.error("Erreur de sauvegarde : " + (e instanceof Error ? e.message : "inconnue"));
     } finally {
       setSaving(false);
     }
+  };
+
+  const confirmerNouveau = () => {
+    const nom = newProjectName.trim();
+    if (!nom) {
+      toast.error("Nom de projet requis");
+      return;
+    }
+    persister({ id: null, chantierOverride: nom });
   };
 
   const chargerProjet = (proj: LocalProject) => {
