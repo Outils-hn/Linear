@@ -113,6 +113,9 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [projects, setProjects] = useState<LocalProject[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [saveMode, setSaveMode] = useState<"choice" | "new">("choice");
+  const [newProjectName, setNewProjectName] = useState("");
 
   const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
   const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
