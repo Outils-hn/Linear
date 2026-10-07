@@ -25,6 +25,9 @@ import { toast } from "sonner";
 
 import { AuthForm } from "@/components/AuthForm";
 import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
+import { optimiserDebit, LIBELLES_DEBIT, DESCRIPTIONS_DEBIT, type StrategieDebit } from "@/lib/strategies-debit";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Info, BarChart3 } from "lucide-react";
 import { BarreSchema } from "@/components/BarreSchema";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -106,6 +109,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [traitScie, setTraitScie] = useState(3);
   const [strategie, setStrategie] = useState<Strategie>("min-barres");
   const [modeUltra, setModeUltra] = useState(false);
+  const [strategieDebit, setStrategieDebit] = useState<StrategieDebit>("min-barres");
+  const [trierPieces, setTrierPieces] = useState(true);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [comparaison, setComparaison] = useState<
+    { key: StrategieDebit; nom: string; nbBarres: number; chute: number; rendement: number }[] | null
+  >(null);
   const [stock, setStock] = useState<StockBarre[]>([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
   const [resultat, setResultat] = useState<ReturnType<typeof optimiser> | null>(null);
@@ -145,6 +154,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     margeSecurite?: number;
     traitScie?: number;
     strategie?: Strategie;
+    strategieDebit?: StrategieDebit;
+    trier?: boolean;
   }) => {
     const p = overrides?.pieces ?? pieces;
     const s = overrides?.stock ?? stock;
@@ -153,6 +164,15 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     const ts = overrides?.traitScie ?? traitScie;
     const st = overrides?.strategie ?? strategie;
     const lu = Math.max(0, lb - ms);
+    const sd = overrides?.strategieDebit ?? strategieDebit;
+    if (st === "min-barres" && sd !== "min-barres") {
+      return optimiserDebit(p, sd, {
+        longueurBarreUtile: lu,
+        longueurBarreBrute: lb,
+        traitScie: ts,
+        trier: overrides?.trier ?? trierPieces,
+      });
+    }
     return optimiser(p, {
       longueurBarreUtileDefaut: lu,
       longueurBarreBruteDefaut: lb,
@@ -162,6 +182,20 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       stock: st === "priorite-stock" ? s : [],
       modeUltra,
     });
+  };
+
+  const comparer = () => {
+    const rows = (Object.keys(LIBELLES_DEBIT) as StrategieDebit[]).map((k) => {
+      const r = calculer({ strategie: "min-barres", strategieDebit: k });
+      return {
+        key: k,
+        nom: LIBELLES_DEBIT[k] + (k !== "min-barres" && trierPieces ? " (trié)" : ""),
+        nbBarres: r.nbBarres,
+        chute: r.longueurChutes,
+        rendement: r.rendement,
+      };
+    });
+    setComparaison(rows);
   };
 
   const lancer = () => {
@@ -471,6 +505,64 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   {strategie === "priorite-stock" &&
                     "Place d'abord les coupes dans les barres du stock, complète avec la barre de base."}
                 </p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label>Stratégie de débit</Label>
+                  <Popover open={infoOpen} onOpenChange={setInfoOpen}>
+                    <PopoverTrigger
+                      asChild
+                      onMouseEnter={() => setInfoOpen(true)}
+                      onMouseLeave={() => setInfoOpen(false)}
+                    >
+                      <button type="button" aria-label="Description de la stratégie" className="text-muted-foreground hover:text-primary">
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 text-sm">
+                      <p className="font-semibold">{LIBELLES_DEBIT[strategieDebit]}</p>
+                      <p className="mt-1 text-muted-foreground">{DESCRIPTIONS_DEBIT[strategieDebit]}</p>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <Select
+                  value={strategieDebit}
+                  onValueChange={(v) => setStrategieDebit(v as StrategieDebit)}
+                  disabled={strategie === "priorite-stock"}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(LIBELLES_DEBIT) as StrategieDebit[]).map((k) => (
+                      <SelectItem key={k} value={k}>
+                        {LIBELLES_DEBIT[k]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {strategie === "priorite-stock" && (
+                  <p className="text-xs text-muted-foreground">Non disponible en mode « Priorité au stock ».</p>
+                )}
+                <label
+                  className={`flex items-center gap-2 text-sm ${strategieDebit === "min-barres" || strategie === "priorite-stock" ? "opacity-50" : "cursor-pointer"}`}
+                >
+                  <Checkbox
+                    checked={trierPieces}
+                    onCheckedChange={(v) => setTrierPieces(v === true)}
+                    disabled={strategieDebit === "min-barres" || strategie === "priorite-stock"}
+                  />
+                  Trier les pièces de la plus longue à la plus courte
+                </label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={comparer}
+                  disabled={pieces.length === 0}
+                >
+                  <BarChart3 className="h-4 w-4" /> Comparer les stratégies
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -836,6 +928,40 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               </Button>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={comparaison !== null} onOpenChange={(o) => !o && setComparaison(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Comparaison des stratégies</DialogTitle>
+            <DialogDescription>Mêmes pièces, même barre de base ({longueurBarre} mm).</DialogDescription>
+          </DialogHeader>
+          {comparaison && (() => {
+            const best = [...comparaison].sort((a, b) => a.nbBarres - b.nbBarres || a.chute - b.chute)[0].key;
+            return (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Stratégie</TableHead>
+                    <TableHead className="text-right">Barres</TableHead>
+                    <TableHead className="text-right">Chute (mm)</TableHead>
+                    <TableHead className="text-right">Utilisation</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {comparaison.map((r) => (
+                    <TableRow key={r.key} className={r.key === best ? "bg-primary/10 font-semibold" : ""}>
+                      <TableCell>{r.nom}{r.key === best && " ★"}</TableCell>
+                      <TableCell className="text-right">{r.nbBarres}</TableCell>
+                      <TableCell className="text-right">{Math.round(r.chute)}</TableCell>
+                      <TableCell className="text-right">{r.rendement.toFixed(1)} %</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
