@@ -930,6 +930,40 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={comparaison !== null} onOpenChange={(o) => !o && setComparaison(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Comparaison des stratégies</DialogTitle>
+            <DialogDescription>Mêmes pièces, même barre de base ({longueurBarre} mm).</DialogDescription>
+          </DialogHeader>
+          {comparaison && (() => {
+            const best = [...comparaison].sort((a, b) => a.nbBarres - b.nbBarres || a.chute - b.chute)[0].key;
+            return (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Stratégie</TableHead>
+                    <TableHead className="text-right">Barres</TableHead>
+                    <TableHead className="text-right">Chute (mm)</TableHead>
+                    <TableHead className="text-right">Utilisation</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {comparaison.map((r) => (
+                    <TableRow key={r.key} className={r.key === best ? "bg-primary/10 font-semibold" : ""}>
+                      <TableCell>{r.nom}{r.key === best && " ★"}</TableCell>
+                      <TableCell className="text-right">{r.nbBarres}</TableCell>
+                      <TableCell className="text-right">{Math.round(r.chute)}</TableCell>
+                      <TableCell className="text-right">{r.rendement.toFixed(1)} %</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
