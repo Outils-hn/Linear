@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { AuthForm } from "@/components/AuthForm";
 import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
+import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
@@ -127,6 +128,22 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId]);
 
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      const txt = e.clipboardData?.getData("text/plain") ?? "";
+      if (!txt.trim()) return;
+      e.preventDefault();
+      setPasteText(txt);
+      setPasteOpen(true);
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, []);
   const addPiece = () =>
     setPieces((p) => [...p, { id: nextId(), nom: `Pièce ${p.length + 1}`, longueur: 1000, quantite: 1 }]);
   const removePiece = (id: string) => setPieces((p) => p.filter((x) => x.id !== id));
@@ -481,9 +498,29 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <CardTitle className="text-base">Pièces à couper</CardTitle>
                 <CardDescription>Liste des pièces et quantités requises</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={addPiece} className="gap-2">
-                <Plus className="h-4 w-4" /> Ajouter
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setPasteText(""); setPasteOpen(true); }}>
+                  Coller depuis Excel
+                </Button>
+                <Button variant="outline" size="sm" onClick={addPiece} className="gap-2">
+                  <Plus className="h-4 w-4" /> Ajouter
+                </Button>
+              </div>
+              <ExcelPasteDialog
+                open={pasteOpen}
+                onOpenChange={setPasteOpen}
+                initialText={pasteText}
+                longueurBarre={longueurBarre}
+                onImport={(list, mode, info) => {
+                  const nouvelles = list.map((x) => ({ ...x, id: nextId() }));
+                  setPieces((p) => (mode === "replace" ? nouvelles : [...p, ...nouvelles]));
+                  const total = list.reduce((s, x) => s + x.quantite, 0);
+                  toast.success(
+                    `${total} pièces importées (${info.lignes} lignes)` +
+                      (info.ignorees ? `, ${info.ignorees} ligne${info.ignorees > 1 ? "s" : ""} ignorée${info.ignorees > 1 ? "s" : ""}` : ""),
+                  );
+                }}
+              />
             </CardHeader>
             <CardContent>
               <Table>
