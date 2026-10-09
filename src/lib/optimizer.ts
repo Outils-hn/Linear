@@ -1,4 +1,11 @@
 export type Strategie = "min-barres" | "priorite-stock";
+export type PositionMarge = "debut" | "fin" | "deux-bouts";
+
+export const POSITION_MARGE_LABELS: Record<PositionMarge, string> = {
+  debut: "Marge en début de barre",
+  fin: "Marge en fin de barre",
+  "deux-bouts": "Répartie aux deux bouts",
+};
 
 export interface Piece {
   id: string;
@@ -30,6 +37,8 @@ export interface BarreOptimisee {
   longueurTraitsScie: number;
   chute: number;
   chuteReutilisable: boolean;
+  margeDebut?: number;
+  margeFin?: number;
 }
 
 export interface ResultatOptimisation {
@@ -43,6 +52,9 @@ export interface ResultatOptimisation {
   longueurDechets: number;
   longueurChutesReutilisables: number;
   rendement: number;
+  rendementHorsChutesReutilisables: number;
+  longueurTraitsScie: number;
+  longueurMarges: number;
   pourcentageChutes: number;
 }
 
@@ -582,6 +594,7 @@ export interface OptionsOptimisation {
   stock?: StockBarre[];
   /** Mode Ultra (SmartCut) : active le solveur cutting-stock avancé. Sinon FFD rapide. */
   modeUltra?: boolean;
+  positionMarge?: PositionMarge;
 }
 
 export function optimiser(
@@ -596,6 +609,7 @@ export function optimiser(
     strategie,
     stock = [],
     modeUltra = false,
+    positionMarge = "debut",
   } = options;
 
   const poolDefaut: PoolBarre = {
@@ -641,6 +655,9 @@ export function optimiser(
       longueurDechets: 0,
       longueurChutesReutilisables: 0,
       rendement: 0,
+      rendementHorsChutesReutilisables: 0,
+      longueurTraitsScie: 0,
+      longueurMarges: 0,
       pourcentageChutes: 0,
     };
   }
@@ -657,6 +674,15 @@ export function optimiser(
   }
 
   for (const b of barres) {
+    // Comptabilité après optimisation uniquement : les patrons et placements
+    // restent inchangés. Si le reste est plus étroit que la lame, la partie
+    // de lame hors barre ne consomme pas de matière.
+    const traitFinal = b.coupes.length > 0 ? Math.min(b.chute, Math.max(0, traitScie)) : 0;
+    b.longueurTraitsScie += traitFinal;
+    b.chute = Math.max(0, b.chute - traitFinal);
+    const marge = Math.max(0, b.longueurBrute - b.longueurBarre);
+    b.margeDebut = positionMarge === "fin" ? 0 : positionMarge === "deux-bouts" ? marge / 2 : marge;
+    b.margeFin = marge - b.margeDebut;
     b.chuteReutilisable = b.chute >= SEUIL_CHUTE_REUTILISABLE;
   }
 
@@ -665,12 +691,16 @@ export function optimiser(
   const nbBarresDefaut = nbBarres - nbBarresStock;
   const longueurTotale = barres.reduce((s, b) => s + b.longueurBrute, 0);
   const longueurUtile = barres.reduce((s, b) => s + b.longueurUtilisee, 0);
+  const longueurTraitsScie = barres.reduce((s, b) => s + b.longueurTraitsScie, 0);
+  const longueurMarges = barres.reduce((s, b) => s + b.longueurBrute - b.longueurBarre, 0);
   const longueurChutes = barres.reduce((s, b) => s + b.chute, 0);
   const longueurChutesReutilisables = barres
     .filter((b) => b.chuteReutilisable)
     .reduce((s, b) => s + b.chute, 0);
   const longueurDechets = longueurChutes - longueurChutesReutilisables;
   const rendement = longueurTotale > 0 ? (longueurUtile / longueurTotale) * 100 : 0;
+  const longueurConsommee = longueurTotale - longueurChutesReutilisables;
+  const rendementHorsChutesReutilisables = longueurConsommee > 0 ? (longueurUtile / longueurConsommee) * 100 : 0;
   const pourcentageChutes = longueurTotale > 0 ? (longueurChutes / longueurTotale) * 100 : 0;
 
   return {
@@ -684,6 +714,9 @@ export function optimiser(
     longueurDechets,
     longueurChutesReutilisables,
     rendement,
+    rendementHorsChutesReutilisables,
+    longueurTraitsScie,
+    longueurMarges,
     pourcentageChutes,
   };
 }

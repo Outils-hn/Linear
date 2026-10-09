@@ -9,18 +9,22 @@ interface Props {
 }
 
 export function BarreSchema({ barre, traitScie, pieceIds }: Props) {
-  const total = barre.longueurBarre;
+  const total = barre.longueurBrute;
   const pct = (mm: number) => (mm / total) * 100;
+  const margeDebut = barre.margeDebut ?? 0;
+  const margeFin = barre.margeFin ?? 0;
+  const traitFinal = Math.max(0, barre.longueurTraitsScie - Math.max(0, barre.coupes.length - 1) * traitScie);
 
   return (
     <div className="w-full">
       <div className="relative flex h-16 w-full overflow-hidden rounded-md border border-border bg-muted">
+        {margeDebut > 0 && <div className="margin-hatch h-full shrink-0 bg-muted" style={{ width: `${pct(margeDebut)}%` }} title={`Marge début : ${margeDebut} mm`} />}
         {barre.coupes.map((c, i) => {
           const color = colorForPieceId(c.pieceId, pieceIds);
           return (
-            <div key={i} className="flex h-full" style={{ width: `${pct(c.longueur)}%` }}>
+            <div key={i} className="flex h-full shrink-0" style={{ width: `${pct(c.longueur + (i < barre.coupes.length - 1 ? traitScie : traitFinal))}%` }}>
               <div
-                className="flex h-full w-full items-center justify-center text-xs font-medium text-white shadow-inner"
+                className="flex h-full min-w-0 flex-1 items-center justify-center text-xs font-medium text-primary-foreground shadow-inner"
                 style={{ backgroundColor: color }}
                 title={`${c.nom} — ${c.longueur} mm`}
               >
@@ -28,11 +32,11 @@ export function BarreSchema({ barre, traitScie, pieceIds }: Props) {
                   {c.nom} <span className="opacity-80">· {c.longueur}</span>
                 </span>
               </div>
-              {i < barre.coupes.length - 1 && traitScie > 0 && (
+              {(i < barre.coupes.length - 1 ? traitScie : traitFinal) > 0 && (
                 <div
-                  className="h-full bg-foreground/80"
-                  style={{ width: `${pct(traitScie)}%`, minWidth: 1 }}
-                  title={`Trait de scie ${traitScie} mm`}
+                  className="h-full shrink-0 bg-foreground/80"
+                  style={{ width: `${((i < barre.coupes.length - 1 ? traitScie : traitFinal) / (c.longueur + (i < barre.coupes.length - 1 ? traitScie : traitFinal))) * 100}%` }}
+                  title={`Trait de scie ${i < barre.coupes.length - 1 ? traitScie : traitFinal} mm`}
                 />
               )}
             </div>
@@ -40,7 +44,7 @@ export function BarreSchema({ barre, traitScie, pieceIds }: Props) {
         })}
         {barre.chute > 0 && (
           <div
-            className="flex h-full items-center justify-center text-xs font-medium"
+            className="offcut-hatch flex h-full shrink-0 items-center justify-center text-xs font-medium"
             style={{
               width: `${pct(barre.chute)}%`,
               backgroundColor: barre.chuteReutilisable
@@ -48,7 +52,7 @@ export function BarreSchema({ barre, traitScie, pieceIds }: Props) {
                 : "var(--color-waste)",
               color: barre.chuteReutilisable
                 ? "var(--color-warning-foreground)"
-                : "white",
+                : "var(--color-foreground)",
             }}
             title={`Chute ${barre.chute} mm`}
           >
@@ -58,12 +62,14 @@ export function BarreSchema({ barre, traitScie, pieceIds }: Props) {
             </span>
           </div>
         )}
+        {margeFin > 0 && <div className="margin-hatch h-full shrink-0 bg-muted" style={{ width: `${pct(margeFin)}%` }} title={`Marge fin : ${margeFin} mm`} />}
       </div>
       <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
         <span>0</span>
         <span>{total} mm</span>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">
+        <span>Marge début : {margeDebut} mm · Marge fin : {margeFin} mm · </span>
         Chute :{" "}
         <span
           className={

@@ -56,8 +56,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.02 250);
 
-  /* Copper accent (signature) */
-  --primary: oklch(0.70 0.19 50);                /* ~#ff7a00 */
+  /* Workshop controls — orange belongs to reusable offcuts only. */
+  --primary: oklch(0.55 0.16 245);
   --primary-foreground: oklch(0.99 0 0);
 
   --secondary: oklch(0.95 0.005 240);
@@ -72,7 +72,7 @@
 
   --border: oklch(0.88 0.006 240);               /* steel-grey fine border */
   --input: oklch(0.88 0.006 240);
-  --ring: oklch(0.70 0.19 50);
+  --ring: oklch(0.55 0.16 245);
 
   --success: oklch(0.62 0.15 155);
   --success-foreground: oklch(0.99 0 0);
@@ -82,10 +82,10 @@
 
   --piece-1: oklch(0.62 0.15 220);
   --piece-2: oklch(0.64 0.14 160);
-  --piece-3: oklch(0.70 0.16 75);
+  --piece-3: oklch(0.57 0.18 280);
   --piece-4: oklch(0.60 0.16 320);
   --piece-5: oklch(0.62 0.14 195);
-  --piece-6: oklch(0.66 0.17 35);
+  --piece-6: oklch(0.55 0.20 15);
   --piece-7: oklch(0.57 0.17 280);
   --piece-8: oklch(0.64 0.15 110);
 }
@@ -99,8 +99,8 @@
   --popover: oklch(0.26 0.005 240);
   --popover-foreground: oklch(0.97 0.003 240);
 
-  --primary: oklch(0.72 0.19 50);
-  --primary-foreground: oklch(0.18 0.01 50);
+  --primary: oklch(0.72 0.14 245);
+  --primary-foreground: oklch(0.18 0.01 245);
 
   --secondary: oklch(0.32 0.006 240);
   --secondary-foreground: oklch(0.92 0.003 240);
@@ -114,7 +114,7 @@
 
   --border: oklch(0.38 0.006 240 / 0.55);
   --input: oklch(0.38 0.006 240 / 0.6);
-  --ring: oklch(0.72 0.19 50);
+  --ring: oklch(0.72 0.14 245);
 
   --success: oklch(0.72 0.15 155);
   --success-foreground: oklch(0.15 0.02 155);
@@ -124,12 +124,20 @@
 
   --piece-1: oklch(0.70 0.15 220);
   --piece-2: oklch(0.72 0.14 160);
-  --piece-3: oklch(0.78 0.16 75);
+  --piece-3: oklch(0.70 0.18 280);
   --piece-4: oklch(0.68 0.16 320);
   --piece-5: oklch(0.70 0.14 195);
-  --piece-6: oklch(0.74 0.17 35);
+  --piece-6: oklch(0.68 0.20 15);
   --piece-7: oklch(0.65 0.17 280);
   --piece-8: oklch(0.72 0.15 110);
+}
+
+.offcut-hatch {
+  background-image: repeating-linear-gradient(135deg, transparent 0 5px, var(--foreground) 5px 6px, transparent 6px 10px);
+}
+
+.margin-hatch {
+  background-image: repeating-linear-gradient(90deg, transparent 0 3px, var(--muted-foreground) 3px 4px);
 }
 
 @layer base {
