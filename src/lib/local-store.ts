@@ -26,6 +26,8 @@ export interface LocalProject {
   pieces: Piece[];
   stock: StockBarre[];
   longueurs_profils?: Record<string, number>;
+  seuils_profils?: Record<string, number>;
+  seuil_chute?: number;
   created_at: string;
   updated_at: string;
 }

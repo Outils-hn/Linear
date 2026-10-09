@@ -1,6 +1,6 @@
 import { formatNombre as fmt } from "@/lib/format-number";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -33,7 +33,8 @@ import { toast } from "sonner";
 import { AuthForm } from "@/components/AuthForm";
 import { POSITION_MARGE_LABELS, type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema, LegendeBarres } from "@/components/BarreSchema";
-import { optimiserParProfil, listeProfils, libelleProfil, longueurPourProfil, type ResultatMulti } from "@/lib/multi-profil";
+import { optimiserParProfil, listeProfils, libelleProfil, longueurPourProfil, seuilPourProfil, type ResultatMulti } from "@/lib/multi-profil";
+import { chutesAConserver } from "@/lib/chutes";
 import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -127,6 +128,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
   const [resultat, setResultat] = useState<ResultatMulti | null>(null);
   const [longueursProfils, setLongueursProfils] = useState<Record<string, number>>({});
+  const [seuilsProfils, setSeuilsProfils] = useState<Record<string, number>>({});
+  const [seuilChute, setSeuilChute] = useState(500);
   const [pdfWarnOpen, setPdfWarnOpen] = useState(false);
   const [verifCtx, setVerifCtx] = useState<{ pieces: Piece[]; traitScie: number } | null>(null);
   const verification = useMemo(
@@ -188,6 +191,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     traitScie?: number;
     strategie?: Strategie;
     longueursProfils?: Record<string, number>;
+    seuilsProfils?: Record<string, number>;
+    seuilChute?: number;
   }) => {
     const p = overrides?.pieces ?? pieces;
     const s = overrides?.stock ?? stock;
@@ -206,6 +211,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       strategie: st,
       stock: st === "priorite-stock" ? s : [],
       modeUltra,
+      seuilsProfils: overrides?.seuilsProfils ?? seuilsProfils,
+      seuilChuteDefaut: overrides?.seuilChute ?? seuilChute,
     });
   };
 
@@ -247,6 +254,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     setMargeSecurite(100);
     setPositionMarge("debut");
     setLongueursProfils({});
+    setSeuilsProfils({});
+    setSeuilChute(500);
     setTraitScie(3);
     setStrategie("min-barres");
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
@@ -278,6 +287,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
         pieces,
         stock,
         longueurs_profils: longueursProfils,
+        seuils_profils: seuilsProfils,
+        seuil_chute: seuilChute,
       });
       setCurrentProjectId(saved.id);
       if (opts.chantierOverride !== undefined) setChantier(opts.chantierOverride);
@@ -317,6 +328,10 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     setStock(loadedStock);
     const lp = proj.longueurs_profils ?? {};
     setLongueursProfils(lp);
+    const sp = proj.seuils_profils ?? {};
+    const sg = proj.seuil_chute ?? 500;
+    setSeuilsProfils(sp);
+    setSeuilChute(sg);
     setSidebarOpen(false);
     const r = calculer({
       pieces: loadedPieces,
@@ -326,6 +341,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       traitScie: proj.trait_scie,
       strategie: st,
       longueursProfils: lp,
+      seuilsProfils: sp,
+      seuilChute: sg,
     });
     setResultat(r);
     toast.success(`Projet « ${proj.chantier || "sans nom"} » chargé`);
@@ -612,6 +629,18 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   <span aria-hidden="true">mm</span>
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="seuil-chute">Chute mini à conserver{profilsNommes.length > 0 ? " (sans profilé)" : ""}</Label>
+                <div className="parameter-measure">
+                <Input
+                  id="seuil-chute"
+                  type="number"
+                  value={seuilChute}
+                  onChange={(e) => setSeuilChute(Math.max(0, Number(e.target.value) || 0))}
+                />
+                  <span aria-hidden="true">mm</span>
+                </div>
+              </div>
               {profilsNommes.length > 0 && (
                 <div className="space-y-2">
                   <Label>Longueur de barre par profilé</Label>
@@ -625,6 +654,17 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                         className="h-8"
                         value={longueursProfils[pr] ?? longueurBarre}
                         onChange={(e) => setLongueursProfils((m) => ({ ...m, [pr]: Number(e.target.value) || 0 }))}
+                      />
+                        <span aria-hidden="true">mm</span>
+                      </div>
+                      <Label htmlFor={`seuil-profile-${pr}`} className="text-xs font-normal normal-case text-muted-foreground">Chute mini à conserver</Label>
+                      <div className="parameter-measure">
+                      <Input
+                        id={`seuil-profile-${pr}`}
+                        type="number"
+                        className="h-8"
+                        value={seuilPourProfil(pr, seuilsProfils, seuilChute)}
+                        onChange={(e) => setSeuilsProfils((m) => ({ ...m, [pr]: Math.max(0, Number(e.target.value) || 0) }))}
                       />
                         <span aria-hidden="true">mm</span>
                       </div>
@@ -686,7 +726,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   disabled={pieces.length === 0}
                   onClick={async () => {
                     try {
-                      await telechargerExcel(pieces, resultat);
+                      await telechargerExcel(pieces, resultat, { chantier, numeroTache, date: dateProjet });
                       toast.success("Fichier Excel téléchargé");
                     } catch {
                       toast.error("Échec de la génération du fichier Excel");
@@ -912,6 +952,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <StatCard label="Chutes réutilisables" value={`${fmt(resultat.longueurChutesReutilisables)} mm`} hint={`Déchets : ${fmt(resultat.longueurDechets)} mm`} accent="warning" />
             </div>
 
+            <ChutesAConserver resultat={resultat} />
+
             <div className="border-y border-border py-4 text-sm tabular-nums">
               <h2 className="mb-1 font-semibold">Bilan matière</h2>
               <p>{fmt(resultat.longueurTotale)} mm = {fmt(resultat.longueurUtile)} pièces + {fmt(resultat.longueurTraitsScie)} traits de scie + {fmt(resultat.longueurMarges)} marges + {fmt(resultat.longueurChutes)} chutes</p>
@@ -927,7 +969,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <CardHeader>
                 <CardTitle className="text-base">Plan de découpe par barre</CardTitle>
                 <CardDescription>
-                  Schéma visuel et instructions de coupe — chutes ≥ 500 mm signalées en orange
+                  Schéma visuel et instructions de coupe — chutes à conserver signalées en orange
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-10">
@@ -990,8 +1032,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                         </Table>
                       </div>
 
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground tabular-nums">
                         Chute finale : <span className="font-medium text-foreground">{fmt(barre.chute)} mm</span>
+                        {" — "}
+                        {barre.chuteReutilisable
+                          ? <span className="font-semibold text-warning">Réutilisable · À conserver - {libelleProfil(barre.profil)}</span>
+                          : <span className="font-medium">Déchet</span>}
                       </p>
                     </div>
                   );
@@ -1141,6 +1187,54 @@ function StatCard({
           {value}
         </div>
         {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChutesAConserver({ resultat }: { resultat: ResultatMulti }) {
+  const groupes = chutesAConserver(resultat);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Chutes à conserver</CardTitle>
+        <CardDescription>Par profilé, de la plus longue à la plus courte</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {groupes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucune chute à conserver.</p>
+        ) : (
+          <div className="overflow-hidden rounded-md border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[30%]">Profilé</TableHead>
+                  <TableHead className="w-[20%] text-right">Longueur de chute (mm)</TableHead>
+                  <TableHead className="w-[15%] text-right">Quantité</TableHead>
+                  <TableHead>Barres d’origine</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {groupes.map((g) => (
+                  <Fragment key={g.profil || "_"}>
+                    {g.lignes.map((l) => (
+                      <TableRow key={l.longueur}>
+                        <TableCell className="text-xs normal-case">{libelleProfil(g.profil)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">{fmt(l.longueur)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">{fmt(l.quantite)}</TableCell>
+                        <TableCell className="text-xs tabular-nums">{l.origine}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableCell className="text-xs font-semibold normal-case">Total {libelleProfil(g.profil)}</TableCell>
+                      <TableCell colSpan={3} className="text-xs font-semibold tabular-nums">{fmt(g.totalMm / 1000, 2)} m linéaires à conserver</TableCell>
+                    </TableRow>
+                  </Fragment>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,4 +1,6 @@
 import type { Piece, ResultatOptimisation } from "@/lib/optimizer";
+import type { ResultatMulti } from "@/lib/multi-profil";
+import { chutesAConserver } from "@/lib/chutes";
 
 // Nombre au format Excel français : virgule décimale, sans unité
 function numFR(n: number): string {
@@ -24,7 +26,11 @@ export async function copierPourExcel(pieces: Piece[]): Promise<number> {
   return pieces.length;
 }
 
-export async function telechargerExcel(pieces: Piece[], resultat: ResultatOptimisation | null): Promise<void> {
+export async function telechargerExcel(
+  pieces: Piece[],
+  resultat: ResultatOptimisation | null,
+  infos: { chantier?: string; numeroTache?: string; date?: string } = {},
+): Promise<void> {
   const XLSX = await import("xlsx");
   const wb = XLSX.utils.book_new();
 
@@ -47,6 +53,18 @@ export async function telechargerExcel(pieces: Piece[], resultat: ResultatOptimi
     const wsRes = XLSX.utils.aoa_to_sheet(rows);
     wsRes["!cols"] = [{ wch: 18 }, { wch: 9 }, { wch: 22 }, { wch: 60 }, { wch: 11 }, { wch: 14 }];
     XLSX.utils.book_append_sheet(wb, wsRes, "Resultats");
+
+    if ("profils" in resultat) {
+      const chutes: (string | number)[][] = [["Profilé", "Longueur (mm)", "Quantité", "Chantier", "Numéro de tâche", "Date"]];
+      for (const g of chutesAConserver(resultat as ResultatMulti)) {
+        for (const l of g.lignes) {
+          chutes.push([g.profil, l.longueur, l.quantite, infos.chantier?.trim() ?? "", infos.numeroTache?.trim() ?? "", infos.date ?? ""]);
+        }
+      }
+      const wsCh = XLSX.utils.aoa_to_sheet(chutes);
+      wsCh["!cols"] = [{ wch: 18 }, { wch: 14 }, { wch: 10 }, { wch: 24 }, { wch: 16 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wsCh, "Chutes reutilisables");
+    }
   }
 
   const d = new Date();

@@ -25,6 +25,12 @@ export function longueurPourProfil(profil: string | undefined, longueurs: Record
   return n && longueurs[n] > 0 ? longueurs[n] : defaut;
 }
 
+export function seuilPourProfil(profil: string | undefined, seuils: Record<string, number>, defaut?: number) {
+  const n = nomProfil(profil);
+  const d = defaut ?? 500;
+  return n && seuils[n] !== undefined && seuils[n] >= 0 ? seuils[n] : d;
+}
+
 /**
  * Optimise profil par profil avec le moteur existant, puis assemble les
  * résultats (numérotation continue des barres, totaux recalculés).
@@ -33,9 +39,9 @@ export function longueurPourProfil(profil: string | undefined, longueurs: Record
 export function optimiserParProfil(
   pieces: Piece[],
   longueurs: Record<string, number>,
-  options: Omit<OptionsOptimisation, "longueurBarreUtileDefaut" | "longueurBarreBruteDefaut"> & { longueurBarreDefaut: number },
+  options: Omit<OptionsOptimisation, "longueurBarreUtileDefaut" | "longueurBarreBruteDefaut"> & { longueurBarreDefaut: number; seuilsProfils?: Record<string, number>; seuilChuteDefaut?: number },
 ): ResultatMulti {
-  const { longueurBarreDefaut, ...rest } = options;
+  const { longueurBarreDefaut, seuilsProfils = {}, seuilChuteDefaut, ...rest } = options;
   const profils = listeProfils(pieces);
   const profilStock = profils.includes("") ? "" : profils[0];
   const res: ResultatProfil[] = [];
@@ -49,6 +55,7 @@ export function optimiserParProfil(
         longueurBarreBruteDefaut: lb,
         longueurBarreUtileDefaut: Math.max(0, lb - rest.margeSecurite),
         stock: profil === profilStock ? rest.stock : [],
+        seuilChuteReutilisable: seuilPourProfil(profil, seuilsProfils, seuilChuteDefaut ?? rest.seuilChuteReutilisable),
       },
     );
     for (const b of r.barres) {
