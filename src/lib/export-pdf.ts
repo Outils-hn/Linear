@@ -5,7 +5,7 @@ import { installerPolicesPDF } from "./pdf-fonts";
 import { themeRgb } from "./visual-theme";
 import { tableauAtelier as autoTable } from "./pdf-table";
 import { dessinBarrePDF } from "./bar-svg-pdf";
-import { grouperBarresIdentiques, libelleGroupe, libelleCote } from "./bar-drawing";
+import { grouperBarresIdentiques, libelleGroupe } from "./bar-drawing";
 export { grouperBarresIdentiques, libelleGroupe } from "./bar-drawing";
 export type { GroupeBarres } from "./bar-drawing";
 import type {
@@ -17,7 +17,7 @@ import type {
 } from "./optimizer";
 import { POSITION_MARGE_LABELS } from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
-import { libelleProfil, type ResultatMulti } from "./multi-profil";
+import { libelleProfil, nomProfil, type ResultatMulti } from "./multi-profil";
 import { chutesAConserver } from "./chutes";
 import { lignesReperes, seuilsDesProfils, METHODES_COUPE, RAPPEL_RUBAN, type MethodeCoupe } from "./cut-method";
 import { optionsChutesDefaut, choixBarre, choixChute, chutesSelectionnees, type OptionsChutesPDF } from "./offcut-settings";

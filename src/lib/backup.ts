@@ -1,3 +1,4 @@
+import { lireMethodeCoupe } from "./cut-method";
 // Sauvegarde / restauration .json des projets (format versionné).
 import type { LocalProject } from "./local-store";
 import { lireOptionsChutes } from "./offcut-settings";
@@ -62,5 +63,5 @@ export function lireJson(texte: string): LocalProject[] {
   else throw new Error("Ce fichier n'est pas une sauvegarde Linear");
   const ok = liste.filter(valide);
   if (ok.length === 0) throw new Error("Aucun projet valide dans le fichier");
-  return ok.map((p) => ({ ...p, stock: Array.isArray(p.stock) ? p.stock : [], chantier: p.chantier ?? "", chutes_pdf: lireOptionsChutes(p.chutes_pdf) }));
+  return ok.map((p) => ({ ...p, stock: Array.isArray(p.stock) ? p.stock : [], chantier: p.chantier ?? "", chutes_pdf: lireOptionsChutes(p.chutes_pdf), methode_coupe: lireMethodeCoupe(p.methode_coupe) }));
 }
