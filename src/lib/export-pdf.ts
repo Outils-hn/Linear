@@ -1,4 +1,6 @@
 import { jsPDF } from "jspdf";
+import { installerPolicesPDF } from "./pdf-fonts";
+import { themeRgb } from "./visual-theme";
 import { tableauAtelier as autoTable } from "./pdf-table";
 import { dessinBarrePDF } from "./bar-svg-pdf";
 import { grouperBarresIdentiques, libelleGroupe, libelleCote } from "./bar-drawing";
@@ -106,20 +108,21 @@ export async function exporterPDF(
   } = options;
   const { svg2pdf } = await import("svg2pdf.js");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  await installerPolicesPDF(doc);
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
   const pieceIds = pieces.map((p) => p.id);
 
-  doc.setFillColor(30, 41, 59);
+  doc.setFillColor(...themeRgb("pdf-heading"));
   doc.rect(0, 0, pageWidth, 28, "F");
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(...themeRgb("cut-separator"));
   doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("PlexSans", "bold");
   doc.text("FICHE DE DÉBIT — Atelier", margin, 12);
 
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  doc.setFont("PlexSans", "normal");
   const dateSrc = infos.date ? new Date(infos.date) : new Date();
   const date = (isNaN(dateSrc.getTime()) ? new Date() : dateSrc).toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -129,26 +132,26 @@ export async function exporterPDF(
   doc.text(date, pageWidth - margin, 12, { align: "right" });
 
   doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("PlexSans", "bold");
   const chantier = infos.chantier?.trim() || "—";
   const numTache = infos.numeroTache?.trim() || "—";
   const clientStr = infos.client?.trim();
   doc.text(`Chantier : ${chantier}`, margin, 22);
   doc.text(`N° de tâche : ${numTache}`, pageWidth - margin, 22, { align: "right" });
   if (clientStr) {
-    doc.setFont("helvetica", "normal");
+    doc.setFont("PlexSans", "normal");
     doc.setFontSize(9);
     doc.text(`Client : ${clientStr}`, margin, 27);
   }
 
-  doc.setTextColor(20, 20, 20);
+  doc.setTextColor(...themeRgb("piece-ink"));
   let y = 38;
 
   doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("PlexSans", "bold");
   doc.text("Paramètres", margin, y);
   y += 5;
-  doc.setFont("helvetica", "normal");
+  doc.setFont("PlexSans", "normal");
   doc.setFontSize(9);
   const ligneLongueur =
     margeSecurite > 0
@@ -168,29 +171,29 @@ export async function exporterPDF(
   if (strategie === "priorite-stock" && stock && stock.length > 0) {
     const stockValide = stock.filter((s) => s.longueur > 0 && s.quantite > 0);
     if (stockValide.length > 0) {
-      doc.setFont("helvetica", "bold");
+      doc.setFont("PlexSans", "bold");
       doc.text("Stock initial disponible :", margin, y);
       y += 4;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("PlexSans", "normal");
       for (const s of stockValide) {
         const suffixe = s.appliquerMarge === false ? " (sans marge)" : "";
         doc.text(`• ${s.quantite} × ${s.longueur} mm${suffixe}`, margin + 4, y);
         y += 4;
       }
-      doc.setFont("helvetica", "bold");
+      doc.setFont("PlexSans", "bold");
       doc.text(
         `Utilisées : ${resultat.nbBarresStock} barre(s) stock + ${resultat.nbBarresDefaut} barre(s) de base`,
         margin,
         y,
       );
       y += 4;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("PlexSans", "normal");
     }
   }
   y += 4;
 
   doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("PlexSans", "bold");
   doc.text("Synthèse du projet", margin, y);
   y += 3;
   autoTable(doc, {
@@ -208,12 +211,12 @@ export async function exporterPDF(
     ],
     theme: "grid",
     styles: { fontSize: 9, halign: "center" },
-    headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: "bold" },
+    headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
     margin: { left: margin, right: margin },
   });
   // @ts-expect-error lastAutoTable
   y = doc.lastAutoTable.finalY + 8;
-  doc.setFont("helvetica", "normal");
+  doc.setFont("PlexSans", "normal");
   doc.setFontSize(9);
   const bilan = `${resultat.longueurTotale} mm = ${resultat.longueurUtile} pièces + ${resultat.longueurTraitsScie} traits de scie + ${resultat.longueurMarges} marges + ${resultat.longueurChutes} chutes`;
   const lignesBilan = doc.splitTextToSize(bilan, pageWidth - 2 * margin);
@@ -223,23 +226,23 @@ export async function exporterPDF(
   if (verif) {
     const ok = verif.ok;
     const txt = ok ? "Vérification OK" : `Erreur de calcul (${verif.problemes.length})`;
-    doc.setFont("helvetica", "bold");
-    doc.setFillColor(...((ok ? [22, 163, 74] : [220, 38, 38]) as [number, number, number]));
+    doc.setFont("PlexSans", "bold");
+    doc.setFillColor(...(ok ? themeRgb("pdf-success") : themeRgb("pdf-error")));
     const w = doc.getTextWidth(txt) + 6;
     doc.roundedRect(margin, y, w, 6, 1.5, 1.5, "F");
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(...themeRgb("cut-separator"));
     doc.text(txt, margin + 3, y + 4.2);
-    doc.setTextColor(20, 20, 20);
-    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...themeRgb("piece-ink"));
+    doc.setFont("PlexSans", "normal");
     y += 9;
     if (!ok) {
-      doc.setTextColor(185, 28, 28);
+      doc.setTextColor(...themeRgb("pdf-error"));
       for (const pb of verif.problemes) {
         const l = doc.splitTextToSize(`• ${pb}`, pageWidth - 2 * margin);
         doc.text(l, margin, y);
         y += l.length * 4;
       }
-      doc.setTextColor(20, 20, 20);
+      doc.setTextColor(...themeRgb("piece-ink"));
       y += 2;
     }
   }
@@ -259,8 +262,8 @@ export async function exporterPDF(
       foot: [["Total", "", `${resultat.nbBarres}`, `${resultat.rendement.toFixed(1)} %`, `${resultat.longueurChutes} mm`]],
       theme: "grid",
       styles: { fontSize: 9, halign: "center" },
-      headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" },
-      footStyles: { fillColor: [248, 250, 252], textColor: [30, 41, 59], fontStyle: "bold" },
+      headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
+      footStyles: { fillColor: themeRgb("pdf-table-stripe"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
       columnStyles: { 0: { halign: "left" } },
       margin: { left: margin, right: margin },
     });
@@ -272,8 +275,8 @@ export async function exporterPDF(
   const piecesValides = pieces.filter((p) => p.quantite > 0 && p.longueur > 0);
   if (piecesValides.length > 0) {
     doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(20, 20, 20);
+    doc.setFont("PlexSans", "bold");
+    doc.setTextColor(...themeRgb("piece-ink"));
     doc.text("Récapitulatif des pièces demandées", margin, y);
     y += 3;
     const totalPieces = piecesValides.reduce((s, p) => s + p.quantite, 0);
@@ -283,18 +286,18 @@ export async function exporterPDF(
       body: piecesValides.map((p) => [p.nom, (p.profil ?? "").trim() || "—", `${p.longueur}`, `${p.quantite}`]),
       foot: [["Total", "", "", `${totalPieces}`]],
       theme: "grid",
-      styles: { fontSize: 9, lineColor: [200, 200, 200], lineWidth: 0.1 },
+      styles: { fontSize: 9, lineColor: themeRgb("hatch"), lineWidth: 0.1 },
       headStyles: {
-        fillColor: [241, 245, 249],
-        textColor: [30, 41, 59],
+        fillColor: themeRgb("pdf-table-head"),
+        textColor: themeRgb("pdf-heading"),
         fontStyle: "bold",
-        lineColor: [200, 200, 200],
+        lineColor: themeRgb("hatch"),
         lineWidth: 0.1,
         halign: "center",
       },
       footStyles: {
-        fillColor: [248, 250, 252],
-        textColor: [30, 41, 59],
+        fillColor: themeRgb("pdf-table-stripe"),
+        textColor: themeRgb("pdf-heading"),
         fontStyle: "bold",
         halign: "center",
       },
@@ -316,10 +319,10 @@ export async function exporterPDF(
     doc.addPage();
     y = margin;
   }
-  doc.setFillColor(30, 41, 59);
+  doc.setFillColor(...themeRgb("pdf-heading"));
   doc.rect(margin, y - 4.5, pageWidth - 2 * margin, 7, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...themeRgb("cut-separator"));
+  doc.setFont("PlexSans", "bold");
   doc.setFontSize(10);
    doc.text(`PROFILÉ : ${libelleProfil(rp.profil).toUpperCase()}`, margin + 2, y);
   doc.text(`Barre ${rp.longueurBarre} mm  ·  Sous-total : ${rp.resultat.nbBarres} barre(s)`, pageWidth - margin - 2, y, { align: "right" });
@@ -340,13 +343,13 @@ export async function exporterPDF(
     }
 
     doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 41, 59);
+    doc.setFont("PlexSans", "bold");
+    doc.setTextColor(...themeRgb("pdf-heading"));
     doc.text(libelleGroupe(g), margin, y);
 
     if (qte > 1) {
       doc.setFontSize(10);
-      doc.setTextColor(220, 38, 38);
+      doc.setTextColor(...themeRgb("pdf-error"));
       doc.text(`x ${qte}`, pageWidth - margin, y, {
         align: "right",
       });
@@ -354,8 +357,8 @@ export async function exporterPDF(
     y += 5;
 
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80, 80, 80);
+    doc.setFont("PlexSans", "normal");
+    doc.setTextColor(...themeRgb("pdf-muted"));
     const brutInfo =
       barre.longueurBrute !== barre.longueurBarre
         ? ` (barre ${barre.longueurBrute} mm)`
@@ -374,20 +377,20 @@ export async function exporterPDF(
     await svg2pdf(svg, doc, { x: margin, y, width: pageWidth - 2 * margin, height: dessin.hauteur });
     y += dessin.hauteur + 6;
 
-    doc.setTextColor(20, 20, 20);
-    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...themeRgb("piece-ink"));
+    doc.setFont("PlexSans", "bold");
     doc.setFontSize(9);
     doc.text(`Chute finale : ${barre.chute} mm — ${barre.chuteReutilisable ? "Réutilisable" : "Déchet"}`, margin, y);
     y += 4;
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont("PlexSans", "normal");
     doc.setFontSize(8);
     doc.text(`Marge début : ${margeDebut} mm | Marge fin : ${margeFin} mm`, margin, y);
     y += 4;
     doc.text("Cotes mesurées depuis l’extrémité brute de la barre", margin, y);
     y += 5;
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont("PlexSans", "normal");
     const body: string[][] = coupesGroupes.map((c, i) => [
       `${i + 1}`,
       c.nom,
@@ -402,7 +405,7 @@ export async function exporterPDF(
       theme: "striped",
       pageBreak: "avoid",
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+      headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading") },
       margin: { left: margin, right: margin },
       columnStyles: {
         0: { cellWidth: 12, halign: "center" },
@@ -420,7 +423,7 @@ export async function exporterPDF(
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
+    doc.setTextColor(...themeRgb("pdf-muted"));
     doc.text(`Page ${i} / ${totalPages}`, pageWidth - margin, pageHeight - 8, {
       align: "right",
     });

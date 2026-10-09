@@ -28,24 +28,24 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
   const ticks: number[] = [];
   for (let n = Math.ceil(zone[0] / step) * step; n <= zone[1]; n += step) ticks.push(n);
   return <div className="relative w-full">
-    <svg aria-label="Dessin de la barre" viewBox={`0 0 ${largeur} ${height}`} preserveAspectRatio="none" className={regle ? "h-64 w-full touch-none select-none" : "h-16! w-full! pointer-events-auto!"}
+    <svg aria-label="Dessin de la barre" viewBox={`0 0 ${largeur} ${height}`} preserveAspectRatio="none" className={regle ? "h-64 w-full touch-none select-none" : "h-9! w-full! rounded-sm pointer-events-auto!"}
       onPointerDown={e => { if (!onZone) return; e.currentTarget.setPointerCapture(e.pointerId); const n = pos(e); setSelection([n, n]); }}
       onPointerMove={e => { if (selection) setSelection([selection[0], pos(e)]); }}
       onPointerUp={e => { if (!selection || !onZone) return; const end = pos(e); if (Math.abs(end - selection[0]) > span * 0.01) onZone([Math.min(end, selection[0]), Math.max(end, selection[0])]); setSelection(null); }}
       onPointerCancel={() => setSelection(null)}>
       <defs>
-        <pattern id={`${id}-marge`} width="5" height="5" patternUnits="userSpaceOnUse"><rect width="5" height="5" className="fill-muted"/><path d="M2 0V5" className="stroke-muted-foreground" strokeWidth="1"/></pattern>
-        <pattern id={`${id}-dechet`} width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" className="fill-waste"/><path d="M-2 2L2 -2M0 10L10 0M8 12L12 8" className="stroke-foreground" strokeWidth="1"/></pattern>
-        <pattern id={`${id}-reutilisable`} width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" className="fill-warning"/><path d="M-2 2L2 -2M0 10L10 0M8 12L12 8" className="stroke-warning-foreground" strokeWidth="1"/></pattern>
+        <pattern id={`${id}-marge`} width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" className="fill-waste"/><path d="M0 6L6 0" className="stroke-hatch" strokeWidth="0.5"/></pattern>
+        <pattern id={`${id}-dechet`} width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" className="fill-waste"/><path d="M-2 2L2 -2M0 10L10 0M8 12L12 8" className="stroke-hatch" strokeWidth="0.5"/></pattern>
+        <pattern id={`${id}-reutilisable`} width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" className="fill-offcut-paper"/><path d="M-2 8L2 12M0 0L10 10M8 -2L12 2" className="stroke-warning" strokeWidth="0.5"/></pattern>
       </defs>
       {segmentsBarre(barre, traitScie).filter(s => s.fin >= zone[0] && s.debut <= zone[1]).map((s, i) => {
         const left = x(s.debut), w = s.longueur / span * largeur;
-        const fill = s.type === "piece" ? colorForPieceId(s.pieceId ?? "", pieceIds) : s.type === "scie" ? "var(--foreground)" : `url(#${id}-${s.type})`;
+        const fill = s.type === "piece" ? colorForPieceId(s.pieceId ?? "", pieceIds) : s.type === "scie" ? "var(--cut-separator)" : `url(#${id}-${s.type})`;
         const label = `${s.nom} · ${fmt(s.longueur)} mm${s.type === "piece" ? ` · Début ${fmt(s.debut)} mm · Fin ${fmt(s.fin)} mm depuis le bout brut` : ""}`;
         return <g key={i} tabIndex={s.type === "scie" ? undefined : 0} aria-label={label} onPointerEnter={() => setHover(s)} onPointerLeave={() => setHover(null)} onFocus={() => setHover(s)} onBlur={() => setHover(null)}>
           <title>{label}</title>
-          <rect x={left} y={regle ? 45 : 0} width={w} height={regle ? 90 : 64} fill={fill} stroke="var(--foreground)" strokeWidth={hover === s ? 3 : 0.6} opacity={hover && hover !== s ? 0.65 : 1}/>
-          {s.type === "piece" && w > 55 && <text x={left + w / 2} y={regle ? 95 : 35} textAnchor="middle" className="fill-primary-foreground" fontSize="12" textLength={w < 170 ? Math.min(w - 8, (s.nom.length + String(s.longueur).length + 3) * 7) : undefined} lengthAdjust="spacingAndGlyphs" pointerEvents="none">{s.nom} · {s.longueur}</text>}
+          <rect x={left} y={regle ? 45 : 0} width={w} height={regle ? 90 : 64} fill={fill} stroke={hover === s ? "var(--primary)" : "var(--cut-separator)"} strokeWidth={hover === s ? 2.5 : 2} vectorEffect="non-scaling-stroke" opacity={hover && hover !== s ? 0.65 : 1}/>
+          {s.type === "piece" && w > 55 && <text x={left + w / 2} y={regle ? 95 : 37} textAnchor="middle" className="fill-piece-ink font-normal" fontSize={regle ? 12 : 19} textLength={w < 170 ? Math.min(w - 8, (s.nom.length + String(s.longueur).length + 3) * 7) : undefined} lengthAdjust="spacingAndGlyphs" pointerEvents="none">{s.nom} · {s.longueur}</text>}
         </g>;
       })}
       {regle && <g className="fill-foreground stroke-muted-foreground" fontSize="12">
@@ -69,7 +69,7 @@ export function BarreSchema({ barre, traitScie, pieceIds, libelle }: Props) {
     const start = Math.max(0, Math.min(barre.longueurBrute - size, (zone[0] + zone[1] - size) / 2));
     setZone([start, start + size]);
   };
-  return <div className="w-full">
+  return <div className="w-full font-mono font-normal">
     <Button variant="ghost" aria-label={`Agrandir ${libelle ?? `barre ${barre.index}`}`} className="block h-auto w-full rounded-md border border-border p-0 hover:bg-transparent" onClick={() => { setZone([0, barre.longueurBrute]); setOpen(true); }}>
       <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={[0, barre.longueurBrute]}/>
     </Button>
@@ -93,7 +93,7 @@ export function LegendeBarres({ pieces, pieceIds }: { pieces: Piece[]; pieceIds:
   return <div aria-label="Légende du plan de découpe" className="flex flex-wrap gap-x-5 gap-y-2 border-b border-border pb-4 text-xs">
     {pieces.filter(p => p.quantite > 0 && p.longueur > 0).map(p => <span key={p.id} className="flex max-w-full items-center gap-2"><svg width="14" height="14" className="shrink-0" aria-hidden="true"><rect width="14" height="14" fill={colorForPieceId(p.id, pieceIds)}/></svg><span className="break-words">{p.nom}</span></span>)}
     <span className="flex items-center gap-2"><i className="margin-hatch h-3.5 w-3.5 bg-muted"/>Marge</span>
-    <span className="flex items-center gap-2"><i className="offcut-hatch h-3.5 w-3.5 bg-warning"/>Chute réutilisable</span>
+    <span className="flex items-center gap-2"><i className="reusable-hatch h-3.5 w-3.5"/>Chute réutilisable</span>
     <span className="flex items-center gap-2"><i className="offcut-hatch h-3.5 w-3.5 bg-waste"/>Déchet</span>
   </div>;
 }
