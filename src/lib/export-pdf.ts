@@ -17,6 +17,7 @@ import type {
 import { POSITION_MARGE_LABELS } from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
 import { libelleProfil, type ResultatMulti } from "./multi-profil";
+import { chutesAConserver } from "./chutes";
 
 const STRATEGIE_LABELS: Record<Strategie, string> = {
   "min-barres": "Minimum de barres",
@@ -254,6 +255,34 @@ export async function exporterPDF(
       headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
       footStyles: { fillColor: themeRgb("pdf-table-stripe"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
       columnStyles: { 0: { halign: "left" } },
+      margin: { left: margin, right: margin },
+    });
+    // @ts-expect-error lastAutoTable
+    y = doc.lastAutoTable.finalY + 6;
+  }
+
+  // ---- Chutes à conserver ----
+  const chutesProfils = chutesAConserver(resultat);
+  if (chutesProfils.length > 0) {
+    doc.setFontSize(11);
+    doc.setFont("PlexSans", "bold");
+    doc.setTextColor(...themeRgb("piece-ink"));
+    doc.text("Chutes à conserver", margin, y);
+    y += 3;
+    autoTable(doc, {
+      startY: y,
+      head: [["Profilé", "Longueur de chute (mm)", "Quantité", "Barres d’origine"]],
+      body: chutesProfils.flatMap((g) => [
+        ...g.lignes.map((l) => [libelleProfil(g.profil), fmt(l.longueur), fmt(l.quantite), l.origine]),
+        [`Total ${libelleProfil(g.profil)}`, `${fmt(g.totalMm / 1000, 2)} m linéaires`, "", ""],
+      ]),
+      theme: "grid",
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
+      columnStyles: { 0: { halign: "left" }, 1: { halign: "right", cellWidth: 44 }, 2: { halign: "right", cellWidth: 22 }, 3: { halign: "left" } },
+      didParseCell: (data) => {
+        if (data.section === "body" && String(data.row.raw && (data.row.raw as string[])[0]).startsWith("Total ")) data.cell.styles.fontStyle = "bold";
+      },
       margin: { left: margin, right: margin },
     });
     // @ts-expect-error lastAutoTable
