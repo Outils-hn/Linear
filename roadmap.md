@@ -31,3 +31,4 @@
 - [x] Champs numériques : vide conservé pendant la saisie, sélection au clic, blocage rouge au lancement ; vérifié à l'écran.
 - [ ] Méthode de coupe à l'atelier (butée / mètre ruban) : accolade de série, cotes en quinconce, rappels PDF — en attente de la demande.
 - [ ] Seuil de réutilisation affiché dans les textes et Paramètres du PDF, lu depuis le réglage du profilé — en attente de la demande.
+- [x] Méthode de coupe (butée / mètre ruban) et seuil de réutilisation visible dans le PDF.

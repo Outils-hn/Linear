@@ -74,12 +74,12 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     accolades.forEach((a, i) => {
       const s = groupes[i], l = x(s.debut) + 0.3, r = x(s.fin) - 0.3, m = (l + r) / 2, y0 = h + 0.8, y1 = h + 2.2;
       rangs = Math.max(rangs, a.niveau + 1);
-      const ty = y1 + 2.6 + a.niveau * 3;
+      const ty = y1 + 3.6 + a.niveau * 3;
       elements.push(`<path d="M${l} ${y0}Q${l} ${y1} ${l + 1} ${y1}H${m - 0.8}L${m} ${y1 + 0.8}L${m + 0.8} ${y1}H${r - 1}Q${r} ${y1} ${r} ${y0}" stroke="${PDF_INK.text}" stroke-width="0.18" fill="none"/>`);
       if (a.niveau > 0 || Math.abs(a.labelX - m) > 0.5) elements.push(`<path d="M${m} ${y1 + 0.8}L${a.labelX} ${ty - 2}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/>`);
       elements.push(`<text x="${a.labelX}" y="${ty}" font-size="2.293" font-family="PlexSans" font-weight="bold" text-anchor="middle" fill="${PDF_INK.text}">${escapeXml(a.texte)}</text>`);
     });
-    if (rangs) yCotes = h + 2.2 + rangs * 3 + 0.8;
+    if (rangs) yCotes = h + 2.2 + rangs * 3 + 1.8;
   }
   const valeurs = methode === "butee" ? series.map(s => s.fin) : pieces.map(s => s.fin);
   const cotes = placerLibelles(valeurs.map(v => ({ valeur: v, x: x(v), texte: libelleCote(v) })), largeur, mesurer);
