@@ -366,7 +366,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="rail-page min-h-screen">
       <header className="border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 lg:px-8">
           <div className="flex items-center gap-3">
@@ -709,8 +709,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   <TableRow>
                     <TableHead className="lg:w-[25%]">Repère</TableHead>
                     <TableHead className="w-40 lg:w-[35%]">Profilé</TableHead>
-                    <TableHead className="w-40 lg:w-[20%]">Longueur (mm)</TableHead>
-                    <TableHead className="w-32 lg:w-[15%]">Quantité</TableHead>
+                    <TableHead className="numeric w-40 lg:w-[20%]">Longueur (mm)</TableHead>
+                    <TableHead className="numeric w-32 lg:w-[15%]">Quantité</TableHead>
                     <TableHead className="w-12 lg:w-[5%] lg:px-1"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -879,64 +879,33 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
 
         {resultat && resultat.nbBarres > 0 && (
           <section id="resultats" className="space-y-6 pt-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-              <StatCard
-                label="Barres utilisées"
-                value={`${resultat.nbBarres}`}
-                hint={
-                  strategie === "priorite-stock"
-                    ? `${resultat.nbBarresStock} stock + ${resultat.nbBarresDefaut} base`
-                    : `${resultat.longueurTotale} mm au total`
-                }
-              />
-              <StatCard
-                label="Rendement brut"
-                value={`${resultat.rendement.toFixed(1)} %`}
-                hint={`${resultat.longueurUtile} mm utiles`}
-                accent="success"
-              />
-              <StatCard
-                label="Rendement hors chutes réutilisables"
-                value={`${resultat.rendementHorsChutesReutilisables.toFixed(1)} %`}
-                hint={`${resultat.longueurTotale - resultat.longueurChutesReutilisables} mm consommés`}
-                accent="success"
-              />
-              <StatCard
-                label="Chutes totales"
-                value={`${resultat.longueurChutes} mm`}
-                hint={`${resultat.pourcentageChutes.toFixed(1)} % de la matière`}
-              />
-              <StatCard
-                label="Chutes réutilisables"
-                value={`${resultat.longueurChutesReutilisables} mm`}
-                hint={`Déchets : ${resultat.longueurDechets} mm`}
-                accent="warning"
-              />
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="font-display text-sm font-medium uppercase tracking-[0.12em]">Résultats</h2>
+              {verification && <div role="status" className={"inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs " + (verification.ok ? "border-success/20 bg-success/5 text-success" : "border-destructive/30 bg-destructive/5 text-destructive")}>
+                <span className={"h-1.5 w-1.5 rounded-full " + (verification.ok ? "bg-success" : "bg-destructive")} />
+                {verification.ok ? "Vérification OK" : `Erreur de calcul (${verification.problemes.length})`}
+              </div>}
             </div>
-
-            {verification && (
-              <div
-                role="status"
-                className={
-                  "rounded-md border p-3 text-sm " +
-                  (verification.ok ? "border-success/40 bg-success/10 text-success" : "border-destructive/50 bg-destructive/10 text-destructive")
-                }
-              >
-                <div className="flex items-center gap-2 font-semibold">
-                  {verification.ok ? <ShieldCheck className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
-                  {verification.ok ? "Vérification OK" : `Erreur de calcul (${verification.problemes.length})`}
-                </div>
-                {!verification.ok && (
-                  <ul className="mt-2 list-disc space-y-0.5 pl-6">
-                    {verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}
-                  </ul>
-                )}
-              </div>
-            )}
+            {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <StatCard large label="Barres utilisées" value={`${resultat.nbBarres}`} hint={strategie === "priorite-stock" ? `${resultat.nbBarresStock} stock + ${resultat.nbBarresDefaut} base` : `${resultat.longueurTotale} mm au total`} />
+              <StatCard large label="Rendement hors chutes réutilisables" value={`${resultat.rendementHorsChutesReutilisables.toFixed(1)} %`} hint={`${resultat.longueurTotale - resultat.longueurChutesReutilisables} mm consommés`} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <StatCard label="Rendement brut" value={`${resultat.rendement.toFixed(1)} %`} hint={`${resultat.longueurUtile} mm utiles`} />
+              <StatCard label="Chutes totales" value={`${resultat.longueurChutes} mm`} hint={`${resultat.pourcentageChutes.toFixed(1)} % de la matière`} />
+              <StatCard label="Chutes réutilisables" value={`${resultat.longueurChutesReutilisables} mm`} hint={`Déchets : ${resultat.longueurDechets} mm`} accent="warning" />
+            </div>
 
             <div className="border-y border-border py-4 text-sm tabular-nums">
               <h2 className="mb-1 font-semibold">Bilan matière</h2>
               <p>{resultat.longueurTotale} mm = {resultat.longueurUtile} pièces + {resultat.longueurTraitsScie} traits de scie + {resultat.longueurMarges} marges + {resultat.longueurChutes} chutes</p>
+              <div aria-label="Répartition du bilan matière" className="mt-4 flex h-3 w-full overflow-hidden rounded-sm">
+                {[{ label: "Pièces", value: resultat.longueurUtile, style: "bg-piece-1" }, { label: "Traits de scie", value: resultat.longueurTraitsScie, style: "bg-heading" }, { label: "Marges", value: resultat.longueurMarges, style: "margin-hatch bg-muted" }, { label: "Chutes", value: resultat.longueurChutes, style: "offcut-hatch" }].map(segment => <div key={segment.label} title={`${segment.label} : ${segment.value} mm`} className={segment.style} style={{ width: `${segment.value / resultat.longueurTotale * 100}%` }} />)}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                {[{ label: "Pièces", value: resultat.longueurUtile, style: "bg-piece-1" }, { label: "Traits de scie", value: resultat.longueurTraitsScie, style: "bg-heading" }, { label: "Marges", value: resultat.longueurMarges, style: "margin-hatch bg-muted" }, { label: "Chutes", value: resultat.longueurChutes, style: "offcut-hatch" }].map(segment => <span key={segment.label} className="flex items-center gap-2"><i className={"h-2.5 w-2.5 rounded-sm " + segment.style} />{segment.label} <span className="font-mono text-foreground">{segment.value} mm</span></span>)}
+              </div>
             </div>
 
             <Card>
@@ -987,9 +956,9 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
                               <TableHead className="w-12 text-center text-xs font-semibold text-foreground">#</TableHead>
                               <TableHead className="text-xs font-semibold text-foreground">Pièce</TableHead>
-                              <TableHead className="w-40 text-center text-xs font-semibold text-foreground">Longueur de coupe (mm)</TableHead>
-                              <TableHead className="w-24 text-center text-xs font-semibold text-foreground">Quantité</TableHead>
-                              <TableHead className="w-56 text-center text-xs font-semibold text-foreground">Repère cumulé (mm)</TableHead>
+                              <TableHead className="w-40 text-right text-xs font-semibold text-foreground">Longueur de coupe (mm)</TableHead>
+                              <TableHead className="w-24 text-right text-xs font-semibold text-foreground">Quantité</TableHead>
+                              <TableHead className="w-56 text-right text-xs font-semibold text-foreground">Repère cumulé (mm)</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -997,9 +966,9 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                               <TableRow key={i}>
                                 <TableCell className="text-center text-xs font-semibold text-foreground">{i + 1}</TableCell>
                                 <TableCell className="text-xs font-medium text-foreground">{g.nom}</TableCell>
-                                <TableCell className="text-center text-xs tabular-nums">{g.longueur}</TableCell>
-                                <TableCell className="text-center text-xs tabular-nums">{g.quantite}</TableCell>
-                                <TableCell className="text-center text-xs tabular-nums">{g.reperes.join(" / ")}</TableCell>
+                                <TableCell className="text-right text-xs tabular-nums">{g.longueur}</TableCell>
+                                <TableCell className="text-right text-xs tabular-nums">{g.quantite}</TableCell>
+                                <TableCell className="text-right text-xs tabular-nums">{g.reperes.join(" / ")}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -1132,24 +1101,26 @@ function StatCard({
   value,
   hint,
   accent,
+  large = false,
 }: {
   label: string;
   value: string;
   hint?: string;
   accent?: "success" | "warning";
+  large?: boolean;
 }) {
   return (
     <Card>
-      <CardContent className="p-5">
+      <CardContent className={large ? "p-6" : "p-4"}>
         <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
         <div
           className={
-            "mt-2 text-2xl font-semibold tracking-tight " +
+            "mt-2 font-mono font-normal " + (large ? "text-5xl text-primary " : "text-2xl ") +
             (accent === "success"
               ? "text-[color:var(--color-success)]"
               : accent === "warning"
                 ? "text-[color:var(--color-warning)]"
-                : "text-foreground")
+                : large ? "text-primary" : "text-foreground")
           }
         >
           {value}

@@ -1,11 +1,27 @@
 import { __createTable, __drawTable, type UserOptions } from "jspdf-autotable";
 import type { jsPDF } from "jspdf";
 import { nombreLignesPage } from "./bar-drawing";
+import { themeRgb } from "./visual-theme";
 
 export function tableauAtelier(doc: jsPDF, options: UserOptions) {
   const margin = 15;
   const bottom = doc.internal.pageSize.getHeight() - margin;
-  const table = __createTable(doc, { ...options, rowPageBreak: "avoid", showFoot: "lastPage" });
+  const table = __createTable(doc, {
+    ...options,
+    styles: { ...options.styles, font: "PlexSans", textColor: themeRgb("piece-ink") },
+    headStyles: { ...options.headStyles, font: "PlexSans" },
+    footStyles: { ...options.footStyles, font: "PlexSans" },
+    alternateRowStyles: { fillColor: themeRgb("pdf-table-stripe") },
+    didParseCell: data => {
+      options.didParseCell?.(data);
+      if (data.section !== "head" && /^\s*[\d.,]/.test(data.cell.text.join(""))) {
+        data.cell.styles.font = "PlexMono";
+        data.cell.styles.fontStyle = "normal";
+        data.cell.styles.halign = "right";
+      }
+    },
+    rowPageBreak: "avoid", showFoot: "lastPage",
+  });
   const headHeight = table.getHeadHeight(table.columns);
   const footHeight = table.getFootHeight(table.columns);
   const rows = [...table.body];
