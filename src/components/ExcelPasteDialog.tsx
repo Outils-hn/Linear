@@ -72,7 +72,7 @@ function detect(rows: string[][], nCols: number): { header: boolean; roles: ColR
     const data = header ? rows.slice(1) : rows;
     const stats = Array.from({ length: nCols }, (_, i) => {
       const vals = data.map((r) => r[i] ?? "").filter((v) => v !== "");
-      const nums = vals.map(parseNombre).filter((n) => !isNaN(n));
+      const nums = vals.map((v) => { const n = parseLongueur(v); return isNaN(n) ? parseNombre(v) : n; }).filter((n) => !isNaN(n));
       const numeric = vals.length > 0 && nums.length / vals.length > 0.8;
       const avg = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
       const ints = nums.every((n) => Number.isInteger(n));
