@@ -12,6 +12,10 @@ import {
   FilePlus,
   ClipboardCopy,
   FileSpreadsheet,
+  ShieldCheck,
+  ShieldAlert,
+  Download,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +37,8 @@ import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
+import { verifierResultat } from "@/lib/verification";
+import { exporterProjetJson, exporterTousJson, lireJson } from "@/lib/backup";
 import { copierPourExcel, telechargerExcel } from "@/lib/export-excel";
 import {
   ensureProfile,
@@ -121,6 +127,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [resultat, setResultat] = useState<ResultatMulti | null>(null);
   const [longueursProfils, setLongueursProfils] = useState<Record<string, number>>({});
   const [pdfWarnOpen, setPdfWarnOpen] = useState(false);
+  const [verifCtx, setVerifCtx] = useState<{ pieces: Piece[]; traitScie: number } | null>(null);
+  const verification = useMemo(
+    () => (resultat && verifCtx ? verifierResultat(resultat, verifCtx.pieces, { traitScie: verifCtx.traitScie, positionMarge }) : null),
+    [resultat, verifCtx, positionMarge],
+  );
+  const [importConflits, setImportConflits] = useState<{ projets: LocalProject[]; noms: string[] } | null>(null);
   const profilsNommes = useMemo(() => listeProfils(pieces).filter(Boolean), [pieces]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [projects, setProjects] = useState<LocalProject[]>([]);
@@ -182,6 +194,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     const ms = overrides?.margeSecurite ?? margeSecurite;
     const ts = overrides?.traitScie ?? traitScie;
     const st = overrides?.strategie ?? strategie;
+    setVerifCtx({ pieces: p, traitScie: ts });
     const lu = Math.max(0, lb - ms);
     void lu;
     return optimiserParProfil(p, overrides?.longueursProfils ?? longueursProfils, {
@@ -219,6 +232,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       longueursProfils,
       stock: strategie === "priorite-stock" ? stock : [],
       infos: { chantier, numeroTache, client, date: dateProjet },
+      verification: verification ?? undefined,
     });
   };
 
@@ -319,6 +333,31 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     }, 80);
   };
 
+  const enregistrerImport = (liste: LocalProject[], mode: "remplacer" | "garder") => {
+    const existants = listProjects(profileId);
+    for (const p of liste) {
+      const { id: _id, created_at: _c, updated_at: _u, ...data } = p;
+      void _id; void _c; void _u;
+      const meme = existants.find((e) => (e.chantier || "").trim() === (p.chantier || "").trim());
+      upsertProject(profileId, { ...data, id: mode === "remplacer" && meme ? meme.id : null });
+    }
+    refreshProjects();
+    setImportConflits(null);
+    toast.success(`${liste.length} projet(s) importé(s)`);
+  };
+
+  const importerJson = async (file: File) => {
+    try {
+      const liste = lireJson(await file.text());
+      const existants = listProjects(profileId).map((e) => (e.chantier || "").trim());
+      const noms = liste.map((p) => (p.chantier || "").trim()).filter((n) => existants.includes(n));
+      if (noms.length > 0) setImportConflits({ projets: liste, noms: [...new Set(noms)] });
+      else enregistrerImport(liste, "garder");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Import impossible");
+    }
+  };
+
   const supprimerProjet = (id: string) => {
     deleteProject(profileId, id);
     if (currentProjectId === id) setCurrentProjectId(null);
@@ -353,7 +392,27 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                     Projets enregistrés localement sous le profil « {profileId} ». Cliquez pour recharger.
                   </SheetDescription>
                 </SheetHeader>
-                <div className="mt-4 space-y-2 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 140px)" }}>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" className="gap-2" disabled={projects.length === 0} onClick={() => exporterTousJson(projects)}>
+                    <Download className="h-4 w-4" /> Exporter tous les projets (.json)
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2" asChild>
+                    <label className="cursor-pointer">
+                      <Upload className="h-4 w-4" /> Importer (.json)
+                      <input
+                        type="file"
+                        accept=".json,application/json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) void importerJson(f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  </Button>
+                </div>
+                <div className="mt-4 space-y-2 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 200px)" }}>
                   {projects.length === 0 && (
                     <p className="py-8 text-center text-sm text-muted-foreground">
                       Aucun projet sauvegardé pour l'instant.
@@ -382,6 +441,16 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                       <Button
                         variant="ghost"
                         size="icon"
+                        title="Exporter ce projet (.json)"
+                        aria-label="Exporter ce projet (.json)"
+                        onClick={() => exporterProjetJson(p)}
+                        className="text-muted-foreground"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => supprimerProjet(p.id)}
                         className="text-muted-foreground hover:text-destructive"
                       >
@@ -392,6 +461,20 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 </div>
               </SheetContent>
             </Sheet>
+            <Dialog open={!!importConflits} onOpenChange={(o) => !o && setImportConflits(null)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Projet déjà existant</DialogTitle>
+                  <DialogDescription>
+                    Un projet du même nom existe déjà : {importConflits?.noms.map((n) => `« ${n || "sans nom"} »`).join(", ")}.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => importConflits && enregistrerImport(importConflits.projets, "garder")}>Garder les deux</Button>
+                  <Button onClick={() => importConflits && enregistrerImport(importConflits.projets, "remplacer")}>Remplacer</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" size="sm" onClick={nouveauProjet} className="gap-2">
               <FilePlus className="h-4 w-4" /> Nouveau
             </Button>
@@ -830,6 +913,26 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 accent="warning"
               />
             </div>
+
+            {verification && (
+              <div
+                role="status"
+                className={
+                  "rounded-md border p-3 text-sm " +
+                  (verification.ok ? "border-success/40 bg-success/10 text-success" : "border-destructive/50 bg-destructive/10 text-destructive")
+                }
+              >
+                <div className="flex items-center gap-2 font-semibold">
+                  {verification.ok ? <ShieldCheck className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
+                  {verification.ok ? "Vérification OK" : `Erreur de calcul (${verification.problemes.length})`}
+                </div>
+                {!verification.ok && (
+                  <ul className="mt-2 list-disc space-y-0.5 pl-6">
+                    {verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}
+                  </ul>
+                )}
+              </div>
+            )}
 
             <div className="border-y border-border py-4 text-sm tabular-nums">
               <h2 className="mb-1 font-semibold">Bilan matière</h2>
