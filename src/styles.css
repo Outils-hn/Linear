@@ -185,7 +185,25 @@ table tbody tr:nth-child(even) { background: color-mix(in oklab, var(--muted) 30
 table tr { height: 36px; }
 table td, table th { padding-top: 2px; padding-bottom: 2px; }
 table input { height: 30px; }
-table td:has(input[type="number"]), table td.tabular-nums, table th.numeric { text-align: right; font-family: var(--font-mono); }
+table td:has(input[type="number"]), table td.tabular-nums { text-align: right; font-family: var(--font-mono); }
+table th.numeric { text-align: right; }
+table thead th { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--piece-ink); }
+table td:has(input) { padding-left: 0; padding-right: 0; }
+table td input { padding-left: 12px; padding-right: 12px; }
+table input[type="number"] { appearance: textfield; }
+table input[type="number"]::-webkit-inner-spin-button,
+table input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.pieces-table tr { height: 40px; }
+.pieces-table td { padding-top: 0; padding-bottom: 0; }
+.pieces-table td input { height: 38px; border-color: transparent; background: transparent; box-shadow: none; }
+.pieces-table td input:hover,
+.pieces-table td input:focus { border-color: var(--primary); }
+.pieces-table td input:focus-visible { outline: none; box-shadow: none; }
+.parameter-measure { position: relative; width: 160px; max-width: 100%; }
+.parameter-measure input { width: 100%; padding-right: 40px; text-align: right; appearance: textfield; }
+.parameter-measure input::-webkit-inner-spin-button,
+.parameter-measure input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.parameter-measure > span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted-foreground); font-family: var(--font-sans); font-size: 12px; pointer-events: none; }
 .offcut-hatch { background-color: var(--waste); background-image: repeating-linear-gradient(135deg, transparent 0 5px, var(--hatch) 5px 5.5px, transparent 5.5px 9px); }
 .reusable-hatch { background-color: var(--offcut-paper); background-image: repeating-linear-gradient(45deg, transparent 0 5px, var(--warning) 5px 6px, transparent 6px 9px); }
 .margin-hatch { background-image: repeating-linear-gradient(135deg, transparent 0 3px, var(--hatch) 3px 3.5px, transparent 3.5px 6px); }
