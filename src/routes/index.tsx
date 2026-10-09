@@ -7,6 +7,7 @@ import {
   Trash2,
   FileDown,
   Calculator,
+  Loader2,
   Package,
   LogOut,
   History,
@@ -944,7 +945,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <span className={"h-1.5 w-1.5 rounded-full " + (verification.ok ? "bg-success" : "bg-destructive")} />
                 {verification.ok ? "Vérification OK" : `Erreur de calcul (${verification.problemes.length})`}
               </div>}
-              {"optimal" in resultat && (resultat.optimal ? <div className="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/5 px-3 py-1 text-xs text-success"><span className="h-1.5 w-1.5 rounded-full bg-success" />Résultat optimal</div> : <div title={`Borne minimale théorique : ${fmt(resultat.borneMin)} barres`} className="inline-flex cursor-help items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />Meilleur résultat trouvé</div>)}
+              {(resultat.optimal ? <div className="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/5 px-3 py-1 text-xs text-success"><span className="h-1.5 w-1.5 rounded-full bg-success" />Résultat optimal</div> : <div title={`Borne minimale théorique : ${fmt(resultat.borneMin)} barres`} className="inline-flex cursor-help items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />Meilleur résultat trouvé</div>)}
             </div>
             {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
             <div className="grid gap-4 sm:grid-cols-2">
