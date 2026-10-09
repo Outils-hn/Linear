@@ -1,4 +1,5 @@
 import type { BarreOptimisee } from "./optimizer";
+import { formatNombre } from "./format-number";
 
 export interface GroupeBarres {
   barres: BarreOptimisee[];
@@ -64,7 +65,7 @@ export function segmentsBarre(barre: BarreOptimisee, traitScie: number): Segment
 export interface CotePlacee { valeur: number; x: number; labelX: number; largeur: number; niveau: number }
 
 // Remove binary floating-point artefacts in drawing labels only.
-export const libelleCote = (valeur: number) => String(Number(valeur.toFixed(6)));
+export const libelleCote = (valeur: number) => formatNombre(valeur);
 
 export function placerCotes(valeurs: number[], total: number, largeur: number, mesurer: (label: string) => number): CotePlacee[] {
   const fins: number[] = [];

@@ -15,3 +15,4 @@
 - [x] Plans pastel et hachures harmonisées, hiérarchie des résultats et bilan empilé.
 - [x] Style PDF harmonisé sans changer son contenu ni sa mise en page.
 - [x] Vérifier écran, PDF et non-régression des calculs.
+- [x] Retouches : textes des barres, formats français, chutes plus visibles et repères cumulés sans retour à la ligne ; vérifier écran et PDF.

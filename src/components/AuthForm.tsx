@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Plus, Trash2 } from "lucide-react";
 import { listProfiles, deleteProfile, type ProfileMeta } from "@/lib/local-store";
+import { formatNombre } from "@/lib/format-number";
 
 export function AuthForm({ onSelect }: { onSelect: (profileId: string) => void }) {
   const [profiles, setProfiles] = useState<ProfileMeta[]>([]);
@@ -80,7 +81,7 @@ export function AuthForm({ onSelect }: { onSelect: (profileId: string) => void }
                       <span className="flex-1">
                         <span className="block text-sm font-medium text-foreground">{p.name}</span>
                         <span className="block text-[11px] text-muted-foreground">
-                          {p.projectCount} projet{p.projectCount > 1 ? "s" : ""}
+                          {formatNombre(p.projectCount)} projet{p.projectCount > 1 ? "s" : ""}
                         </span>
                       </span>
                     </button>

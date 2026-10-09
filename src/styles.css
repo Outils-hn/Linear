@@ -57,7 +57,7 @@
   --heading: oklch(0.279 0.041 260.031);
   --piece-ink: #374151;
   --cut-separator: #ffffff;
-  --offcut-paper: #fcf0e4;
+  --offcut-paper: #FCE3C6;
   --hatch: #a5adb6;
   --rail: oklch(0.75 0.01 250 / 0.10);
   --pdf-primary: #1F5FAD;
@@ -178,6 +178,7 @@
 .rail-page { background: transparent; }
 .font-display, h1, h2, h3 { color: var(--heading); }
 .tabular-nums, input[type="number"], svg text { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.bar-piece-label { font-family: var(--font-sans); font-size: 12px; font-weight: 400; letter-spacing: 0; }
 input[type="number"] { text-align: right; }
 table thead { background: var(--muted); }
 table tbody tr:nth-child(even) { background: color-mix(in oklab, var(--muted) 30%, transparent); }
@@ -186,5 +187,5 @@ table td, table th { padding-top: 2px; padding-bottom: 2px; }
 table input { height: 30px; }
 table td:has(input[type="number"]), table td.tabular-nums, table th.numeric { text-align: right; font-family: var(--font-mono); }
 .offcut-hatch { background-color: var(--waste); background-image: repeating-linear-gradient(135deg, transparent 0 5px, var(--hatch) 5px 5.5px, transparent 5.5px 9px); }
-.reusable-hatch { background-color: var(--offcut-paper); background-image: repeating-linear-gradient(45deg, transparent 0 5px, var(--warning) 5px 5.5px, transparent 5.5px 9px); }
+.reusable-hatch { background-color: var(--offcut-paper); background-image: repeating-linear-gradient(45deg, transparent 0 5px, var(--warning) 5px 6px, transparent 6px 9px); }
 .margin-hatch { background-image: repeating-linear-gradient(135deg, transparent 0 3px, var(--hatch) 3px 3.5px, transparent 3.5px 6px); }

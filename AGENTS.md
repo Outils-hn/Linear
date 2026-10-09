@@ -7,3 +7,4 @@
 - Bar grouping and segment coordinates live in the browser-safe bar-drawing module; screen and PDF consume placed results without changing optimization or verification.
 - Atelier PDF drawings use dynamically loaded svg2pdf.js and SVG geometry; collision-aware dimensions and measured table pagination keep print content legible.
 - Embed CDN-hosted Plex font assets in PDF exports and select the mono family for numerical cells, so workshop printouts match the interface typography.
+- Format displayed measurements through the browser-safe format-number module for consistent French screen/PDF labels; keep numeric calculations and editable values unchanged.
