@@ -1,4 +1,5 @@
 # Corrections Linear
+- [ ] Adapter les étiquettes écran/PDF par mesure réelle, cascade et regroupement ; vérifier le cas atelier et les pièces très étroites.
 - [x] Couleurs des pièces et hachures écran/PDF.
 - [x] Bilan matière fermé et deux rendements.
 - [x] Position des marges et repères depuis le bout brut.
