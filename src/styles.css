@@ -199,7 +199,7 @@ table input[type="number"]::-webkit-outer-spin-button { appearance: none; margin
 .pieces-table td input:hover,
 .pieces-table td input:focus { border-color: var(--primary); }
 .pieces-table td input:focus-visible { outline: none; box-shadow: none; }
-.parameter-measure { position: relative; width: 160px; max-width: 100%; }
+.parameter-measure { position: relative; width: 100%; min-width: 0; }
 .parameter-measure input { width: 100%; padding-right: 40px; text-align: right; appearance: textfield; }
 .parameter-measure input::-webkit-inner-spin-button,
 .parameter-measure input::-webkit-outer-spin-button { appearance: none; margin: 0; }

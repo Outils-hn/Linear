@@ -20,3 +20,4 @@
 - [x] Retoucher le PDF : sans badge, Plex Sans tabulaire, formats français, alignements, repères et tableaux aérés.
 - [x] Vérifier les cartes, le PDF et les tests de non-régression ; corriger le titre de profilé isolé en fin de page.
 - [x] Alléger les cellules éditables, harmoniser les en-têtes et intégrer les unités aux paramètres ; vérifier à l’écran.
+- [ ] Réaligner les paramètres en pleine largeur et les longueurs par profilé sur une ligne, sans unités dans les libellés ni majuscules forcées ; vérifier à l’écran.
