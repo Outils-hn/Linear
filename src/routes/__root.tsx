@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 
 import { Toaster } from "@/components/ui/sonner";
+import { AppFooter } from "@/components/AppFooter";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -126,7 +127,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <div className="flex min-h-screen flex-col">
+        <div className="flex flex-1 flex-col">
+          <Outlet />
+        </div>
+        <AppFooter />
+      </div>
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );

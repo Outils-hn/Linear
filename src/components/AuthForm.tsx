@@ -37,7 +37,7 @@ export function AuthForm({ onSelect }: { onSelect: (profileId: string) => void }
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="relative flex flex-1 items-center justify-center bg-background px-4">
       <div className="absolute right-4 top-4">
         <ThemeToggle className="text-muted-foreground hover:text-foreground" />
       </div>
