@@ -5,6 +5,7 @@
 - Result verification lives in src/lib/verification.ts and recomputes everything from the bars without calling the engine, so it can catch engine bugs independently.
 - Project backups (.json) carry a format version (src/lib/backup.ts); readers reject newer versions so future formats stay compatible.
 - Bar grouping and segment coordinates live in the browser-safe bar-drawing module; screen and PDF consume placed results without changing optimization or verification.
+- Adaptive piece labels live in a browser-safe layout module with injected font measurements; screen and PDF share the cascade, consecutive-run row references and physical font sizes to prevent overflow without altering placed cuts.
 - Atelier PDF drawings use dynamically loaded svg2pdf.js and SVG geometry; collision-aware dimensions and measured table pagination keep print content legible.
 - Embed CDN-hosted Plex Sans font assets exclusively in PDF exports and use tabular digit metrics with explicit per-column alignment shared by headers and values, so workshop printouts remain proportional and aligned.
 - Format displayed measurements through the browser-safe format-number module for consistent French screen/PDF labels; keep numeric calculations and editable values unchanged.

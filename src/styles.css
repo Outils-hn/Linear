@@ -185,7 +185,7 @@
 .rail-page { background: transparent; }
 .font-display, h1, h2, h3 { color: var(--heading); }
 .tabular-nums, input[type="number"], svg text { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.bar-piece-label { font-family: var(--font-sans); font-size: 12px; font-weight: 400; letter-spacing: 0; }
+.bar-piece-label { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; }
 input[type="number"] { text-align: right; }
 table thead { background: var(--table-header-surface); }
 table tbody tr:nth-child(even) { background: color-mix(in oklab, var(--muted) 30%, transparent); }
