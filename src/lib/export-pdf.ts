@@ -6,7 +6,9 @@ import type {
   Strategie,
   BarreOptimisee,
   StockBarre,
+  PositionMarge,
 } from "./optimizer";
+import { POSITION_MARGE_LABELS } from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
 
 const STRATEGIE_LABELS: Record<Strategie, string> = {
@@ -25,6 +27,7 @@ export interface OptionsExportPDF {
   longueurBarreBrute: number;
   longueurBarreUtile: number;
   margeSecurite: number;
+  positionMarge?: PositionMarge;
   traitScie: number;
   strategie: Strategie;
   stock?: StockBarre[];
@@ -48,9 +51,10 @@ export interface GroupeCoupe {
 export function calculerReperes(
   coupes: BarreOptimisee["coupes"],
   traitScie: number,
+  margeDebut = 0,
 ): number[] {
   const reperes: number[] = [];
-  let pos = 0;
+  let pos = margeDebut;
   coupes.forEach((c, i) => {
     if (i > 0 && traitScie > 0) pos += traitScie;
     pos += c.longueur;
@@ -62,9 +66,10 @@ export function calculerReperes(
 export function grouperCoupesConsecutives(
   coupes: BarreOptimisee["coupes"],
   traitScie: number,
+  margeDebut = 0,
 ): (GroupeCoupe & { reperes: number[] })[] {
   const groupes: (GroupeCoupe & { reperes: number[] })[] = [];
-  const reperesAll = calculerReperes(coupes, traitScie);
+  const reperesAll = calculerReperes(coupes, traitScie, margeDebut);
   coupes.forEach((c, idx) => {
     const last = groupes[groupes.length - 1];
     if (last && last.pieceId === c.pieceId && last.longueur === c.longueur) {
@@ -89,7 +94,7 @@ function signatureBarre(b: BarreOptimisee): string {
   return (
     `${b.origine}|${b.longueurBrute}|${b.longueurBarre}|` +
     b.coupes.map((c) => `${c.pieceId}:${c.longueur}`).join(",") +
-    `|c=${b.chute}`
+    `|c=${b.chute}|m=${b.margeDebut ?? 0}:${b.margeFin ?? 0}`
   );
 }
 
@@ -182,7 +187,7 @@ export function exporterPDF(
   doc.text(`Trait de scie : ${traitScie} mm`, margin, y);
   y += 4;
   if (margeSecurite > 0) {
-    doc.text(`Marge de rafraîchissement / sécurité : ${margeSecurite} mm`, margin, y);
+    doc.text(`Marge de rafraîchissement / sécurité : ${margeSecurite} mm — ${POSITION_MARGE_LABELS[options.positionMarge ?? "debut"]}`, margin, y);
     y += 4;
   }
   doc.text(`Stratégie : ${STRATEGIE_LABELS[strategie]}`, margin, y);
@@ -218,11 +223,12 @@ export function exporterPDF(
   y += 3;
   autoTable(doc, {
     startY: y,
-    head: [["Barres utilisées", "Rendement", "Chutes totales", "Réutilisables", "Déchets"]],
+    head: [["Barres utilisées", "Rendement brut", "Hors chutes réutilisables", "Chutes totales", "Réutilisables", "Déchets"]],
     body: [
       [
         `${resultat.nbBarres}`,
         `${resultat.rendement.toFixed(1)} %`,
+        `${resultat.rendementHorsChutesReutilisables.toFixed(1)} %`,
         `${resultat.longueurChutes} mm (${resultat.pourcentageChutes.toFixed(1)} %)`,
         `${resultat.longueurChutesReutilisables} mm`,
         `${resultat.longueurDechets} mm`,
@@ -235,6 +241,12 @@ export function exporterPDF(
   });
   // @ts-expect-error lastAutoTable
   y = doc.lastAutoTable.finalY + 8;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  const bilan = `${resultat.longueurTotale} mm = ${resultat.longueurUtile} pièces + ${resultat.longueurTraitsScie} traits de scie + ${resultat.longueurMarges} marges + ${resultat.longueurChutes} chutes`;
+  const lignesBilan = doc.splitTextToSize(bilan, pageWidth - 2 * margin);
+  doc.text(lignesBilan, margin, y);
+  y += lignesBilan.length * 4 + 6;
 
   // ---- Récapitulatif des pièces demandées ----
   const piecesValides = pieces.filter((p) => p.quantite > 0 && p.longueur > 0);
@@ -321,13 +333,29 @@ export function exporterPDF(
     const schemaY = y;
     const schemaW = pageWidth - 2 * margin;
     const schemaH = 14;
-    let cursorMm = 0;
-    const mmToPx = (mm: number) => (mm / barre.longueurBarre) * schemaW;
+    const margeDebut = barre.margeDebut ?? 0;
+    const margeFin = barre.margeFin ?? 0;
+    let cursorMm = margeDebut;
+    const mmToPx = (mm: number) => (mm / barre.longueurBrute) * schemaW;
+
+    const hachurer = (x: number, w: number, reutilisable: boolean, marge = false) => {
+      if (w <= 0) return;
+      doc.setFillColor(...(reutilisable ? [248, 184, 74] as const : [232, 232, 232] as const));
+      doc.rect(x, schemaY, w, schemaH, "F");
+      doc.setDrawColor(...(reutilisable ? [177, 99, 18] as const : [110, 110, 110] as const));
+      doc.setLineWidth(0.15);
+      for (let d = -schemaH; d < w; d += marge ? 1.5 : 3) {
+        const start = Math.max(0, -d);
+        const end = Math.min(schemaH, w - d);
+        if (end > start) doc.line(x + d + start, schemaY + start, x + d + end, schemaY + end);
+      }
+    };
 
     doc.setFillColor(240, 240, 240);
     doc.rect(schemaX, schemaY, schemaW, schemaH, "F");
+    hachurer(schemaX, mmToPx(margeDebut), false, true);
 
-    const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie);
+    const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie, margeDebut);
 
     coupesGroupes.forEach((gp, gi) => {
       const x = schemaX + mmToPx(cursorMm);
@@ -386,18 +414,23 @@ export function exporterPDF(
       if (gi < coupesGroupes.length - 1 && traitScie > 0) {
         const xt = schemaX + mmToPx(cursorMm);
         doc.setFillColor(30, 30, 30);
-        doc.rect(xt, schemaY, Math.max(0.3, mmToPx(traitScie)), schemaH, "F");
+        doc.rect(xt, schemaY, mmToPx(traitScie), schemaH, "F");
         cursorMm += traitScie;
       }
     });
 
+    const traitFinal = Math.max(0, barre.longueurTraitsScie - Math.max(0, barre.coupes.length - 1) * traitScie);
+    if (traitFinal > 0) {
+      doc.setFillColor(30, 30, 30);
+      doc.rect(schemaX + mmToPx(cursorMm), schemaY, mmToPx(traitFinal), schemaH, "F");
+      cursorMm += traitFinal;
+    }
     if (barre.chute > 0) {
       const x = schemaX + mmToPx(cursorMm);
-      const w = schemaW - mmToPx(cursorMm);
-      doc.setFillColor(180, 180, 180);
-      doc.rect(x, schemaY, w, schemaH, "F");
+      const w = mmToPx(barre.chute);
+      hachurer(x, w, barre.chuteReutilisable);
       if (w > 14) {
-        doc.setTextColor(255, 255, 255);
+        doc.setTextColor(20, 20, 20);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(7);
         doc.text(`Chute ${barre.chute} mm`, x + w / 2, schemaY + schemaH / 2 + 1, {
@@ -405,9 +438,10 @@ export function exporterPDF(
         });
       }
     }
+    hachurer(schemaX + mmToPx(barre.longueurBrute - margeFin), mmToPx(margeFin), false, true);
 
     // Repères cumulés sous la barre (graduations)
-    const reperesBarre = calculerReperes(barre.coupes, traitScie);
+    const reperesBarre = calculerReperes(barre.coupes, traitScie, margeDebut);
     const tickY = schemaY + schemaH;
     doc.setDrawColor(60, 60, 60);
     doc.setTextColor(20, 20, 20);
@@ -427,8 +461,15 @@ export function exporterPDF(
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.text(`Chute finale : ${barre.chute} mm`, margin, y);
+    doc.text(`Chute finale : ${barre.chute} mm — ${barre.chuteReutilisable ? "Réutilisable" : "Déchet"}`, margin, y);
     y += 4;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(`Marge début : ${margeDebut} mm | Marge fin : ${margeFin} mm`, margin, y);
+    y += 4;
+    doc.text("Cotes mesurées depuis l’extrémité brute de la barre", margin, y);
+    y += 5;
 
     doc.setFont("helvetica", "normal");
     const body: string[][] = coupesGroupes.map((c, i) => [

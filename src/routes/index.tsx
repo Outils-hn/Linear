@@ -26,7 +26,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 
 import { AuthForm } from "@/components/AuthForm";
-import { optimiser, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
+import { optimiser, POSITION_MARGE_LABELS, type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
 import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { LinearMark } from "@/components/LinearMark";
@@ -49,6 +49,10 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Linear ·" },
+      { property: "og:title", content: "Linear · Optimisation de découpe en atelier" },
+      { property: "og:description", content: "Plans de découpe linéaire, bilan matière, chutes réutilisables et fiches de débit pour l’atelier." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         name: "description",
         content:
@@ -107,6 +111,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [dateProjet, setDateProjet] = useState(() => new Date().toISOString().slice(0, 10));
   const [longueurBarre, setLongueurBarre] = useState(6000);
   const [margeSecurite, setMargeSecurite] = useState(100);
+  const [positionMarge, setPositionMarge] = useState<PositionMarge>("debut");
   const [traitScie, setTraitScie] = useState(3);
   const [strategie, setStrategie] = useState<Strategie>("min-barres");
   const [modeUltra, setModeUltra] = useState(false);
@@ -177,6 +182,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       longueurBarreUtileDefaut: lu,
       longueurBarreBruteDefaut: lb,
       margeSecurite: ms,
+      positionMarge,
       traitScie: ts,
       strategie: st,
       stock: st === "priorite-stock" ? s : [],
@@ -197,6 +203,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       longueurBarreBrute: longueurBarre,
       longueurBarreUtile: longueurUtile,
       margeSecurite,
+      positionMarge,
       traitScie,
       strategie,
       stock: strategie === "priorite-stock" ? stock : [],
@@ -212,6 +219,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     setDateProjet(new Date().toISOString().slice(0, 10));
     setLongueurBarre(6000);
     setMargeSecurite(100);
+    setPositionMarge("debut");
     setTraitScie(3);
     setStrategie("min-barres");
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
@@ -465,6 +473,21 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   Longueur utile pour l'optimisation :{" "}
                   <span className="font-semibold text-foreground">{longueurUtile} mm</span>
                 </p>
+                <Label htmlFor="position-marge">Position de la marge</Label>
+                <Select value={positionMarge} onValueChange={(v) => {
+                  const position = v as PositionMarge;
+                  setPositionMarge(position);
+                  setResultat((r) => r ? { ...r, barres: r.barres.map((b) => {
+                    const marge = Math.max(0, b.longueurBrute - b.longueurBarre);
+                    const debut = position === "fin" ? 0 : position === "deux-bouts" ? marge / 2 : marge;
+                    return { ...b, margeDebut: debut, margeFin: marge - debut };
+                  }) } : r);
+                }}>
+                  <SelectTrigger id="position-marge"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(POSITION_MARGE_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ts">Épaisseur du trait de scie (mm)</Label>
@@ -726,7 +749,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
 
         {resultat && resultat.nbBarres > 0 && (
           <section id="resultats" className="space-y-6 pt-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               <StatCard
                 label="Barres utilisées"
                 value={`${resultat.nbBarres}`}
@@ -737,9 +760,15 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 }
               />
               <StatCard
-                label="Rendement global"
+                label="Rendement brut"
                 value={`${resultat.rendement.toFixed(1)} %`}
                 hint={`${resultat.longueurUtile} mm utiles`}
+                accent="success"
+              />
+              <StatCard
+                label="Rendement hors chutes réutilisables"
+                value={`${resultat.rendementHorsChutesReutilisables.toFixed(1)} %`}
+                hint={`${resultat.longueurTotale - resultat.longueurChutesReutilisables} mm consommés`}
                 accent="success"
               />
               <StatCard
@@ -755,6 +784,11 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               />
             </div>
 
+            <div className="border-y border-border py-4 text-sm tabular-nums">
+              <h2 className="mb-1 font-semibold">Bilan matière</h2>
+              <p>{resultat.longueurTotale} mm = {resultat.longueurUtile} pièces + {resultat.longueurTraitsScie} traits de scie + {resultat.longueurMarges} marges + {resultat.longueurChutes} chutes</p>
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Plan de découpe par barre</CardTitle>
@@ -765,7 +799,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <CardContent className="space-y-8">
                 {grouperBarresIdentiques(resultat.barres).map((groupe) => {
                   const barre = groupe.reference;
-                  const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie);
+                  const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie, barre.margeDebut ?? 0);
                   const qte = groupe.barres.length;
                   return (
                     <div
@@ -786,6 +820,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                       </div>
 
                       <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
+                      <p className="text-xs text-muted-foreground">Cotes mesurées depuis l’extrémité brute de la barre</p>
 
                       <div className="overflow-hidden rounded-md border border-border">
                         <Table>
