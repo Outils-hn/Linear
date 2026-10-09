@@ -554,21 +554,27 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="lb">Longueur de la barre de base (mm)</Label>
+                <div className="parameter-measure">
                 <Input
                   id="lb"
                   type="number"
                   value={longueurBarre}
                   onChange={(e) => setLongueurBarre(Number(e.target.value) || 0)}
                 />
+                  <span aria-hidden="true">mm</span>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ms">Marge de rafraîchissement / sécurité (mm)</Label>
+                <div className="parameter-measure">
                 <Input
                   id="ms"
                   type="number"
                   value={margeSecurite}
                   onChange={(e) => setMargeSecurite(Number(e.target.value) || 0)}
                 />
+                  <span aria-hidden="true">mm</span>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Longueur utile pour l'optimisation :{" "}
                   <span className="font-semibold text-foreground">{fmt(longueurUtile)} mm</span>
@@ -596,25 +602,32 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ts">Épaisseur du trait de scie (mm)</Label>
+                <div className="parameter-measure">
                 <Input
                   id="ts"
                   type="number"
                   value={traitScie}
                   onChange={(e) => setTraitScie(Number(e.target.value) || 0)}
                 />
+                  <span aria-hidden="true">mm</span>
+                </div>
               </div>
               {profilsNommes.length > 0 && (
                 <div className="space-y-2">
                   <Label>Longueur de barre par profilé (mm)</Label>
                   {profilsNommes.map((pr) => (
-                    <div key={pr} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-2">
-                      <span className="whitespace-normal break-words text-xs font-medium">{pr}</span>
+                    <div key={pr} className="space-y-2">
+                      <label className="block whitespace-normal break-words text-xs font-medium">{pr}
+                      <div className="parameter-measure mt-2">
                       <Input
                         type="number"
                         className="h-8"
                         value={longueursProfils[pr] ?? longueurBarre}
                         onChange={(e) => setLongueursProfils((m) => ({ ...m, [pr]: Number(e.target.value) || 0 }))}
                       />
+                        <span aria-hidden="true">mm</span>
+                      </div>
+                      </label>
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground">Les pièces sans profilé utilisent la barre de base.</p>
@@ -705,14 +718,14 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               />
             </CardHeader>
             <CardContent>
-              <Table className="lg:table-fixed">
+              <Table className="pieces-table table-fixed min-w-[540px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="lg:w-[25%]">Repère</TableHead>
-                    <TableHead className="w-40 lg:w-[35%]">Profilé</TableHead>
-                    <TableHead className="numeric w-40 lg:w-[20%]">Longueur (mm)</TableHead>
-                    <TableHead className="numeric w-32 lg:w-[15%]">Quantité</TableHead>
-                    <TableHead className="w-12 lg:w-[5%] lg:px-1"></TableHead>
+                    <TableHead className="w-[20%]">Repère</TableHead>
+                    <TableHead className="w-[35%]">Profilé</TableHead>
+                    <TableHead className="numeric w-[20%]">Longueur (mm)</TableHead>
+                    <TableHead className="numeric w-[15%]">Quantité</TableHead>
+                    <TableHead className="w-[10%]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -742,7 +755,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                           onChange={(e) => updatePiece(p.id, { quantite: Number(e.target.value) || 0 })}
                         />
                       </TableCell>
-                      <TableCell className="lg:px-1">
+                      <TableCell className="text-center">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -815,10 +828,10 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-48">Longueur de barre (mm)</TableHead>
-                    <TableHead className="w-32">Quantité</TableHead>
+                    <TableHead className="numeric w-48">Longueur de barre (mm)</TableHead>
+                    <TableHead className="numeric w-32">Quantité</TableHead>
                     <TableHead className="w-40">Appliquer la marge</TableHead>
-                    <TableHead>Longueur utile</TableHead>
+                    <TableHead className="numeric">Longueur utile</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -851,7 +864,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                             {margeOn ? `−${fmt(margeSecurite)} mm` : "Aucune"}
                           </label>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{fmt(utile)} mm</TableCell>
+                        <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{fmt(utile)} mm</TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
@@ -955,7 +968,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
-                              <TableHead className="w-12 text-center text-xs font-semibold text-foreground">#</TableHead>
+                              <TableHead className="w-12 text-right text-xs font-semibold text-foreground">#</TableHead>
                               <TableHead className="w-[25%] text-xs font-semibold text-foreground">Pièce</TableHead>
                               <TableHead className="w-40 text-right text-xs font-semibold text-foreground">Longueur de coupe (mm)</TableHead>
                               <TableHead className="w-24 text-right text-xs font-semibold text-foreground">Quantité</TableHead>
@@ -965,7 +978,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                           <TableBody>
                             {coupesGroupes.map((g, i) => (
                               <TableRow key={i}>
-                                <TableCell className="text-center text-xs font-semibold text-foreground">{i + 1}</TableCell>
+                                <TableCell className="text-right text-xs tabular-nums font-semibold text-foreground">{i + 1}</TableCell>
                                 <TableCell className="text-xs font-medium text-foreground">{g.nom}</TableCell>
                                 <TableCell className="text-right text-xs tabular-nums">{fmt(g.longueur)}</TableCell>
                                 <TableCell className="text-right text-xs tabular-nums">{fmt(g.quantite)}</TableCell>
