@@ -76,7 +76,7 @@
   --popover-foreground: oklch(0.22 0.02 250);
 
   /* Workshop controls — orange belongs to reusable offcuts only. */
-  --primary: oklch(0.488 0.14 256.2);
+  --primary: oklch(0.488604 0.140023 255.772374);
   --primary-foreground: oklch(0.99 0 0);
 
   --secondary: oklch(0.95 0.005 240);
@@ -141,7 +141,7 @@
   --success-foreground: oklch(0.15 0.02 155);
   --warning: #E8913A;
   --warning-foreground: oklch(0.2 0.02 70);
-  --waste: oklch(0.55 0.01 240);
+  --waste: #f0f2f4;
 
   --piece-1: #A8C5E8;
   --piece-2: #B5D8B0;

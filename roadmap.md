@@ -11,7 +11,7 @@
 - [x] Dessins SVG interactifs, infobulles, légende et agrandissement avec zoom de zone.
 - [x] PDF via svg2pdf.js, cotes sans chevauchement et pagination des tableaux.
 - [x] Tests de non-régression, interactions écran et inspection visuelle du PDF.
-- [ ] Refonte : identité bleu acier, polices Plex et tableaux compacts.
-- [ ] Plans pastel et hachures harmonisées, hiérarchie des résultats et bilan empilé.
-- [ ] Style PDF harmonisé sans changer son contenu ni sa mise en page.
-- [ ] Vérifier écran, PDF et non-régression des calculs.
+- [x] Refonte : identité bleu acier, polices Plex et tableaux compacts.
+- [x] Plans pastel et hachures harmonisées, hiérarchie des résultats et bilan empilé.
+- [x] Style PDF harmonisé sans changer son contenu ni sa mise en page.
+- [x] Vérifier écran, PDF et non-régression des calculs.
