@@ -41,13 +41,32 @@
   --color-piece-6: var(--piece-6);
   --color-piece-7: var(--piece-7);
   --color-piece-8: var(--piece-8);
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-display: 'IBM Plex Sans', system-ui, sans-serif;
+  --color-heading: var(--heading);
+  --color-piece-ink: var(--piece-ink);
+  --color-cut-separator: var(--cut-separator);
+  --color-offcut-paper: var(--offcut-paper);
+  --color-hatch: var(--hatch);
 }
 
 /* ============ LIGHT (default) — Technical paper / engineering sheet ============ */
 :root {
-  --radius: 0.5rem;
+  --radius: 0.625rem;
+  --heading: oklch(0.279 0.041 260.031);
+  --piece-ink: #374151;
+  --cut-separator: #ffffff;
+  --offcut-paper: #fcf0e4;
+  --hatch: #a5adb6;
+  --rail: oklch(0.75 0.01 250 / 0.10);
+  --pdf-primary: #1F5FAD;
+  --pdf-heading: #1E293B;
+  --pdf-muted: #64748b;
+  --pdf-table-head: #f1f3f5;
+  --pdf-table-stripe: #fafbfc;
+  --pdf-success: #298451;
+  --pdf-error: #b83e3e;
 
   --background: oklch(0.98 0.003 240);          /* ~#f4f6f8 */
   --foreground: oklch(0.22 0.02 250);           /* ~#1e293b anthracite */
@@ -57,7 +76,7 @@
   --popover-foreground: oklch(0.22 0.02 250);
 
   /* Workshop controls — orange belongs to reusable offcuts only. */
-  --primary: oklch(0.55 0.16 245);
+  --primary: oklch(0.488 0.14 256.2);
   --primary-foreground: oklch(0.99 0 0);
 
   --secondary: oklch(0.95 0.005 240);
@@ -72,26 +91,28 @@
 
   --border: oklch(0.88 0.006 240);               /* steel-grey fine border */
   --input: oklch(0.88 0.006 240);
-  --ring: oklch(0.55 0.16 245);
+  --ring: var(--primary);
 
   --success: oklch(0.62 0.15 155);
   --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.72 0.16 70);
+  --warning: #E8913A;
   --warning-foreground: oklch(0.2 0.02 70);
-  --waste: oklch(0.78 0.01 240);
+  --waste: #f0f2f4;
 
-  --piece-1: oklch(0.62 0.15 220);
-  --piece-2: oklch(0.64 0.14 160);
-  --piece-3: oklch(0.57 0.18 280);
-  --piece-4: oklch(0.60 0.16 320);
-  --piece-5: oklch(0.62 0.14 195);
-  --piece-6: oklch(0.55 0.20 15);
-  --piece-7: oklch(0.57 0.17 280);
-  --piece-8: oklch(0.64 0.15 110);
+  --piece-1: #A8C5E8;
+  --piece-2: #B5D8B0;
+  --piece-3: #C9C0E8;
+  --piece-4: #E8D9B0;
+  --piece-5: #E8B8C0;
+  --piece-6: #A8DCD0;
+  --piece-7: #BAC9D8;
+  --piece-8: #D7DDBB;
 }
 
 /* ============ DARK — Titanium / anthracite ============ */
 .dark {
+  --heading: oklch(0.9 0.025 250);
+  --rail: oklch(0.8 0.01 250 / 0.04);
   --background: oklch(0.22 0.004 240);
   --foreground: oklch(0.97 0.003 240);
   --card: oklch(0.27 0.005 240);
@@ -118,18 +139,18 @@
 
   --success: oklch(0.72 0.15 155);
   --success-foreground: oklch(0.15 0.02 155);
-  --warning: oklch(0.78 0.16 70);
+  --warning: #E8913A;
   --warning-foreground: oklch(0.2 0.02 70);
   --waste: oklch(0.55 0.01 240);
 
-  --piece-1: oklch(0.70 0.15 220);
-  --piece-2: oklch(0.72 0.14 160);
-  --piece-3: oklch(0.70 0.18 280);
-  --piece-4: oklch(0.68 0.16 320);
-  --piece-5: oklch(0.70 0.14 195);
-  --piece-6: oklch(0.68 0.20 15);
-  --piece-7: oklch(0.65 0.17 280);
-  --piece-8: oklch(0.72 0.15 110);
+  --piece-1: #A8C5E8;
+  --piece-2: #B5D8B0;
+  --piece-3: #C9C0E8;
+  --piece-4: #E8D9B0;
+  --piece-5: #E8B8C0;
+  --piece-6: #A8DCD0;
+  --piece-7: #BAC9D8;
+  --piece-8: #D7DDBB;
 }
 
 .offcut-hatch {
@@ -147,8 +168,23 @@
 
   body {
     background-color: var(--color-background);
+    background-image: repeating-linear-gradient(0deg, transparent 0 23px, var(--rail) 23px 24px);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
 }
+
+.rail-page { background: transparent; }
+.font-display, h1, h2, h3 { color: var(--heading); }
+.tabular-nums, input[type="number"], svg text { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+input[type="number"] { text-align: right; }
+table thead { background: var(--muted); }
+table tbody tr:nth-child(even) { background: color-mix(in oklab, var(--muted) 30%, transparent); }
+table tr { height: 36px; }
+table td, table th { padding-top: 2px; padding-bottom: 2px; }
+table input { height: 30px; }
+table td:has(input[type="number"]), table td.tabular-nums, table th.numeric { text-align: right; font-family: var(--font-mono); }
+.offcut-hatch { background-color: var(--waste); background-image: repeating-linear-gradient(135deg, transparent 0 5px, var(--hatch) 5px 5.5px, transparent 5.5px 9px); }
+.reusable-hatch { background-color: var(--offcut-paper); background-image: repeating-linear-gradient(45deg, transparent 0 5px, var(--warning) 5px 5.5px, transparent 5.5px 9px); }
+.margin-hatch { background-image: repeating-linear-gradient(135deg, transparent 0 3px, var(--hatch) 3px 3.5px, transparent 3.5px 6px); }
