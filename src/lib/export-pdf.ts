@@ -340,9 +340,11 @@ export function exporterPDF(
 
     const hachurer = (x: number, w: number, reutilisable: boolean, marge = false) => {
       if (w <= 0) return;
-      doc.setFillColor(...(reutilisable ? [248, 184, 74] as const : [232, 232, 232] as const));
+      if (reutilisable) doc.setFillColor(248, 184, 74);
+      else doc.setFillColor(232, 232, 232);
       doc.rect(x, schemaY, w, schemaH, "F");
-      doc.setDrawColor(...(reutilisable ? [177, 99, 18] as const : [110, 110, 110] as const));
+      if (reutilisable) doc.setDrawColor(177, 99, 18);
+      else doc.setDrawColor(110, 110, 110);
       doc.setLineWidth(0.15);
       for (let d = -schemaH; d < w; d += marge ? 1.5 : 3) {
         const start = Math.max(0, -d);
@@ -366,6 +368,11 @@ export function exporterPDF(
       const bb = parseInt(hex.slice(5, 7), 16);
       doc.setFillColor(r, gg, bb);
       doc.rect(x, schemaY, w, schemaH, "F");
+
+      for (let k = 1; k < gp.quantite && traitScie > 0; k++) {
+        doc.setFillColor(30, 30, 30);
+        doc.rect(schemaX + mmToPx(cursorMm + k * gp.longueur + (k - 1) * traitScie), schemaY, mmToPx(traitScie), schemaH, "F");
+      }
 
       doc.setTextColor(255, 255, 255);
       const cx = x + w / 2;
