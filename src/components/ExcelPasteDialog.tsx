@@ -50,6 +50,7 @@ function splitRows(text: string): string[][] {
 function roleFromHeader(h: string): ColRole | null {
   const s = h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   if (/^(rep|designation|profil|nom|ref)/.test(s)) return "repere";
+  if (/^(barre|stock)/.test(s)) return "barre";
   if (/^(long|l$|l\s|lg)/.test(s)) return "longueur";
   if (/^(qte|qt|quantite|nb|nombre|q$)/.test(s)) return "quantite";
   return null;
