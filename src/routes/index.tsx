@@ -107,7 +107,7 @@ function Index() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center bg-background text-sm text-muted-foreground">
         Chargement…
       </div>
     );
@@ -401,7 +401,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   };
 
   return (
-    <div className="rail-page min-h-screen">
+    <div className="rail-page flex-1">
       <header className="border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 lg:px-8">
           <div className="flex items-center gap-3">
