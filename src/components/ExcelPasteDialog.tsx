@@ -228,6 +228,19 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
             {rows.length > 5 && <p className="p-1 text-xs text-muted-foreground">… {rows.length - 5} autre(s) ligne(s)</p>}
           </div>
         )}
+        {analyse.barreUnique !== null && analyse.barreUnique !== longueurBarre && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-xs">
+            <span>Longueur de barre détectée : <strong>{analyse.barreUnique} mm</strong> (actuelle : {longueurBarre} mm)</span>
+            <Button size="sm" variant="outline" onClick={() => onSetBarre(analyse.barreUnique!)}>
+              Utiliser {analyse.barreUnique} mm comme barre de base
+            </Button>
+          </div>
+        )}
+        {analyse.barreVariee && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+            Attention : les longueurs de barre varient d'une ligne à l'autre — la barre de base du calcul n'a pas été modifiée.
+          </div>
+        )}
         {analyse.erreurs.length > 0 && (
           <div className="max-h-28 overflow-auto rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
             {analyse.erreurs.map((e) => (
