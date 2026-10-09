@@ -26,8 +26,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 
 import { AuthForm } from "@/components/AuthForm";
-import { optimiser, POSITION_MARGE_LABELS, type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
+import { POSITION_MARGE_LABELS, type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema } from "@/components/BarreSchema";
+import { optimiserParProfil, listeProfils, libelleProfil, longueurPourProfil, type ResultatMulti } from "@/lib/multi-profil";
 import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -117,7 +118,10 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [modeUltra, setModeUltra] = useState(false);
   const [stock, setStock] = useState<StockBarre[]>([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
-  const [resultat, setResultat] = useState<ReturnType<typeof optimiser> | null>(null);
+  const [resultat, setResultat] = useState<ResultatMulti | null>(null);
+  const [longueursProfils, setLongueursProfils] = useState<Record<string, number>>({});
+  const [pdfWarnOpen, setPdfWarnOpen] = useState(false);
+  const profilsNommes = useMemo(() => listeProfils(pieces).filter(Boolean), [pieces]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [projects, setProjects] = useState<LocalProject[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -170,6 +174,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     margeSecurite?: number;
     traitScie?: number;
     strategie?: Strategie;
+    longueursProfils?: Record<string, number>;
   }) => {
     const p = overrides?.pieces ?? pieces;
     const s = overrides?.stock ?? stock;
@@ -178,9 +183,9 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     const ts = overrides?.traitScie ?? traitScie;
     const st = overrides?.strategie ?? strategie;
     const lu = Math.max(0, lb - ms);
-    return optimiser(p, {
-      longueurBarreUtileDefaut: lu,
-      longueurBarreBruteDefaut: lb,
+    void lu;
+    return optimiserParProfil(p, overrides?.longueursProfils ?? longueursProfils, {
+      longueurBarreDefaut: lb,
       margeSecurite: ms,
       positionMarge,
       traitScie: ts,
@@ -197,8 +202,13 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     }, 50);
   };
 
-  const exporter = () => {
+  const exporter = (force = false) => {
     if (!resultat) return;
+    if (!force && (!chantier.trim() || !numeroTache.trim())) {
+      setPdfWarnOpen(true);
+      return;
+    }
+    setPdfWarnOpen(false);
     exporterPDF(resultat, pieces, {
       longueurBarreBrute: longueurBarre,
       longueurBarreUtile: longueurUtile,
@@ -206,6 +216,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       positionMarge,
       traitScie,
       strategie,
+      longueursProfils,
       stock: strategie === "priorite-stock" ? stock : [],
       infos: { chantier, numeroTache, client, date: dateProjet },
     });
@@ -220,6 +231,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     setLongueurBarre(6000);
     setMargeSecurite(100);
     setPositionMarge("debut");
+    setLongueursProfils({});
     setTraitScie(3);
     setStrategie("min-barres");
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
@@ -250,6 +262,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
         strategie,
         pieces,
         stock,
+        longueurs_profils: longueursProfils,
       });
       setCurrentProjectId(saved.id);
       if (opts.chantierOverride !== undefined) setChantier(opts.chantierOverride);
@@ -287,6 +300,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     const loadedStock = Array.isArray(proj.stock) ? (proj.stock as StockBarre[]) : [];
     setPieces(loadedPieces);
     setStock(loadedStock);
+    const lp = proj.longueurs_profils ?? {};
+    setLongueursProfils(lp);
     setSidebarOpen(false);
     const r = calculer({
       pieces: loadedPieces,
@@ -295,6 +310,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       margeSecurite: proj.marge_securite,
       traitScie: proj.trait_scie,
       strategie: st,
+      longueursProfils: lp,
     });
     setResultat(r);
     toast.success(`Projet « ${proj.chantier || "sans nom"} » chargé`);
@@ -383,7 +399,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Sauvegarder"}
             </Button>
             {resultat && (
-              <Button onClick={exporter} size="sm" className="gap-2">
+              <Button onClick={() => exporter()} size="sm" className="gap-2">
                 <FileDown className="h-4 w-4" /> PDF atelier
               </Button>
             )}
@@ -498,6 +514,23 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   onChange={(e) => setTraitScie(Number(e.target.value) || 0)}
                 />
               </div>
+              {profilsNommes.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Longueur de barre par profile (mm)</Label>
+                  {profilsNommes.map((pr) => (
+                    <div key={pr} className="flex items-center gap-2">
+                      <span className="w-28 truncate text-xs font-medium" title={pr}>{pr}</span>
+                      <Input
+                        type="number"
+                        className="h-8"
+                        value={longueursProfils[pr] ?? longueurBarre}
+                        onChange={(e) => setLongueursProfils((m) => ({ ...m, [pr]: Number(e.target.value) || 0 }))}
+                      />
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground">Les pièces sans profile utilisent la barre de base.</p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Stratégie d'optimisation</Label>
                 <Select value={strategie} onValueChange={(v) => setStrategie(v as Strategie)}>
@@ -569,6 +602,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 onOpenChange={setPasteOpen}
                 initialText={pasteText}
                 longueurBarre={longueurBarre}
+                longueurMax={(pr) => Math.max(0, longueurPourProfil(pr, longueursProfils, longueurBarre) - margeSecurite)}
                 onSetBarre={(v) => { setLongueurBarre(v); toast.success(`Barre de base réglée sur ${v} mm`); }}
                 onImport={(list, mode, info) => {
                   const nouvelles = list.map((x) => ({ ...x, id: nextId() }));
@@ -588,6 +622,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                     <TableHead>Repère</TableHead>
                     <TableHead className="w-40">Longueur (mm)</TableHead>
                     <TableHead className="w-32">Quantité</TableHead>
+                    <TableHead className="w-40">Profile</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -612,6 +647,13 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                         />
                       </TableCell>
                       <TableCell>
+                        <Input
+                          value={p.profil ?? ""}
+                          placeholder="—"
+                          onChange={(e) => updatePiece(p.id, { profil: e.target.value })}
+                        />
+                      </TableCell>
+                      <TableCell>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -625,7 +667,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   ))}
                   {pieces.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
                         Aucune pièce. Cliquez sur « Ajouter » pour commencer.
                       </TableCell>
                     </TableRow>
@@ -796,8 +838,16 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   Schéma visuel et instructions de coupe — chutes ≥ 500 mm signalées en orange
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-8">
-                {grouperBarresIdentiques(resultat.barres).map((groupe) => {
+              <CardContent className="space-y-10">
+                {resultat.profils.map((rp) => (
+                <div key={rp.profil || "_"} className="space-y-8">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-2 border-foreground/80 pb-2">
+                  <h3 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Profile : {libelleProfil(rp.profil)}</h3>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    Barre {rp.longueurBarre} mm · Sous-total : <span className="font-semibold text-foreground">{rp.resultat.nbBarres} barre{rp.resultat.nbBarres > 1 ? "s" : ""}</span> · Rendement {rp.resultat.rendement.toFixed(1)} %
+                  </span>
+                </div>
+                {grouperBarresIdentiques(rp.resultat.barres).map((groupe) => {
                   const barre = groupe.reference;
                   const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie, barre.margeDebut ?? 0);
                   const qte = groupe.barres.length;
@@ -853,6 +903,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                     </div>
                   );
                 })}
+                </div>
+                ))}
               </CardContent>
             </Card>
           </section>
@@ -866,6 +918,22 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
           </Card>
         )}
       </main>
+
+      <Dialog open={pdfWarnOpen} onOpenChange={setPdfWarnOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase tracking-[0.18em]">Informations manquantes</DialogTitle>
+            <DialogDescription>
+              {[!chantier.trim() && "Chantier", !numeroTache.trim() && "Numéro de tâche"].filter(Boolean).join(" et ")}{" "}
+              {!chantier.trim() && !numeroTache.trim() ? "sont vides" : "est vide"}. La fiche de débit sera difficile à identifier en atelier.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPdfWarnOpen(false)}>Compléter</Button>
+            <Button size="sm" onClick={() => exporter(true)}>Exporter quand même</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent className="sm:max-w-md">
