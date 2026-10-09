@@ -5,6 +5,7 @@ export function themeHex(token: string): string {
 }
 
 export function themeRgb(token: string): [number, number, number] {
-  const hex = themeHex(token).replace("#", "");
+  const raw = themeHex(token).replace("#", "");
+  const hex = raw.length === 3 ? raw.split("").map(char => char + char).join("") : raw;
   return [0, 2, 4].map(offset => parseInt(hex.slice(offset, offset + 2), 16)) as [number, number, number];
 }
