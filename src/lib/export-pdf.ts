@@ -296,7 +296,9 @@ export function exporterPDF(
     const barre = g.reference;
     const qte = g.barres.length;
 
-    if (y > pageHeight - 70) {
+    const nbGroupes = grouperCoupesConsecutives(barre.coupes, traitScie).length;
+    const hauteurEstimee = 70 + nbGroupes * 10;
+    if (y + hauteurEstimee > pageHeight - margin) {
       doc.addPage();
       y = margin;
     }
@@ -491,6 +493,7 @@ export function exporterPDF(
       head: [["#", "Pièce", "Longueur de coupe", "Quantité", "Repère cumulé (mm)"]],
       body,
       theme: "striped",
+      pageBreak: "avoid",
       styles: { fontSize: 9 },
       headStyles: { fillColor: [59, 130, 246], textColor: 255 },
       margin: { left: margin, right: margin },
