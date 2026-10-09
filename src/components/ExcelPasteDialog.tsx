@@ -202,6 +202,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
                           <SelectItem value="repere">Repère</SelectItem>
                           <SelectItem value="longueur">Longueur (mm)</SelectItem>
                           <SelectItem value="quantite">Quantité</SelectItem>
+                          <SelectItem value="barre">Longueur de barre</SelectItem>
                           <SelectItem value="ignorer">Ignorer</SelectItem>
                         </SelectContent>
                       </Select>
