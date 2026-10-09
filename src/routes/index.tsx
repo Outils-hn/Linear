@@ -39,6 +39,7 @@ import { chutesAConserver } from "@/lib/chutes";
 import { OffcutPDFOptions } from "@/components/OffcutPDFOptions";
 import { optionsChutesDefaut, lireOptionsChutes, cleChute, choixChute, type OptionsChutesPDF } from "@/lib/offcut-settings";
 import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
+import { ChampNombre } from "@/components/ChampNombre";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
@@ -150,6 +151,17 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveMode, setSaveMode] = useState<"choice" | "new">("choice");
   const [newProjectName, setNewProjectName] = useState("");
+  // Champs numériques vides pendant la saisie, et champs signalés en erreur au lancement.
+  const [champsVides, setChampsVides] = useState<Set<string>>(new Set());
+  const [erreursChamps, setErreursChamps] = useState<Set<string>>(new Set());
+  const marquerVide = (cle: string, vide: boolean) => {
+    setChampsVides((s) => {
+      const n = new Set(s);
+      if (vide) n.add(cle); else n.delete(cle);
+      return n;
+    });
+    if (!vide) setErreursChamps((s) => (s.has(cle) ? new Set([...s].filter((k) => k !== cle)) : s));
+  };
 
   const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
   const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
@@ -222,6 +234,41 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
 
   const lancer = () => {
     if (enCours) return;
+    // Bloque le lancement si un champ numérique requis est vide ou à 0.
+    const erreurs = new Set<string>();
+    const problemes: string[] = [];
+    const requis = (cle: string, valeur: number, zeroInterdit: boolean, libelle: string) => {
+      if (champsVides.has(cle) || (zeroInterdit ? valeur <= 0 : false)) {
+        erreurs.add(cle);
+        if (problemes.length < 6) problemes.push(libelle);
+      }
+    };
+    requis("lb", longueurBarre, true, "Longueur de la barre de base");
+    requis("ms", margeSecurite, false, "Marge de sécurité");
+    requis("ts", traitScie, false, "Épaisseur du trait de scie");
+    requis("seuil-chute", seuilChute, false, "Chute mini à conserver");
+    for (const pr of profilsNommes) {
+      requis(`longueur-profile-${pr}`, longueursProfils[pr] ?? longueurBarre, true, `Longueur de barre du profilé « ${pr} »`);
+      requis(`seuil-profile-${pr}`, seuilPourProfil(pr, seuilsProfils, seuilChute), false, `Chute mini du profilé « ${pr} »`);
+    }
+    for (const p of pieces) {
+      requis(`piece-${p.id}-longueur`, p.longueur, true, `Longueur de la pièce « ${p.nom || "sans repère"} »`);
+      requis(`piece-${p.id}-quantite`, p.quantite, true, `Quantité de la pièce « ${p.nom || "sans repère"} »`);
+    }
+    if (strategie === "priorite-stock") {
+      for (const s of stock) {
+        requis(`stock-${s.id}-longueur`, s.longueur, true, "Longueur d'une barre du stock");
+        requis(`stock-${s.id}-quantite`, s.quantite, true, "Quantité d'une barre du stock");
+      }
+    }
+    if (erreurs.size > 0) {
+      setErreursChamps(erreurs);
+      toast.error(
+        `Optimisation impossible : ${problemes.join(", ")}${erreurs.size > problemes.length ? "…" : ""} ${erreurs.size > 1 ? "sont vides ou à 0" : "est vide ou à 0"}.`,
+      );
+      return;
+    }
+    setErreursChamps(new Set());
     setEnCours(true);
     // Laisse le navigateur afficher l'état « en cours » avant un éventuel SmartCut.
     setTimeout(() => {
@@ -589,11 +636,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <div className="space-y-2">
                 <Label htmlFor="lb">Longueur de la barre de base</Label>
                 <div className="parameter-measure">
-                <Input
+                <ChampNombre
                   id="lb"
-                  type="number"
                   value={longueurBarre}
-                  onChange={(e) => setLongueurBarre(Number(e.target.value) || 0)}
+                  onChange={setLongueurBarre}
+                  onVide={(v) => marquerVide("lb", v)}
+                  erreur={erreursChamps.has("lb")}
                 />
                   <span aria-hidden="true">mm</span>
                 </div>
@@ -601,11 +649,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <div className="space-y-2">
                 <Label htmlFor="ms">Marge de rafraîchissement / sécurité</Label>
                 <div className="parameter-measure">
-                <Input
+                <ChampNombre
                   id="ms"
-                  type="number"
                   value={margeSecurite}
-                  onChange={(e) => setMargeSecurite(Number(e.target.value) || 0)}
+                  onChange={setMargeSecurite}
+                  onVide={(v) => marquerVide("ms", v)}
+                  erreur={erreursChamps.has("ms")}
                 />
                   <span aria-hidden="true">mm</span>
                 </div>
@@ -637,11 +686,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <div className="space-y-2">
                 <Label htmlFor="ts">Épaisseur du trait de scie</Label>
                 <div className="parameter-measure">
-                <Input
+                <ChampNombre
                   id="ts"
-                  type="number"
                   value={traitScie}
-                  onChange={(e) => setTraitScie(Number(e.target.value) || 0)}
+                  onChange={setTraitScie}
+                  onVide={(v) => marquerVide("ts", v)}
+                  erreur={erreursChamps.has("ts")}
                 />
                   <span aria-hidden="true">mm</span>
                 </div>
@@ -649,11 +699,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <div className="space-y-2">
                 <Label htmlFor="seuil-chute">Chute mini à conserver{profilsNommes.length > 0 ? " (sans profilé)" : ""}</Label>
                 <div className="parameter-measure">
-                <Input
+                <ChampNombre
                   id="seuil-chute"
-                  type="number"
                   value={seuilChute}
-                  onChange={(e) => setSeuilChute(Math.max(0, Number(e.target.value) || 0))}
+                  onChange={(n) => setSeuilChute(Math.max(0, n))}
+                  onVide={(v) => marquerVide("seuil-chute", v)}
+                  erreur={erreursChamps.has("seuil-chute")}
                 />
                   <span aria-hidden="true">mm</span>
                 </div>
@@ -665,23 +716,25 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                     <div key={pr} className="grid grid-cols-2 items-center gap-2">
                       <Label htmlFor={`longueur-profile-${pr}`} className="whitespace-normal break-words text-xs font-medium normal-case">{pr}</Label>
                       <div className="parameter-measure">
-                      <Input
+                      <ChampNombre
                         id={`longueur-profile-${pr}`}
-                        type="number"
                         className="h-8"
                         value={longueursProfils[pr] ?? longueurBarre}
-                        onChange={(e) => setLongueursProfils((m) => ({ ...m, [pr]: Number(e.target.value) || 0 }))}
+                        onChange={(n) => setLongueursProfils((m) => ({ ...m, [pr]: n }))}
+                        onVide={(v) => marquerVide(`longueur-profile-${pr}`, v)}
+                        erreur={erreursChamps.has(`longueur-profile-${pr}`)}
                       />
                         <span aria-hidden="true">mm</span>
                       </div>
                       <Label htmlFor={`seuil-profile-${pr}`} className="text-xs font-normal normal-case text-muted-foreground">Chute mini à conserver</Label>
                       <div className="parameter-measure">
-                      <Input
+                      <ChampNombre
                         id={`seuil-profile-${pr}`}
-                        type="number"
                         className="h-8"
                         value={seuilPourProfil(pr, seuilsProfils, seuilChute)}
-                        onChange={(e) => setSeuilsProfils((m) => ({ ...m, [pr]: Math.max(0, Number(e.target.value) || 0) }))}
+                        onChange={(n) => setSeuilsProfils((m) => ({ ...m, [pr]: Math.max(0, n) }))}
+                        onVide={(v) => marquerVide(`seuil-profile-${pr}`, v)}
+                        erreur={erreursChamps.has(`seuil-profile-${pr}`)}
                       />
                         <span aria-hidden="true">mm</span>
                       </div>
@@ -802,17 +855,19 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
+                        <ChampNombre
                           value={p.longueur}
-                          onChange={(e) => updatePiece(p.id, { longueur: Number(e.target.value) || 0 })}
+                          onChange={(n) => updatePiece(p.id, { longueur: n })}
+                          onVide={(v) => marquerVide(`piece-${p.id}-longueur`, v)}
+                          erreur={erreursChamps.has(`piece-${p.id}-longueur`)}
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
+                        <ChampNombre
                           value={p.quantite}
-                          onChange={(e) => updatePiece(p.id, { quantite: Number(e.target.value) || 0 })}
+                          onChange={(n) => updatePiece(p.id, { quantite: n })}
+                          onVide={(v) => marquerVide(`piece-${p.id}-quantite`, v)}
+                          erreur={erreursChamps.has(`piece-${p.id}-quantite`)}
                         />
                       </TableCell>
                       <TableCell className="text-center">
@@ -888,17 +943,19 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                     return (
                       <TableRow key={s.id}>
                         <TableCell>
-                          <Input
-                            type="number"
+                          <ChampNombre
                             value={s.longueur}
-                            onChange={(e) => updateStock(s.id, { longueur: Number(e.target.value) || 0 })}
+                            onChange={(n) => updateStock(s.id, { longueur: n })}
+                            onVide={(v) => marquerVide(`stock-${s.id}-longueur`, v)}
+                            erreur={erreursChamps.has(`stock-${s.id}-longueur`)}
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
+                          <ChampNombre
                             value={s.quantite}
-                            onChange={(e) => updateStock(s.id, { quantite: Number(e.target.value) || 0 })}
+                            onChange={(n) => updateStock(s.id, { quantite: n })}
+                            onVide={(v) => marquerVide(`stock-${s.id}-quantite`, v)}
+                            erreur={erreursChamps.has(`stock-${s.id}-quantite`)}
                           />
                         </TableCell>
                         <TableCell>
