@@ -136,14 +136,16 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
   };
 
   const analyse = useMemo(() => {
-    const iR = roles.indexOf("repere"), iL = roles.indexOf("longueur"), iQ = roles.indexOf("quantite");
+    const iR = roles.indexOf("repere"), iL = roles.indexOf("longueur"), iQ = roles.indexOf("quantite"), iB = roles.indexOf("barre");
     const data = (header ? rows.slice(1) : rows).map((r, k) => ({ r, ligne: k + 1 + (header ? 1 : 0) }));
     const valides: Omit<Piece, "id">[] = [];
     const erreurs: { ligne: number; msg: string }[] = [];
+    const barreVals: number[] = [];
     for (const { r, ligne } of data) {
       const nom = iR >= 0 ? r[iR] ?? "" : "";
-      const L = iL >= 0 ? parseNombre(r[iL] ?? "") : NaN;
-      const Q = iQ >= 0 ? parseNombre(r[iQ] ?? "") : 1;
+      const L = iL >= 0 ? parseLongueur(r[iL] ?? "") : NaN;
+      const Q = iQ >= 0 ? parseQuantite(r[iQ] ?? "") : 1;
+      if (iB >= 0) { const b = parseLongueur(r[iB] ?? ""); if (!isNaN(b) && b > 0) barreVals.push(b); }
       if (iL < 0 || isNaN(L) || L <= 0) { erreurs.push({ ligne, msg: "longueur vide ou non numérique" }); continue; }
       if (L > longueurBarre) { erreurs.push({ ligne, msg: `longueur ${L} > barre ${longueurBarre}` }); continue; }
       if (isNaN(Q) || !Number.isInteger(Q) || Q <= 0) { erreurs.push({ ligne, msg: "quantité non entière ou nulle" }); continue; }
