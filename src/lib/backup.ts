@@ -52,7 +52,7 @@ export function lireJson(texte: string): LocalProject[] {
   } catch {
     throw new Error("Fichier illisible (JSON invalide)");
   }
-  const d = data as Partial<FichierProjet & FichierSauvegarde>;
+  const d = data as { format?: string; version?: number; projet?: unknown; projets?: unknown };
   if (typeof d.version === "number" && d.version > FORMAT_VERSION)
     throw new Error(`Fichier créé par une version plus récente (format ${d.version})`);
   let liste: unknown[];
