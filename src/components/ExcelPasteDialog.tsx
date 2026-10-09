@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Piece } from "@/lib/optimizer";
 
-type ColRole = "repere" | "longueur" | "quantite" | "barre" | "ignorer";
+type ColRole = "repere" | "longueur" | "quantite" | "profil" | "barre" | "ignorer";
 const MAP_KEY = "linear:excel-colmap:v1";
 
 export function parseNombre(s: string): number {
@@ -49,7 +49,8 @@ function splitRows(text: string): string[][] {
 
 function roleFromHeader(h: string): ColRole | null {
   const s = h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  if (/^(rep|designation|profil|nom|ref)/.test(s)) return "repere";
+  if (/^(profil|profile|serie|matiere)/.test(s)) return "profil";
+  if (/^(rep|designation|nom|ref)/.test(s)) return "repere";
   if (/^(barre|stock)/.test(s)) return "barre";
   if (/^(long|l$|l\s|lg)/.test(s)) return "longueur";
   if (/^(qte|qt|quantite|nb|nombre|q$)/.test(s)) return "quantite";
@@ -101,11 +102,12 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   initialText: string;
   longueurBarre: number;
+  longueurMax?: (profil: string) => number;
   onSetBarre: (v: number) => void;
   onImport: (pieces: Omit<Piece, "id">[], mode: "replace" | "append", info: { lignes: number; ignorees: number }) => void;
 }
 
-export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarre, onSetBarre, onImport }: Props) {
+export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarre, longueurMax, onSetBarre, onImport }: Props) {
   const [text, setText] = useState("");
   const [roles, setRoles] = useState<ColRole[]>([]);
   const [header, setHeader] = useState(false);
@@ -136,26 +138,28 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
   };
 
   const analyse = useMemo(() => {
-    const iR = roles.indexOf("repere"), iL = roles.indexOf("longueur"), iQ = roles.indexOf("quantite"), iB = roles.indexOf("barre");
+    const iR = roles.indexOf("repere"), iL = roles.indexOf("longueur"), iQ = roles.indexOf("quantite"), iB = roles.indexOf("barre"), iP = roles.indexOf("profil");
     const data = (header ? rows.slice(1) : rows).map((r, k) => ({ r, ligne: k + 1 + (header ? 1 : 0) }));
     const valides: Omit<Piece, "id">[] = [];
     const erreurs: { ligne: number; msg: string }[] = [];
     const barreVals: number[] = [];
     for (const { r, ligne } of data) {
       const nom = iR >= 0 ? r[iR] ?? "" : "";
+      const profil = iP >= 0 ? (r[iP] ?? "").trim() : "";
+      const max = longueurMax ? longueurMax(profil) : longueurBarre;
       const L = iL >= 0 ? parseLongueur(r[iL] ?? "") : NaN;
       const Q = iQ >= 0 ? parseQuantite(r[iQ] ?? "") : 1;
       if (iB >= 0) { const b = parseLongueur(r[iB] ?? ""); if (!isNaN(b) && b > 0) barreVals.push(b); }
       if (iL < 0 || isNaN(L) || L <= 0) { erreurs.push({ ligne, msg: "longueur vide ou non numérique" }); continue; }
-      if (L > longueurBarre) { erreurs.push({ ligne, msg: `longueur ${L} > barre ${longueurBarre}` }); continue; }
+      if (L > max) { erreurs.push({ ligne, msg: `longueur ${L} > barre ${max}${profil ? ` (${profil})` : ""}` }); continue; }
       if (isNaN(Q) || !Number.isInteger(Q) || Q <= 0) { erreurs.push({ ligne, msg: "quantité non entière ou nulle" }); continue; }
-      valides.push({ nom, longueur: L, quantite: Q });
+      valides.push({ nom, longueur: L, quantite: Q, ...(profil ? { profil } : {}) });
     }
     let out = valides;
     if (fusion) {
       const m = new Map<string, Omit<Piece, "id">>();
       for (const v of valides) {
-        const k = `${v.nom}\u0000${v.longueur}`;
+        const k = `${v.profil ?? ""}\u0000${v.nom}\u0000${v.longueur}`;
         const e = m.get(k);
         if (e) e.quantite += v.quantite; else m.set(k, { ...v });
       }
@@ -164,7 +168,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
     const barreUnique = barreVals.length > 0 && barreVals.every((b) => b === barreVals[0]) ? barreVals[0] : null;
     const barreVariee = barreVals.length > 1 && barreUnique === null;
     return { out, erreurs, nValides: valides.length, barreUnique, barreVariee };
-  }, [rows, roles, header, fusion, longueurBarre]);
+  }, [rows, roles, header, fusion, longueurBarre, longueurMax]);
 
   const doImport = (mode: "replace" | "append") => {
     onImport(analyse.out, mode, { lignes: analyse.nValides, ignorees: analyse.erreurs.length });
@@ -202,6 +206,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
                           <SelectItem value="repere">Repère</SelectItem>
                           <SelectItem value="longueur">Longueur (mm)</SelectItem>
                           <SelectItem value="quantite">Quantité</SelectItem>
+                          <SelectItem value="profil">Profile</SelectItem>
                           <SelectItem value="barre">Longueur de barre</SelectItem>
                           <SelectItem value="ignorer">Ignorer</SelectItem>
                         </SelectContent>
