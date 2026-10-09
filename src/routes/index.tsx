@@ -797,7 +797,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <Button
                   onClick={lancer}
                   size="lg"
-                  className="gap-2 sm:self-end"
+                  className="optimization-launch gap-2 sm:self-end"
                   disabled={pieces.length === 0}
                 >
                   <Calculator className="h-4 w-4" /> Lancer l'optimisation

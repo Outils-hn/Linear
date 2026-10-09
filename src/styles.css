@@ -56,6 +56,8 @@
   --radius: 0.625rem;
   --heading: oklch(0.279 0.041 260.031);
   --piece-ink: #374151;
+  --table-heading: var(--piece-ink);
+  --table-header-surface: var(--muted);
   --cut-separator: #ffffff;
   --offcut-paper: #FCE3C6;
   --hatch: #a5adb6;
@@ -111,6 +113,10 @@
 
 /* ============ DARK — Titanium / anthracite ============ */
 .dark {
+  --table-heading: #CBD5E1;
+  --table-header-surface: #34383E;
+  --optimization-action: #3B82F6;
+  --optimization-action-foreground: #FFFFFF;
   --heading: oklch(0.9 0.025 250);
   --rail: oklch(0.8 0.01 250 / 0.04);
   --background: oklch(0.22 0.004 240);
@@ -126,7 +132,7 @@
   --secondary: oklch(0.32 0.006 240);
   --secondary-foreground: oklch(0.92 0.003 240);
   --muted: oklch(0.30 0.005 240);
-  --muted-foreground: oklch(0.68 0.006 240);
+  --muted-foreground: #B8C2CE;
   --accent: oklch(0.32 0.006 240);
   --accent-foreground: oklch(0.95 0.003 240);
 
@@ -180,14 +186,18 @@
 .tabular-nums, input[type="number"], svg text { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .bar-piece-label { font-family: var(--font-sans); font-size: 12px; font-weight: 400; letter-spacing: 0; }
 input[type="number"] { text-align: right; }
-table thead { background: var(--muted); }
+table thead { background: var(--table-header-surface); }
 table tbody tr:nth-child(even) { background: color-mix(in oklab, var(--muted) 30%, transparent); }
 table tr { height: 36px; }
 table td, table th { padding-top: 2px; padding-bottom: 2px; }
 table input { height: 30px; }
 table td:has(input[type="number"]), table td.tabular-nums { text-align: right; font-family: var(--font-mono); }
 table th.numeric { text-align: right; }
-table thead th { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--piece-ink); }
+table thead th { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--table-heading); }
+.dark table thead tr { background: var(--table-header-surface); }
+.dark table thead th button { color: var(--table-heading); }
+.dark .optimization-launch { background: var(--optimization-action); color: var(--optimization-action-foreground); }
+.dark .optimization-launch:hover { background: var(--optimization-action); filter: brightness(0.94); }
 table td:has(input) { padding-left: 0; padding-right: 0; }
 table td input { padding-left: 11px; padding-right: 11px; }
 table input[type="number"] { appearance: textfield; }
