@@ -1,6 +1,7 @@
 import type { Piece, ResultatOptimisation } from "@/lib/optimizer";
 import type { ResultatMulti } from "@/lib/multi-profil";
 import { chutesAConserver } from "@/lib/chutes";
+import { bilanMatiere } from "@/lib/material-summary";
 
 // Nombre au format Excel français : virgule décimale, sans unité
 function numFR(n: number): string {
@@ -43,16 +44,29 @@ export async function telechargerExcel(
 
   if (resultat && resultat.nbBarres > 0) {
     const rows: (string | number)[][] = [
-      ["Profilé", "Barre n°", "Longueur de barre (mm)", "Pièces coupées", "Chute (mm)", "Utilisation (%)"],
+      ["Profilé", "Barre n°", "Longueur de barre (mm)", "Pièces coupées", "Chute (mm)", "Rendement (%)"],
     ];
     for (const b of resultat.barres) {
       const coupes = b.coupes.map((c) => `${c.nom ? c.nom + " " : ""}${c.longueur}`).join(" + ");
-      const utilisation = b.longueurBarre > 0 ? (b.longueurUtilisee / b.longueurBarre) * 100 : 0;
+      const utilisation = b.longueurBrute > 0 ? (b.coupes.reduce((s, c) => s + c.longueur, 0) / b.longueurBrute) * 100 : 0;
       rows.push([(b.profil ?? "").trim(), b.index, b.longueurBrute, coupes, b.chute, Math.round(utilisation * 10) / 10]);
     }
     const wsRes = XLSX.utils.aoa_to_sheet(rows);
     wsRes["!cols"] = [{ wch: 18 }, { wch: 9 }, { wch: 22 }, { wch: 60 }, { wch: 11 }, { wch: 14 }];
     XLSX.utils.book_append_sheet(wb, wsRes, "Resultats");
+    const matiere = bilanMatiere(resultat);
+    const synthese = XLSX.utils.aoa_to_sheet([
+      ["Indicateur", "Longueur (mm)", "Part de la matière achetée (%)", "Détail"],
+      ["Barres utilisées", resultat.nbBarres, "", "Nombre de barres"],
+      ["Matière achetée", resultat.longueurTotale, 100, ""],
+      ["Rendement", resultat.longueurUtile, matiere.parts[0].affiche, "Pièces / matière achetée"],
+      ["Chutes réutilisables", resultat.longueurChutesReutilisables, matiere.parts[1].affiche, ""],
+      ["Perte définitive", matiere.perte, matiere.parts[2].affiche, "Matière réellement jetée"],
+      ["Chutes totales", resultat.longueurChutes, Math.round(resultat.pourcentageChutes * 10) / 10, ""],
+      ["Répartition", "", matiere.parts.reduce((s, p) => s + p.affiche, 0), matiere.repartition],
+    ]);
+    synthese["!cols"] = [{ wch: 24 }, { wch: 18 }, { wch: 30 }, { wch: 90 }];
+    XLSX.utils.book_append_sheet(wb, synthese, "Synthese");
 
     if ("profils" in resultat) {
       const chutes: (string | number)[][] = [["Profilé", "Longueur (mm)", "Quantité", "Chantier", "Numéro de tâche", "Date"]];

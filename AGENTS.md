@@ -9,3 +9,4 @@
 - Embed CDN-hosted Plex Sans font assets exclusively in PDF exports and use tabular digit metrics with explicit per-column alignment shared by headers and values, so workshop printouts remain proportional and aligned.
 - Format displayed measurements through the browser-safe format-number module for consistent French screen/PDF labels; keep numeric calculations and editable values unchanged.
 - Keep editable-table and measurement-field presentation in shared CSS classes, with shared table-header defaults, so alignment changes do not alter input handlers or calculations.
+- Derive material-loss indicators and balanced display percentages in the browser-safe material-summary module shared by screen, PDF and Excel; preserve engine results and independent verification.
