@@ -1,89 +1,99 @@
-import type { BarreOptimisee } from "@/lib/optimizer";
+import { useId, useState, type PointerEvent } from "react";
+import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import type { BarreOptimisee, Piece } from "@/lib/optimizer";
 import { SEUIL_CHUTE_REUTILISABLE } from "@/lib/optimizer";
 import { colorForPieceId } from "@/lib/piece-colors";
+import { segmentsBarre, type SegmentBarre } from "@/lib/bar-drawing";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
-interface Props {
-  barre: BarreOptimisee;
-  traitScie: number;
-  pieceIds: string[];
+interface Props { barre: BarreOptimisee; traitScie: number; pieceIds: string[]; libelle?: string }
+const fmt = (n: number) => Number(n.toFixed(3)).toLocaleString("fr-FR");
+
+function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: Props & { zone: [number, number]; regle?: boolean; onZone?: (zone: [number, number]) => void }) {
+  const id = useId().replace(/:/g, "");
+  const [hover, setHover] = useState<SegmentBarre | null>(null);
+  const [selection, setSelection] = useState<[number, number] | null>(null);
+  const largeur = 1000, height = regle ? 200 : 64;
+  const span = zone[1] - zone[0];
+  const x = (mm: number) => (mm - zone[0]) / span * largeur;
+  const pos = (e: PointerEvent<SVGSVGElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return Math.max(zone[0], Math.min(zone[1], zone[0] + (e.clientX - r.left) / r.width * span));
+  };
+  const stepBase = span / 10;
+  const power = 10 ** Math.floor(Math.log10(stepBase));
+  const step = [1, 2, 5, 10].map(n => n * power).find(n => n >= stepBase) ?? power * 10;
+  const ticks: number[] = [];
+  for (let n = Math.ceil(zone[0] / step) * step; n <= zone[1]; n += step) ticks.push(n);
+  return <div className="relative w-full">
+    <svg aria-label="Dessin de la barre" viewBox={`0 0 ${largeur} ${height}`} preserveAspectRatio="none" className={regle ? "h-64 w-full touch-none select-none" : "h-16 w-full"}
+      onPointerDown={e => { if (!onZone) return; e.currentTarget.setPointerCapture(e.pointerId); const n = pos(e); setSelection([n, n]); }}
+      onPointerMove={e => { if (selection) setSelection([selection[0], pos(e)]); }}
+      onPointerUp={e => { if (!selection || !onZone) return; const end = pos(e); if (Math.abs(end - selection[0]) > span * 0.01) onZone([Math.min(end, selection[0]), Math.max(end, selection[0])]); setSelection(null); }}
+      onPointerCancel={() => setSelection(null)}>
+      <defs>
+        <pattern id={`${id}-marge`} width="5" height="5" patternUnits="userSpaceOnUse"><rect width="5" height="5" className="fill-muted"/><path d="M2 0V5" className="stroke-muted-foreground" strokeWidth="1"/></pattern>
+        <pattern id={`${id}-dechet`} width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" className="fill-waste"/><path d="M-2 2L2 -2M0 10L10 0M8 12L12 8" className="stroke-foreground" strokeWidth="1"/></pattern>
+        <pattern id={`${id}-reutilisable`} width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" className="fill-warning"/><path d="M-2 2L2 -2M0 10L10 0M8 12L12 8" className="stroke-warning-foreground" strokeWidth="1"/></pattern>
+      </defs>
+      {segmentsBarre(barre, traitScie).filter(s => s.fin >= zone[0] && s.debut <= zone[1]).map((s, i) => {
+        const left = x(s.debut), w = s.longueur / span * largeur;
+        const fill = s.type === "piece" ? colorForPieceId(s.pieceId ?? "", pieceIds) : s.type === "scie" ? "var(--foreground)" : `url(#${id}-${s.type})`;
+        const label = `${s.nom} · ${fmt(s.longueur)} mm${s.type === "piece" ? ` · Début ${fmt(s.debut)} mm · Fin ${fmt(s.fin)} mm depuis le bout brut` : ""}`;
+        return <g key={i} tabIndex={s.type === "scie" ? undefined : 0} aria-label={label} onPointerEnter={() => setHover(s)} onPointerLeave={() => setHover(null)} onFocus={() => setHover(s)} onBlur={() => setHover(null)}>
+          <title>{label}</title>
+          <rect x={left} y={regle ? 45 : 0} width={w} height={regle ? 90 : 64} fill={fill} stroke="var(--foreground)" strokeWidth={hover === s ? 3 : 0.6} opacity={hover && hover !== s ? 0.65 : 1}/>
+          {s.type === "piece" && w > 55 && <text x={left + w / 2} y={regle ? 95 : 35} textAnchor="middle" className="fill-primary-foreground" fontSize="12" textLength={w < 170 ? Math.min(w - 8, (s.nom.length + String(s.longueur).length + 3) * 7) : undefined} lengthAdjust="spacingAndGlyphs" pointerEvents="none">{s.nom} · {s.longueur}</text>}
+        </g>;
+      })}
+      {regle && <g className="fill-foreground stroke-muted-foreground" fontSize="12">
+        <line x1="0" x2="1000" y1="155" y2="155"/>
+        {ticks.map(n => <g key={n}><line x1={x(n)} x2={x(n)} y1="155" y2="165"/><text x={Math.max(25, Math.min(975, x(n)))} y="185" textAnchor="middle" stroke="none">{fmt(n)}</text></g>)}
+      </g>}
+      {selection && <rect x={x(Math.min(...selection))} y="45" width={Math.abs(selection[1] - selection[0]) / span * largeur} height="90" className="fill-primary/20 stroke-primary" strokeWidth="2" pointerEvents="none"/>}
+    </svg>
+    {hover && <div role="tooltip" className="pointer-events-none absolute bottom-full left-0 z-10 mb-2 max-w-full rounded-md border border-border bg-popover px-3 py-2 text-left text-xs text-popover-foreground shadow-md">
+      <div className="font-semibold">{hover.nom} · {fmt(hover.longueur)} mm</div>
+      {hover.type === "piece" && <div>Début : {fmt(hover.debut)} mm · Fin : {fmt(hover.fin)} mm — bout brut</div>}
+    </div>}
+  </div>;
 }
 
-export function BarreSchema({ barre, traitScie, pieceIds }: Props) {
-  const total = barre.longueurBrute;
-  const pct = (mm: number) => (mm / total) * 100;
-  const margeDebut = barre.margeDebut ?? 0;
-  const margeFin = barre.margeFin ?? 0;
-  const traitFinal = Math.max(0, barre.longueurTraitsScie - Math.max(0, barre.coupes.length - 1) * traitScie);
+export function BarreSchema({ barre, traitScie, pieceIds, libelle }: Props) {
+  const [open, setOpen] = useState(false);
+  const [zone, setZone] = useState<[number, number]>([0, barre.longueurBrute]);
+  const zoom = (factor: number) => {
+    const size = Math.max(barre.longueurBrute / 100, Math.min(barre.longueurBrute, (zone[1] - zone[0]) * factor));
+    const start = Math.max(0, Math.min(barre.longueurBrute - size, (zone[0] + zone[1] - size) / 2));
+    setZone([start, start + size]);
+  };
+  return <div className="w-full">
+    <Button variant="ghost" aria-label={`Agrandir ${libelle ?? `barre ${barre.index}`}`} className="block h-auto w-full rounded-md border border-border p-0 hover:bg-transparent" onClick={() => { setZone([0, barre.longueurBrute]); setOpen(true); }}>
+      <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={[0, barre.longueurBrute]}/>
+    </Button>
+    <div className="mt-1 flex justify-between text-[10px] text-muted-foreground"><span>0</span><span>{barre.longueurBrute} mm</span></div>
+    <div className="mt-1 text-xs text-muted-foreground">Marge début : {barre.margeDebut ?? 0} mm · Marge fin : {barre.margeFin ?? 0} mm · Chute : <span className={barre.chuteReutilisable ? "font-semibold text-warning" : "font-semibold text-muted-foreground"}>{barre.chute} mm — {barre.chuteReutilisable ? `Réutilisable (≥ ${SEUIL_CHUTE_REUTILISABLE} mm)` : "Déchet"}</span></div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-6xl sm:max-w-6xl">
+        <DialogHeader><DialogTitle>{libelle ?? `Barre n°${barre.index}`}</DialogTitle><DialogDescription>Cotes mesurées depuis l’extrémité brute de la barre</DialogDescription></DialogHeader>
+        <TooltipProvider><div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-sm tabular-nums">{fmt(zone[0])} à {fmt(zone[1])} mm · x {fmt(barre.longueurBrute / (zone[1] - zone[0]))}</span>
+          <div className="flex gap-1">{[{ label: "Zoomer", Icon: ZoomIn, action: () => zoom(0.5) }, { label: "Dézoomer", Icon: ZoomOut, action: () => zoom(2) }, { label: "Vue complète", Icon: RotateCcw, action: () => setZone([0, barre.longueurBrute]) }].map(({label, Icon, action}) => <Tooltip key={label}><TooltipTrigger asChild><Button size="icon" variant="outline" aria-label={label} onClick={action}><Icon className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent>{label}</TooltipContent></Tooltip>)}</div>
+        </div></TooltipProvider>
+        <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={zone} regle onZone={setZone}/>
+        <div className="flex items-center gap-3"><span className="text-xs text-muted-foreground">Zone</span><input aria-label="Déplacer la zone de zoom" type="range" min="0" max={Math.max(0, barre.longueurBrute - (zone[1] - zone[0]))} step="1" value={zone[0]} disabled={zone[1] - zone[0] >= barre.longueurBrute} className="w-full accent-primary" onChange={e => { const start = Number(e.target.value); setZone([start, start + zone[1] - zone[0]]); }}/></div>
+      </DialogContent>
+    </Dialog>
+  </div>;
+}
 
-  return (
-    <div className="w-full">
-      <div className="relative flex h-16 w-full overflow-hidden rounded-md border border-border bg-muted">
-        {margeDebut > 0 && <div className="margin-hatch h-full shrink-0 bg-muted" style={{ width: `${pct(margeDebut)}%` }} title={`Marge début : ${margeDebut} mm`} />}
-        {barre.coupes.map((c, i) => {
-          const color = colorForPieceId(c.pieceId, pieceIds);
-          return (
-            <div key={i} className="flex h-full shrink-0" style={{ width: `${pct(c.longueur + (i < barre.coupes.length - 1 ? traitScie : traitFinal))}%` }}>
-              <div
-                className="flex h-full min-w-0 flex-1 items-center justify-center text-xs font-medium text-primary-foreground shadow-inner"
-                style={{ backgroundColor: color }}
-                title={`${c.nom} — ${c.longueur} mm`}
-              >
-                <span className="truncate px-1">
-                  {c.nom} <span className="opacity-80">· {c.longueur}</span>
-                </span>
-              </div>
-              {(i < barre.coupes.length - 1 ? traitScie : traitFinal) > 0 && (
-                <div
-                  className="h-full shrink-0 bg-foreground/80"
-                  style={{ width: `${((i < barre.coupes.length - 1 ? traitScie : traitFinal) / (c.longueur + (i < barre.coupes.length - 1 ? traitScie : traitFinal))) * 100}%` }}
-                  title={`Trait de scie ${i < barre.coupes.length - 1 ? traitScie : traitFinal} mm`}
-                />
-              )}
-            </div>
-          );
-        })}
-        {barre.chute > 0 && (
-          <div
-            className="offcut-hatch flex h-full shrink-0 items-center justify-center text-xs font-medium"
-            style={{
-              width: `${pct(barre.chute)}%`,
-              backgroundColor: barre.chuteReutilisable
-                ? "var(--color-warning)"
-                : "var(--color-waste)",
-              color: barre.chuteReutilisable
-                ? "var(--color-warning-foreground)"
-                : "var(--color-foreground)",
-            }}
-            title={`Chute ${barre.chute} mm`}
-          >
-            <span className="truncate px-1">
-              {barre.chuteReutilisable ? "♺ " : ""}
-              {barre.chute} mm
-            </span>
-          </div>
-        )}
-        {margeFin > 0 && <div className="margin-hatch h-full shrink-0 bg-muted" style={{ width: `${pct(margeFin)}%` }} title={`Marge fin : ${margeFin} mm`} />}
-      </div>
-      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-        <span>0</span>
-        <span>{total} mm</span>
-      </div>
-      <div className="mt-1 text-xs text-muted-foreground">
-        <span>Marge début : {margeDebut} mm · Marge fin : {margeFin} mm · </span>
-        Chute :{" "}
-        <span
-          className={
-            barre.chuteReutilisable
-              ? "font-semibold text-[color:var(--color-warning)]"
-              : "font-semibold text-[color:var(--color-waste)]"
-          }
-        >
-          {barre.chute} mm —{" "}
-          {barre.chuteReutilisable
-            ? `Réutilisable (≥ ${SEUIL_CHUTE_REUTILISABLE} mm)`
-            : "Déchet"}
-        </span>
-      </div>
-    </div>
-  );
+export function LegendeBarres({ pieces, pieceIds }: { pieces: Piece[]; pieceIds: string[] }) {
+  return <div aria-label="Légende du plan de découpe" className="flex flex-wrap gap-x-5 gap-y-2 border-b border-border pb-4 text-xs">
+    {pieces.filter(p => p.quantite > 0 && p.longueur > 0).map(p => <span key={p.id} className="flex max-w-full items-center gap-2"><svg width="14" height="14" className="shrink-0" aria-hidden="true"><rect width="14" height="14" fill={colorForPieceId(p.id, pieceIds)}/></svg><span className="break-words">{p.nom}</span></span>)}
+    <span className="flex items-center gap-2"><i className="margin-hatch h-3.5 w-3.5 bg-muted"/>Marge</span>
+    <span className="flex items-center gap-2"><i className="offcut-hatch h-3.5 w-3.5 bg-warning"/>Chute réutilisable</span>
+    <span className="flex items-center gap-2"><i className="offcut-hatch h-3.5 w-3.5 bg-waste"/>Déchet</span>
+  </div>;
 }
