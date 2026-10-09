@@ -24,7 +24,7 @@ export function tableauAtelier(doc: jsPDF, options: UserOptions) {
       // Exceptionally tall cells: shrink only this table until a legal group fits.
       const size = options.styles?.fontSize ?? 9;
       if (size > 4) {
-        tableauAtelier(doc, { ...options, body: rows.map(row => row.raw), startY, styles: { ...options.styles, fontSize: size - 1 } });
+        tableauAtelier(doc, { ...options, body: rows.map(row => table.columns.map(column => row.cells[column.index]?.text.join("\n") ?? "")), startY, styles: { ...options.styles, fontSize: size - 1 } });
         return;
       }
       throw new Error("Le tableau contient des lignes trop hautes pour une page A4.");

@@ -370,7 +370,7 @@ export async function exporterPDF(
     const margeFin = barre.margeFin ?? 0;
     const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie, margeDebut);
     const svg = new DOMParser().parseFromString(dessin.source, "image/svg+xml").documentElement;
-    await svg2pdf(svg, doc, { x: margin, y, scale: 1 });
+    await svg2pdf(svg, doc, { x: margin, y, width: pageWidth - 2 * margin, height: dessin.hauteur });
     y += dessin.hauteur + 6;
 
     doc.setTextColor(20, 20, 20);
