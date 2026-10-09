@@ -1,7 +1,6 @@
 import type { jsPDF } from "jspdf";
 import sans from "@/assets/fonts/plex-sans-Regular.ttf.asset.json";
 import bold from "@/assets/fonts/plex-sans-SemiBold.ttf.asset.json";
-import mono from "@/assets/fonts/plex-mono-Regular.ttf.asset.json";
 
 const fontData = new Map<string, Promise<string>>();
 function loadFont(url: string) {
@@ -22,8 +21,6 @@ export async function installerPolicesPDF(doc: jsPDF) {
   await Promise.all([
     { asset: sans, family: "PlexSans", style: "normal" },
     { asset: bold, family: "PlexSans", style: "bold" },
-    { asset: mono, family: "PlexMono", style: "normal" },
-    { asset: mono, family: "PlexMono", style: "bold" },
   ].map(async ({ asset, family, style }) => {
     const data = await loadFont(asset.url);
     doc.addFileToVFS(asset.original_filename, data);

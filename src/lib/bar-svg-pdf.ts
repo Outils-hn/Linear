@@ -33,7 +33,8 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
         doc.setFont("PlexSans", "normal");
         doc.setFontSize(9);
         const longueur = `${formatNombre(s.longueur)} mm`;
-        const complet = s.nom ? `${s.nom} · ${longueur}` : longueur;
+        const nom = s.nom?.replace(/\s+/g, " ").trim();
+        const complet = nom ? `${nom} · ${longueur}` : longueur;
         const label = doc.getTextWidth(complet) <= w - 2.4 ? complet : formatNombre(s.longueur);
         if (doc.getTextWidth(label) <= w - 2.4) elements.push(`<text x="${left + w / 2}" y="8" font-size="3.175" letter-spacing="0" font-family="PlexSans" font-weight="normal" fill="${PDF_INK.text}" text-anchor="middle">${escapeXml(label)}</text>`);
       }
@@ -41,15 +42,15 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
       elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">Chute ${formatNombre(s.longueur)} mm</text>`);
     }
   }
-  doc.setFont("PlexMono", "normal"); doc.setFontSize(6.5);
+  doc.setFont("PlexSans", "normal"); doc.setFontSize(6.5);
   const cotes = placerCotes(segments.filter(s => s.type === "piece").map(s => s.fin), barre.longueurBrute, largeur, txt => doc.getTextWidth(txt));
   let niveaux = 1;
   for (const cote of cotes) {
     niveaux = Math.max(niveaux, cote.niveau + 1);
     const yy = h + 4.2 + cote.niveau * 3.5;
-    elements.push(`<path d="M${cote.x} ${h}V${yy - 2.4}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/><text x="${cote.labelX}" y="${yy}" font-size="2.293" font-family="PlexMono" font-weight="normal" text-anchor="middle" fill="${PDF_INK.text}">${libelleCote(cote.valeur)}</text>`);
+    elements.push(`<path d="M${cote.x} ${h}V${yy - 2.4}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/><text x="${cote.labelX}" y="${yy}" font-size="2.293" font-family="PlexSans" font-weight="normal" text-anchor="middle" fill="${PDF_INK.text}">${libelleCote(cote.valeur)}</text>`);
   }
   const hauteur = h + 6 + (niveaux - 1) * 3.5;
-  const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${largeur}" height="${hauteur}" viewBox="0 0 ${largeur} ${hauteur}" font-family="PlexSans">${elements.join("")}</svg>`;
+  const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${largeur}" height="${hauteur}" viewBox="0 0 ${largeur} ${hauteur}" font-family="PlexSans" style="font-variant-numeric:tabular-nums">${elements.join("")}</svg>`;
   return { source, hauteur };
 }
