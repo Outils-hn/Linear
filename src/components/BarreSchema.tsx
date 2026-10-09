@@ -56,7 +56,7 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
   const ticks: number[] = [];
   for (let n = Math.ceil(zone[0] / step) * step; n <= zone[1]; n += step) ticks.push(n);
   return <div ref={container} className="relative w-full">
-    <svg aria-label="Dessin de la barre" viewBox={`0 0 ${largeur} ${height}`} preserveAspectRatio="none" height={height} className={regle ? "h-64 w-full touch-none select-none" : "w-full! rounded-sm pointer-events-auto!"}
+    <svg aria-label="Dessin de la barre" viewBox={`0 0 ${largeur} ${height}`} preserveAspectRatio="none" width={largeur} height={height} className={regle ? "h-64 w-full touch-none select-none" : "block h-auto! w-full! rounded-sm pointer-events-auto!"}
       onPointerDown={e => { if (!onZone) return; e.currentTarget.setPointerCapture(e.pointerId); const n = pos(e); setSelection([n, n]); }}
       onPointerMove={e => { if (selection) setSelection([selection[0], pos(e)]); }}
       onPointerUp={e => { if (!selection || !onZone) return; const end = pos(e); if (Math.abs(end - selection[0]) > span * 0.01) onZone([Math.min(end, selection[0]), Math.max(end, selection[0])]); setSelection(null); }}
@@ -79,6 +79,7 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
         const center = (label.gauche + label.droite) / 2;
         if (!label.lignes.length) {
           const text = String(label.ligneTableau);
+          if (mesure.current) mesure.current.font = `400 ${LABEL_BASE_PX}px "IBM Plex Sans"`;
           const width = mesure.current?.measureText(text).width ?? 12;
           const cx = Math.max(width / 2, Math.min(largeur - width / 2, center));
           const y = top - 8 - label.niveau * 16;

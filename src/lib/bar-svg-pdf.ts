@@ -49,14 +49,15 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
       const text = String(label.ligneTableau), width = measure(text, LABEL_BASE_PX) * MM_PER_PX;
       const center = Math.max(width / 2, Math.min(largeur - width / 2, cx));
       const y = (-8 - label.niveau * 16) * MM_PER_PX;
-      elements.push(`<path d="M${cx} 0V${y + 5 * MM_PER_PX}H${center}" stroke="${PDF_INK.text}" stroke-width="0.13" fill="none"/><text x="${center}" y="${y + LABEL_BASE_PX * MM_PER_PX * 0.35}" font-size="${LABEL_BASE_PX * MM_PER_PX}" text-anchor="middle" fill="${PDF_INK.text}">${text}</text>`);
+      elements.push(`<path d="M${cx} 0V${y + 5 * MM_PER_PX}H${center}" stroke="${PDF_INK.text}" stroke-width="0.13" fill="none"/><text x="${center - width / 2}" y="${y + LABEL_BASE_PX * MM_PER_PX * 0.35}" font-size="${LABEL_BASE_PX * MM_PER_PX}" text-anchor="start" fill="${PDF_INK.text}">${text}</text>`);
       return;
     }
     const size = label.taille * MM_PER_PX;
     elements.push(`<defs><clipPath id="piece-label-${i}"><rect x="${(label.gauche + 4) * MM_PER_PX}" y="0" width="${Math.max(0, label.droite - label.gauche - 8) * MM_PER_PX}" height="${h}"/></clipPath></defs>`);
     label.lignes.forEach((text, line) => {
       const y = h / 2 + (line - (label.lignes.length - 1) / 2) * size * 1.2 + size * 0.35;
-      elements.push(`<text x="${cx}" y="${y}" font-size="${size}" letter-spacing="0" font-family="PlexSans" font-weight="normal" fill="${PDF_INK.text}" text-anchor="middle" clip-path="url(#piece-label-${i})">${escapeXml(text)}</text>`);
+      const left = cx - measure(text, label.taille) * MM_PER_PX / 2;
+      elements.push(`<text x="${left}" y="${y}" font-size="${size}" letter-spacing="0" font-family="PlexSans" font-weight="normal" fill="${PDF_INK.text}" text-anchor="start" clip-path="url(#piece-label-${i})">${escapeXml(text)}</text>`);
     });
   });
   doc.setFont("PlexSans", "normal"); doc.setFontSize(6.5);
