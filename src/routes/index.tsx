@@ -10,6 +10,8 @@ import {
   History,
   Save,
   FilePlus,
+  ClipboardCopy,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +32,7 @@ import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
+import { copierPourExcel, telechargerExcel } from "@/lib/export-excel";
 import {
   ensureProfile,
   getActiveProfile,
@@ -501,6 +504,38 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => { setPasteText(""); setPasteOpen(true); }}>
                   Coller depuis Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={pieces.length === 0}
+                  onClick={async () => {
+                    try {
+                      const n = await copierPourExcel(pieces);
+                      toast.success(`${n} ligne${n > 1 ? "s" : ""} copiée${n > 1 ? "s" : ""}, collez-les dans Excel avec Ctrl+V`);
+                    } catch {
+                      toast.error("Copie impossible : autorisez l'accès au presse-papiers");
+                    }
+                  }}
+                >
+                  <ClipboardCopy className="h-4 w-4" /> Copier pour Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={pieces.length === 0}
+                  onClick={async () => {
+                    try {
+                      await telechargerExcel(pieces, resultat);
+                      toast.success("Fichier Excel téléchargé");
+                    } catch {
+                      toast.error("Échec de la génération du fichier Excel");
+                    }
+                  }}
+                >
+                  <FileSpreadsheet className="h-4 w-4" /> Télécharger en Excel
                 </Button>
                 <Button variant="outline" size="sm" onClick={addPiece} className="gap-2">
                   <Plus className="h-4 w-4" /> Ajouter
