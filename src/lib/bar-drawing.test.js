@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { grouperBarresIdentiques, libelleGroupe, segmentsBarre, placerCotes, nombreLignesPage } from "./bar-drawing";
+import { grouperBarresIdentiques, libelleGroupe, segmentsBarre, placerCotes, nombreLignesPage, libelleCote } from "./bar-drawing";
 import { optimiserParProfil } from "./multi-profil";
 import { verifierResultat } from "./verification";
 
@@ -30,6 +30,13 @@ describe("Dessins atelier sans modification du calcul", () => {
     expect(nombreLignesPage(Array(8).fill(10), 20)).toBe(0);
     expect(nombreLignesPage(Array(4).fill(10), 30)).toBe(0);
     expect(nombreLignesPage(Array(2).fill(10), 30)).toBe(2);
+  });
+  test("les cotes décimales restent compactes sans modifier les valeurs", () => {
+    expect(libelleCote(200.20000000000002)).toBe("200.2");
+    const values = Array.from({ length: 80 }, (_, i) => 100 + i * 43.7);
+    const cotes = placerCotes(values, 6000, 180, text => text.length * 1.5);
+    expect(cotes.map(c => c.valeur)).toEqual(values);
+    for (let i = 0; i < cotes.length; i++) for (let j = i + 1; j < cotes.length; j++) if (cotes[i].niveau === cotes[j].niveau) expect(cotes[j].labelX - cotes[j].largeur / 2).toBeGreaterThan(cotes[i].labelX + cotes[i].largeur / 2);
   });
   test("cas atelier, toutes stratégies et SmartCut", () => {
     const pieces = [1200, 800, 450].map((longueur, i) => ({ id: String(i), nom: String(i), profil: "Tube", longueur, quantite: [4, 6, 8][i] }));

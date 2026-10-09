@@ -63,11 +63,14 @@ export function segmentsBarre(barre: BarreOptimisee, traitScie: number): Segment
 
 export interface CotePlacee { valeur: number; x: number; labelX: number; largeur: number; niveau: number }
 
+// Remove binary floating-point artefacts in drawing labels only.
+export const libelleCote = (valeur: number) => String(Number(valeur.toFixed(6)));
+
 export function placerCotes(valeurs: number[], total: number, largeur: number, mesurer: (label: string) => number): CotePlacee[] {
   const fins: number[] = [];
   return valeurs.map(valeur => {
     const x = valeur / total * largeur;
-    const w = Math.min(largeur, mesurer(String(valeur)));
+    const w = Math.min(largeur, mesurer(libelleCote(valeur)));
     const labelX = Math.max(w / 2, Math.min(largeur - w / 2, x));
     const gauche = labelX - w / 2;
     let niveau = fins.findIndex(fin => gauche >= fin + 1.2);

@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { tableauAtelier as autoTable } from "./pdf-table";
 import { dessinBarrePDF } from "./bar-svg-pdf";
-import { grouperBarresIdentiques, libelleGroupe } from "./bar-drawing";
+import { grouperBarresIdentiques, libelleGroupe, libelleCote } from "./bar-drawing";
 export { grouperBarresIdentiques, libelleGroupe } from "./bar-drawing";
 export type { GroupeBarres } from "./bar-drawing";
 import type {
@@ -332,7 +332,8 @@ export async function exporterPDF(
 
     const nbGroupes = grouperCoupesConsecutives(barre.coupes, traitScie).length;
     const dessin = dessinBarrePDF(doc, barre, traitScie, pieceIds, pageWidth - 2 * margin);
-    const hauteurEstimee = 70 + nbGroupes * 10 + Math.max(0, dessin.hauteur - 20);
+    // Long tables must span pages; keep the profile heading with its first drawing.
+    const hauteurEstimee = Math.min(70 + nbGroupes * 10 + Math.max(0, dessin.hauteur - 20), pageHeight - 2 * margin - 9);
     if (y + hauteurEstimee > pageHeight - margin) {
       doc.addPage();
       y = margin;
@@ -392,7 +393,7 @@ export async function exporterPDF(
       c.nom,
       `${c.longueur} mm`,
       `${c.quantite}`,
-      c.reperes.join(" / "),
+      c.reperes.map(libelleCote).join(" / "),
     ]);
     autoTable(doc, {
       startY: y,

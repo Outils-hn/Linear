@@ -1,6 +1,6 @@
 import type { jsPDF } from "jspdf";
 import type { BarreOptimisee } from "./optimizer";
-import { segmentsBarre, placerCotes } from "./bar-drawing";
+import { segmentsBarre, placerCotes, libelleCote } from "./bar-drawing";
 import { hexColorForPieceId } from "./piece-colors";
 
 const PDF_INK = { text: "#141414", paper: "#ffffff", waste: "#e8e8e8", hatch: "#6e6e6e", reusable: "#f8b84a", reusableHatch: "#b16312", kerf: "#1e1e1e" };
@@ -44,7 +44,7 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
   for (const cote of cotes) {
     niveaux = Math.max(niveaux, cote.niveau + 1);
     const yy = h + 4.2 + cote.niveau * 3.5;
-    elements.push(`<path d="M${cote.x} ${h}V${yy - 2.4}" stroke="${PDF_INK.hatch}" stroke-width="0.15" fill="none"/><text x="${cote.labelX}" y="${yy}" font-size="2.293" font-weight="bold" text-anchor="middle" fill="${PDF_INK.text}">${cote.valeur}</text>`);
+    elements.push(`<path d="M${cote.x} ${h}V${yy - 2.4}" stroke="${PDF_INK.hatch}" stroke-width="0.15" fill="none"/><text x="${cote.labelX}" y="${yy}" font-size="2.293" font-weight="bold" text-anchor="middle" fill="${PDF_INK.text}">${libelleCote(cote.valeur)}</text>`);
   }
   const hauteur = h + 6 + (niveaux - 1) * 3.5;
   const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${largeur}" height="${hauteur}" viewBox="0 0 ${largeur} ${hauteur}" font-family="helvetica">${elements.join("")}</svg>`;
