@@ -226,14 +226,14 @@ export async function exporterPDF(
   const verif = options.verification;
   if (verif && !verif.ok) {
     doc.setFont("PlexSans", "normal");
-      doc.setTextColor(...themeRgb("pdf-error"));
-      for (const pb of verif.problemes) {
-        const l = doc.splitTextToSize(`• ${pb}`, pageWidth - 2 * margin);
-        doc.text(l, margin, y);
-        y += l.length * 4;
-      }
-      doc.setTextColor(...themeRgb("piece-ink"));
-      y += 2;
+    doc.setTextColor(...themeRgb("pdf-error"));
+    for (const pb of verif.problemes) {
+      const l = doc.splitTextToSize(`• ${pb}`, pageWidth - 2 * margin);
+      doc.text(l, margin, y);
+      y += l.length * 4;
+    }
+    doc.setTextColor(...themeRgb("piece-ink"));
+    y += 2;
   }
   y += 2;
 
@@ -304,7 +304,12 @@ export async function exporterPDF(
 
 
   for (const rp of resultat.profils) {
-  if (y + 90 > pageHeight - margin) {
+  const groupes = grouperBarresIdentiques(rp.resultat.barres);
+  const premiere = groupes[0]?.reference;
+  const hauteurPremierGroupe = premiere
+    ? Math.min(70 + grouperCoupesConsecutives(premiere.coupes, traitScie).length * 10 + Math.max(0, dessinBarrePDF(doc, premiere, traitScie, pieceIds, pageWidth - 2 * margin).hauteur - 20), pageHeight - 2 * margin - 9)
+    : 0;
+  if (y + 9 + hauteurPremierGroupe > pageHeight - margin) {
     doc.addPage();
     y = margin;
   }
@@ -316,7 +321,6 @@ export async function exporterPDF(
    doc.text(`PROFILÉ : ${libelleProfil(rp.profil).toUpperCase()}`, margin + 2, y);
   doc.text(`Barre ${fmt(rp.longueurBarre)} mm  ·  Sous-total : ${fmt(rp.resultat.nbBarres)} barre(s)`, pageWidth - margin - 2, y, { align: "right" });
   y += 9;
-  const groupes = grouperBarresIdentiques(rp.resultat.barres);
 
   for (const g of groupes) {
     const barre = g.reference;
