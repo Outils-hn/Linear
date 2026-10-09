@@ -69,6 +69,7 @@
   --pdf-table-stripe: #fafbfc;
   --pdf-success: #298451;
   --pdf-error: #b83e3e;
+  --pdf-print-ink: #000000;
 
   --background: oklch(0.98 0.003 240);          /* ~#f4f6f8 */
   --foreground: oklch(0.22 0.02 250);           /* ~#1e293b anthracite */

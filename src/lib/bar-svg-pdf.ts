@@ -8,7 +8,7 @@ import { formatNombre } from "./format-number";
 
 const escapeXml = (value: string) => value.replace(/[<>&"']/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c] ?? c);
 
-export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: number, ids: string[], largeur: number) {
+export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: number, ids: string[], largeur: number, conserver = false, masquerTypes = false) {
   const PDF_INK = { text: themeHex("piece-ink"), paper: themeHex("cut-separator"), waste: themeHex("waste"), hatch: themeHex("hatch"), reusable: themeHex("offcut-paper"), reusableHatch: themeHex("warning"), kerf: themeHex("cut-separator") };
   const h = 14;
   const x = (mm: number) => mm / barre.longueurBrute * largeur;
@@ -16,11 +16,11 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
   const elements: string[] = [];
   for (const s of segments) {
     const left = x(s.debut), w = x(s.longueur);
-    const fill = s.type === "piece" ? hexColorForPieceId(s.pieceId ?? "", ids) : s.type === "scie" ? PDF_INK.kerf : s.type === "reutilisable" ? PDF_INK.reusable : PDF_INK.waste;
+    const fill = s.type === "piece" ? hexColorForPieceId(s.pieceId ?? "", ids) : s.type === "scie" ? PDF_INK.kerf : s.type === "reutilisable" && !masquerTypes ? PDF_INK.reusable : PDF_INK.waste;
     elements.push(`<rect x="${left}" y="0" width="${w}" height="${h}" fill="${fill}"/>`);
     if (["marge", "reutilisable", "dechet"].includes(s.type)) {
       const step = s.type === "marge" ? 1.5 : 3;
-      const stroke = s.type === "reutilisable" ? PDF_INK.reusableHatch : PDF_INK.hatch;
+      const stroke = s.type === "reutilisable" && !masquerTypes ? PDF_INK.reusableHatch : PDF_INK.hatch;
       for (let d = -h; d < w; d += step) {
         const a = Math.max(0, -d), b = Math.min(h, w - d);
         const yy = (v: number) => s.type === "reutilisable" ? h - v : v;
@@ -41,6 +41,7 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     } else if ((s.type === "reutilisable" || s.type === "dechet") && w > 14) {
       elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">Chute ${formatNombre(s.longueur)} mm</text>`);
     }
+    if (s.type === "reutilisable" && conserver) elements.push(`<rect x="${left + 0.35}" y="0.35" width="${Math.max(0, w - 0.7)}" height="${h - 0.7}" fill="none" stroke="${themeHex("pdf-print-ink")}" stroke-width="0.7"/>`);
   }
   doc.setFont("PlexSans", "normal"); doc.setFontSize(6.5);
   const cotes = placerCotes(segments.filter(s => s.type === "piece").map(s => s.fin), barre.longueurBrute, largeur, txt => doc.getTextWidth(txt));
