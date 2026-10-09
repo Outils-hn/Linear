@@ -5,6 +5,7 @@ import { SEUIL_CHUTE_REUTILISABLE } from "@/lib/optimizer";
 import { colorForPieceId } from "@/lib/piece-colors";
 import { segmentsBarre, type SegmentBarre } from "@/lib/bar-drawing";
 import { formatNombre as fmt } from "@/lib/format-number";
+import { etiquettesPieces, LABEL_BASE_PX } from "@/lib/piece-labels";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -18,7 +19,7 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
   const container = useRef<HTMLDivElement>(null);
   const mesure = useRef<CanvasRenderingContext2D | null>(null);
   const [largeur, setLargeur] = useState(1000);
-  const height = regle ? 256 : 36;
+  const [fontReady, setFontReady] = useState(false);
   useEffect(() => {
     const element = container.current;
     if (!element) return;
@@ -28,12 +29,23 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
     const update = () => setLargeur(Math.max(1, element.getBoundingClientRect().width));
     const observer = new ResizeObserver(update);
     observer.observe(element);
-    void document.fonts.ready.then(update);
+    void document.fonts.ready.then(() => { update(); setFontReady(true); });
     update();
     return () => observer.disconnect();
   }, []);
   const span = zone[1] - zone[0];
   const x = (mm: number) => (mm - zone[0]) / span * largeur;
+  const segments = segmentsBarre(barre, traitScie);
+  const barHeight = regle ? 90 : 36;
+  const labels = fontReady ? etiquettesPieces(segments, x, largeur, barHeight, (text, size) => {
+    const context = mesure.current;
+    if (!context) return Infinity;
+    context.font = `400 ${size}px "IBM Plex Sans"`;
+    return context.measureText(text).width;
+  }) : [];
+  const references = labels.filter(l => !l.lignes.length);
+  const top = regle ? 45 : references.length ? (Math.max(...references.map(l => l.niveau)) + 1) * 16 + 4 : 0;
+  const height = regle ? 256 : top + barHeight;
   const pos = (e: PointerEvent<SVGSVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     return Math.max(zone[0], Math.min(zone[1], zone[0] + (e.clientX - r.left) / r.width * span));
@@ -44,7 +56,7 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
   const ticks: number[] = [];
   for (let n = Math.ceil(zone[0] / step) * step; n <= zone[1]; n += step) ticks.push(n);
   return <div ref={container} className="relative w-full">
-    <svg aria-label="Dessin de la barre" viewBox={`0 0 ${largeur} ${height}`} preserveAspectRatio="none" className={regle ? "h-64 w-full touch-none select-none" : "h-9! w-full! rounded-sm pointer-events-auto!"}
+    <svg aria-label="Dessin de la barre" viewBox={`0 0 ${largeur} ${height}`} preserveAspectRatio="none" height={height} className={regle ? "h-64 w-full touch-none select-none" : "w-full! rounded-sm pointer-events-auto!"}
       onPointerDown={e => { if (!onZone) return; e.currentTarget.setPointerCapture(e.pointerId); const n = pos(e); setSelection([n, n]); }}
       onPointerMove={e => { if (selection) setSelection([selection[0], pos(e)]); }}
       onPointerUp={e => { if (!selection || !onZone) return; const end = pos(e); if (Math.abs(end - selection[0]) > span * 0.01) onZone([Math.min(end, selection[0]), Math.max(end, selection[0])]); setSelection(null); }}
@@ -54,19 +66,29 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
         <pattern id={`${id}-dechet`} width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" className="fill-waste"/><path d="M-2 2L2 -2M0 10L10 0M8 12L12 8" className="stroke-hatch" strokeWidth="0.5"/></pattern>
         <pattern id={`${id}-reutilisable`} width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" className="fill-offcut-paper"/><path d="M-2 8L2 12M0 0L10 10M8 -2L12 2" className="stroke-warning" strokeWidth="1"/></pattern>
       </defs>
-      {segmentsBarre(barre, traitScie).filter(s => s.fin >= zone[0] && s.debut <= zone[1]).map((s, i) => {
+      {segments.filter(s => s.fin >= zone[0] && s.debut <= zone[1]).map((s, i) => {
         const left = x(s.debut), w = s.longueur / span * largeur;
         const fill = s.type === "piece" ? colorForPieceId(s.pieceId ?? "", pieceIds) : s.type === "scie" ? "var(--cut-separator)" : `url(#${id}-${s.type})`;
         const label = `${s.nom} · ${fmt(s.longueur)} mm${s.type === "piece" ? ` · Début ${fmt(s.debut)} mm · Fin ${fmt(s.fin)} mm depuis le bout brut` : ""}`;
-        const fullText = s.nom ? `${s.nom} · ${fmt(s.longueur)}` : fmt(s.longueur);
-        const available = Math.max(0, Math.min(largeur, left + w) - Math.max(0, left) - 8);
-        const measureText = (text: string) => mesure.current?.measureText(text).width ?? text.length * 6.5;
-        const pieceText = measureText(fullText) <= available ? fullText : fmt(s.longueur);
-        const labelX = (Math.max(0, left) + Math.min(largeur, left + w)) / 2;
         return <g key={i} tabIndex={s.type === "scie" ? undefined : 0} aria-label={label} onPointerEnter={() => setHover(s)} onPointerLeave={() => setHover(null)} onFocus={() => setHover(s)} onBlur={() => setHover(null)}>
           <title>{label}</title>
-          <rect x={left} y={regle ? 45 : 0} width={w} height={regle ? 90 : 36} fill={fill} stroke={hover === s ? "var(--primary)" : "var(--cut-separator)"} strokeWidth={hover === s ? 2.5 : 2} vectorEffect="non-scaling-stroke" opacity={hover && hover !== s ? 0.65 : 1}/>
-          {s.type === "piece" && measureText(pieceText) <= available && <text x={labelX} y={regle ? 90 : 18} dominantBaseline="middle" textAnchor="middle" letterSpacing="0" className="bar-piece-label fill-piece-ink" pointerEvents="none">{pieceText}</text>}
+          <rect x={left} y={top} width={w} height={barHeight} fill={fill} stroke={hover === s ? "var(--primary)" : "var(--cut-separator)"} strokeWidth={hover === s ? 2.5 : 2} vectorEffect="non-scaling-stroke" opacity={hover && hover !== s ? 0.65 : 1}/>
+        </g>;
+      })}
+      {labels.map((label, i) => {
+        const center = (label.gauche + label.droite) / 2;
+        if (!label.lignes.length) {
+          const text = String(label.ligneTableau);
+          const width = mesure.current?.measureText(text).width ?? 12;
+          const cx = Math.max(width / 2, Math.min(largeur - width / 2, center));
+          const y = top - 8 - label.niveau * 16;
+          return <g key={`label-${i}`} pointerEvents="none"><path d={`M${center} ${top}V${y + 5}H${cx}`} className="stroke-piece-ink" fill="none" strokeWidth="0.5"/><text x={cx} y={y} dominantBaseline="middle" textAnchor="middle" fontSize={LABEL_BASE_PX} className="bar-piece-label fill-piece-ink">{text}</text></g>;
+        }
+        return <g key={`label-${i}`} pointerEvents="none">
+          <defs><clipPath id={`${id}-label-${i}`}><rect x={label.gauche + 4} y={top} width={Math.max(0, label.droite - label.gauche - 8)} height={barHeight}/></clipPath></defs>
+          <text data-piece-label="true" data-row={label.ligneTableau} x={center} textAnchor="middle" dominantBaseline="middle" fontSize={label.taille} className="bar-piece-label fill-piece-ink" clipPath={`url(#${id}-label-${i})`}>
+            {label.lignes.map((line, j) => <tspan key={j} x={center} y={top + barHeight / 2 + (j - (label.lignes.length - 1) / 2) * label.taille * 1.2}>{line}</tspan>)}
+          </text>
         </g>;
       })}
       {regle && <g className="fill-foreground stroke-muted-foreground" fontSize="12">
