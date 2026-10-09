@@ -198,11 +198,11 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
             <table className="w-full text-xs">
               <thead>
                 <tr>
-                  <th className="w-10 p-1 text-muted-foreground">#</th>
+                  <th className="w-10 px-3 py-1 text-right">#</th>
                   {Array.from({ length: nCols }, (_, i) => (
-                    <th key={i} className="p-1">
+                    <th key={i} className={`py-1 ${["longueur", "quantite", "barre"].includes(roles[i]) ? "text-right" : "text-left"}`}>
                       <Select value={roles[i] ?? "ignorer"} onValueChange={(v) => setRole(i, v as ColRole)}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className={`h-8 px-3 font-sans text-xs font-semibold text-piece-ink ${["longueur", "quantite", "barre"].includes(roles[i]) ? "[&>span]:flex-1 [&>span]:text-right" : "[&>span]:text-left"}`}><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="repere">Repère</SelectItem>
                           <SelectItem value="longueur">Longueur (mm)</SelectItem>
@@ -222,9 +222,9 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
                   const bad = errLines.has(k + 1);
                   return (
                     <tr key={k} className={isHead ? "bg-muted font-semibold" : bad ? "bg-destructive/10 text-destructive" : ""}>
-                      <td className="p-1 text-center text-muted-foreground">{k + 1}</td>
+                      <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">{k + 1}</td>
                       {Array.from({ length: nCols }, (_, i) => (
-                        <td key={i} className={`p-1 ${roles[i] === "ignorer" ? "opacity-40" : ""}`}>{r[i] ?? ""}</td>
+                        <td key={i} className={`px-3 py-1 ${["longueur", "quantite", "barre"].includes(roles[i]) ? "text-right tabular-nums" : "text-left"} ${roles[i] === "ignorer" ? "opacity-40" : ""}`}>{r[i] ?? ""}</td>
                       ))}
                     </tr>
                   );
