@@ -66,7 +66,7 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
         return <g key={i} tabIndex={s.type === "scie" ? undefined : 0} aria-label={label} onPointerEnter={() => setHover(s)} onPointerLeave={() => setHover(null)} onFocus={() => setHover(s)} onBlur={() => setHover(null)}>
           <title>{label}</title>
           <rect x={left} y={regle ? 45 : 0} width={w} height={regle ? 90 : 36} fill={fill} stroke={hover === s ? "var(--primary)" : "var(--cut-separator)"} strokeWidth={hover === s ? 2.5 : 2} vectorEffect="non-scaling-stroke" opacity={hover && hover !== s ? 0.65 : 1}/>
-          {s.type === "piece" && measureText(pieceText) <= available && <text x={labelX} y={regle ? 90 : 18} dominantBaseline="middle" textAnchor="middle" className="bar-piece-label fill-piece-ink" pointerEvents="none">{pieceText}</text>}
+          {s.type === "piece" && measureText(pieceText) <= available && <text x={labelX} y={regle ? 90 : 18} dominantBaseline="middle" textAnchor="middle" letterSpacing="0" className="bar-piece-label fill-piece-ink" pointerEvents="none">{pieceText}</text>}
         </g>;
       })}
       {regle && <g className="fill-foreground stroke-muted-foreground" fontSize="12">

@@ -34,7 +34,7 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
         doc.setFontSize(9);
         const longueur = `${formatNombre(s.longueur)} mm`;
         const complet = s.nom ? `${s.nom} · ${longueur}` : longueur;
-        const label = doc.getTextWidth(complet) <= w - 2.4 ? complet : longueur;
+        const label = doc.getTextWidth(complet) <= w - 2.4 ? complet : formatNombre(s.longueur);
         if (doc.getTextWidth(label) <= w - 2.4) elements.push(`<text x="${left + w / 2}" y="8" font-size="3.175" letter-spacing="0" font-family="PlexSans" font-weight="normal" fill="${PDF_INK.text}" text-anchor="middle">${escapeXml(label)}</text>`);
       }
     } else if ((s.type === "reutilisable" || s.type === "dechet") && w > 14) {
