@@ -19,6 +19,7 @@ import { POSITION_MARGE_LABELS } from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
 import { libelleProfil, type ResultatMulti } from "./multi-profil";
 import { chutesAConserver } from "./chutes";
+import { lignesReperes, seuilsDesProfils, METHODES_COUPE, RAPPEL_RUBAN, type MethodeCoupe } from "./cut-method";
 import { optionsChutesDefaut, choixBarre, choixChute, chutesSelectionnees, type OptionsChutesPDF } from "./offcut-settings";
 import { ajouterEtiquettes } from "./offcut-labels-pdf";
 
@@ -46,6 +47,7 @@ export interface OptionsExportPDF {
   infos: InfosProjet;
   verification?: { ok: boolean; problemes: string[] };
   chutesPDF?: OptionsChutesPDF;
+  methodeCoupe?: MethodeCoupe;
 }
 
 export interface GroupeCoupe {
@@ -177,6 +179,16 @@ export async function exporterPDF(
   }
   doc.text(`Stratégie : ${STRATEGIE_LABELS[strategie]}`, margin, y);
   y += 4;
+  const methodeCoupe: MethodeCoupe = options.methodeCoupe ?? "butee";
+  doc.text(`Méthode de coupe à l’atelier : ${METHODES_COUPE[methodeCoupe]}`, margin, y);
+  y += 4;
+  const seuils = seuilsDesProfils(resultat.profils);
+  const seuilTexte = (liste: typeof seuils) => new Set(liste.map(s => s.seuil)).size <= 1
+    ? `${fmt(liste[0]?.seuil ?? 0)} mm`
+    : liste.map(s => `${libelleProfil(s.profil)} ${fmt(s.seuil)} mm`).join(" · ");
+  if (seuils.length) {
+    for (const ligne of doc.splitTextToSize(`Chute réutilisable à partir de : ${seuilTexte(seuils)}`, pageWidth - 2 * margin) as string[]) { doc.text(ligne, margin, y); y += 4; }
+  }
 
   if (strategie === "priorite-stock" && stock && stock.length > 0) {
     const stockValide = stock.filter((s) => s.longueur > 0 && s.quantite > 0);
@@ -326,9 +338,10 @@ export async function exporterPDF(
     doc.setTextColor(...themeRgb("piece-ink"));
     doc.text(consigne ? "Chutes à conserver" : "Chutes conservables", margin, y);
     y += 3;
-    if (!consigne) {
+    {
+      const concernes = seuils.filter(s => chutesProfils.some(g => g.profil === nomProfil(s.profil)));
       doc.setFont("PlexSans", "normal"); doc.setFontSize(8);
-      doc.text("À titre indicatif : longueurs supérieures au seuil de réutilisation", margin, y + 2);
+      doc.text(`À titre indicatif : chutes de ${seuilTexte(concernes.length ? concernes : seuils)} et plus`, margin, y + 2);
       y += 7;
     }
     autoTable(doc, {
@@ -420,7 +433,7 @@ export async function exporterPDF(
     const nbGroupes = grouperCoupesConsecutives(barre.coupes, traitScie).length;
     const choix = choixBarre(chutesPDF, barre);
     const aConserver = consigne && barre.chuteReutilisable && choix.conserver;
-    const dessin = dessinBarrePDF(doc, barre, traitScie, pieceIds, pageWidth - 2 * margin, aConserver, sansTypes);
+    const dessin = dessinBarrePDF(doc, barre, traitScie, pieceIds, pageWidth - 2 * margin, aConserver, sansTypes, methodeCoupe);
     doc.setFont("PlexSans", "bold"); doc.setFontSize(9);
     const consigneLignes: string[] = aConserver ? doc.splitTextToSize(`À CONSERVER - NE PAS JETER${choix.note.trim() ? ` — ${choix.note.trim()}` : ""}`, pageWidth - 2 * margin) : [];
     // Long tables must span pages; keep the profile heading with its first drawing.
@@ -457,6 +470,12 @@ export async function exporterPDF(
       y,
     );
     y += 4;
+    if (methodeCoupe === "ruban") {
+      doc.setFont("PlexSans", "bold"); doc.setTextColor(...themeRgb("piece-ink"));
+      doc.text(RAPPEL_RUBAN, margin, y);
+      doc.setFont("PlexSans", "normal");
+      y += 4;
+    }
 
     const margeDebut = barre.margeDebut ?? 0;
     const margeFin = barre.margeFin ?? 0;
@@ -493,7 +512,7 @@ export async function exporterPDF(
       c.nom,
       `${fmt(c.longueur)} mm`,
       `${fmt(c.quantite)}`,
-      c.reperes.map(libelleCote).join(" / "),
+      lignesReperes(c.reperes, methodeCoupe).join("\n"),
     ]);
     autoTable(doc, {
       startY: y,
@@ -502,9 +521,9 @@ export async function exporterPDF(
         if (column.index !== 4) return;
         doc.setFont("PlexSans", section === "head" ? "bold" : "normal");
         doc.setFontSize(9);
-        const text = cell.text.join(" ");
-        cell.text = [text];
-        const width = doc.getTextWidth(text);
+        const lignes = section === "head" ? [cell.text.join(" ")] : cell.text;
+        cell.text = lignes;
+        const width = Math.max(...lignes.map(t => doc.getTextWidth(t)));
         if (width > 76) cell.styles.fontSize = 9 * 76 / width;
       },
       body,
