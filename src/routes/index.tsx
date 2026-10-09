@@ -234,6 +234,41 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
 
   const lancer = () => {
     if (enCours) return;
+    // Bloque le lancement si un champ numérique requis est vide ou à 0.
+    const erreurs = new Set<string>();
+    const problemes: string[] = [];
+    const requis = (cle: string, valeur: number, zeroInterdit: boolean, libelle: string) => {
+      if (champsVides.has(cle) || (zeroInterdit ? valeur <= 0 : false)) {
+        erreurs.add(cle);
+        if (problemes.length < 6) problemes.push(libelle);
+      }
+    };
+    requis("lb", longueurBarre, true, "Longueur de la barre de base");
+    requis("ms", margeSecurite, false, "Marge de sécurité");
+    requis("ts", traitScie, false, "Épaisseur du trait de scie");
+    requis("seuil-chute", seuilChute, false, "Chute mini à conserver");
+    for (const pr of profilsNommes) {
+      requis(`longueur-profile-${pr}`, longueursProfils[pr] ?? longueurBarre, true, `Longueur de barre du profilé « ${pr} »`);
+      requis(`seuil-profile-${pr}`, seuilPourProfil(pr, seuilsProfils, seuilChute), false, `Chute mini du profilé « ${pr} »`);
+    }
+    for (const p of pieces) {
+      requis(`piece-${p.id}-longueur`, p.longueur, true, `Longueur de la pièce « ${p.nom || "sans repère"} »`);
+      requis(`piece-${p.id}-quantite`, p.quantite, true, `Quantité de la pièce « ${p.nom || "sans repère"} »`);
+    }
+    if (strategie === "priorite-stock") {
+      for (const s of stock) {
+        requis(`stock-${s.id}-longueur`, s.longueur, true, "Longueur d'une barre du stock");
+        requis(`stock-${s.id}-quantite`, s.quantite, true, "Quantité d'une barre du stock");
+      }
+    }
+    if (erreurs.size > 0) {
+      setErreursChamps(erreurs);
+      toast.error(
+        `Optimisation impossible : ${problemes.join(", ")}${erreurs.size > problemes.length ? "…" : ""} ${erreurs.size > 1 ? "sont vides ou à 0" : "est vide ou à 0"}.`,
+      );
+      return;
+    }
+    setErreursChamps(new Set());
     setEnCours(true);
     // Laisse le navigateur afficher l'état « en cours » avant un éventuel SmartCut.
     setTimeout(() => {
