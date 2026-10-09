@@ -41,6 +41,8 @@ export interface BarreOptimisee {
   margeDebut?: number;
   margeFin?: number;
   profil?: string;
+  /** Seuil appliqué pour classer la chute (mm). */
+  seuilChute?: number;
 }
 
 export interface ResultatOptimisation {
@@ -597,6 +599,8 @@ export interface OptionsOptimisation {
   /** Mode Ultra (SmartCut) : active le solveur cutting-stock avancé. Sinon FFD rapide. */
   modeUltra?: boolean;
   positionMarge?: PositionMarge;
+  /** Chute mini à conserver (mm), appliquée après placement. */
+  seuilChuteReutilisable?: number;
 }
 
 export function optimiser(
@@ -685,7 +689,9 @@ export function optimiser(
     const marge = Math.max(0, b.longueurBrute - b.longueurBarre);
     b.margeDebut = positionMarge === "fin" ? 0 : positionMarge === "deux-bouts" ? marge / 2 : marge;
     b.margeFin = marge - b.margeDebut;
-    b.chuteReutilisable = b.chute >= SEUIL_CHUTE_REUTILISABLE;
+    const seuil = options.seuilChuteReutilisable ?? SEUIL_CHUTE_REUTILISABLE;
+    b.seuilChute = seuil;
+    b.chuteReutilisable = b.chute > 0 && b.chute >= seuil;
   }
 
   const nbBarres = barres.length;
