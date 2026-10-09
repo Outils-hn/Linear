@@ -39,6 +39,7 @@ import { chutesAConserver } from "@/lib/chutes";
 import { OffcutPDFOptions } from "@/components/OffcutPDFOptions";
 import { optionsChutesDefaut, lireOptionsChutes, cleChute, choixChute, type OptionsChutesPDF } from "@/lib/offcut-settings";
 import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
+import { ChampNombre } from "@/components/ChampNombre";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
@@ -150,6 +151,17 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveMode, setSaveMode] = useState<"choice" | "new">("choice");
   const [newProjectName, setNewProjectName] = useState("");
+  // Champs numériques vides pendant la saisie, et champs signalés en erreur au lancement.
+  const [champsVides, setChampsVides] = useState<Set<string>>(new Set());
+  const [erreursChamps, setErreursChamps] = useState<Set<string>>(new Set());
+  const marquerVide = (cle: string, vide: boolean) => {
+    setChampsVides((s) => {
+      const n = new Set(s);
+      if (vide) n.add(cle); else n.delete(cle);
+      return n;
+    });
+    if (!vide) setErreursChamps((s) => (s.has(cle) ? new Set([...s].filter((k) => k !== cle)) : s));
+  };
 
   const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
   const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
