@@ -22,7 +22,7 @@ export function ajouterEtiquettes(doc: jsPDF, groupes: ChutesProfil[], options: 
       ...doc.splitTextToSize(`Date : ${date}`, width - 8),
       ...(note ? doc.splitTextToSize(`Note : ${note}`, width - 8) : []),
     ] as string[];
-    // Long notes continue inside a full-width label rather than clipping or disappearing.
+    // Exceptionally long notes continue in a second label-sized block without clipping.
     const chunks: string[][] = [];
     for (let start = 0; start < lines.length; start += 48) chunks.push(lines.slice(start, start + 48));
     const height = Math.max(48, 16 + Math.min(lines.length, 48) * 4.5);
@@ -38,8 +38,6 @@ export function ajouterEtiquettes(doc: jsPDF, groupes: ChutesProfil[], options: 
         if (column === 0) column = 1;
         else { column = 0; y += height + gap; }
       }
-      // Unequal heights on adjacent labels are avoided by starting long labels on a new row.
-      if (height > 48 && column === 1) { column = 0; y += height + gap; }
     }
     if (column === 1) { column = 0; y += height + gap; }
   }
