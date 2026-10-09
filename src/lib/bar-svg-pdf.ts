@@ -1,6 +1,7 @@
 import type { jsPDF } from "jspdf";
 import type { BarreOptimisee } from "./optimizer";
-import { segmentsBarre, placerCotes, libelleCote } from "./bar-drawing";
+import { segmentsBarre, placerLibelles, libelleCote } from "./bar-drawing";
+import { seriesPieces, type MethodeCoupe } from "./cut-method";
 import { themeHex } from "./visual-theme";
 import { hexColorForPieceId } from "./piece-colors";
 import { formatNombre } from "./format-number";
@@ -9,7 +10,7 @@ import { etiquettesPieces, MM_PER_PX, LABEL_BASE_PX } from "./piece-labels";
 
 const escapeXml = (value: string) => value.replace(/[<>&"']/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c] ?? c);
 
-export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: number, ids: string[], largeur: number, conserver = false, masquerTypes = false) {
+export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: number, ids: string[], largeur: number, conserver = false, masquerTypes = false, methode: MethodeCoupe = "butee") {
   const PDF_INK = { text: themeHex("piece-ink"), paper: themeHex("cut-separator"), waste: themeHex("waste"), hatch: themeHex("hatch"), reusable: themeHex("offcut-paper"), reusableHatch: themeHex("warning"), kerf: themeHex("cut-separator") };
   const h = 14;
   const x = (mm: number) => mm / barre.longueurBrute * largeur;
@@ -61,14 +62,35 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     });
   });
   doc.setFont("PlexSans", "normal"); doc.setFontSize(6.5);
-  const cotes = placerCotes(segments.filter(s => s.type === "piece").map(s => s.fin), barre.longueurBrute, largeur, txt => doc.getTextWidth(txt));
+  const pieces = segments.filter(s => s.type === "piece");
+  const series = seriesPieces(pieces);
+  const mesurer = (txt: string) => doc.getTextWidth(txt);
+  let yCotes = h;
+  if (methode === "butee") {
+    // Brace under each run of identical pieces; only the run's end dimension below.
+    const groupes = series.filter(s => s.quantite > 1);
+    const accolades = placerLibelles(groupes.map(s => ({ valeur: s.fin, x: (x(s.debut) + x(s.fin)) / 2, texte: `${s.quantite} x ${formatNombre(s.longueur)}` })), largeur, mesurer);
+    let rangs = 0;
+    accolades.forEach((a, i) => {
+      const s = groupes[i], l = x(s.debut) + 0.3, r = x(s.fin) - 0.3, m = (l + r) / 2, y0 = h + 0.8, y1 = h + 2.2;
+      rangs = Math.max(rangs, a.niveau + 1);
+      const ty = y1 + 2.6 + a.niveau * 3;
+      elements.push(`<path d="M${l} ${y0}Q${l} ${y1} ${l + 1} ${y1}H${m - 0.8}L${m} ${y1 + 0.8}L${m + 0.8} ${y1}H${r - 1}Q${r} ${y1} ${r} ${y0}" stroke="${PDF_INK.text}" stroke-width="0.18" fill="none"/>`);
+      if (a.niveau > 0 || Math.abs(a.labelX - m) > 0.5) elements.push(`<path d="M${m} ${y1 + 0.8}L${a.labelX} ${ty - 2}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/>`);
+      elements.push(`<text x="${a.labelX}" y="${ty}" font-size="2.293" font-family="PlexSans" font-weight="bold" text-anchor="middle" fill="${PDF_INK.text}">${escapeXml(a.texte)}</text>`);
+    });
+    if (rangs) yCotes = h + 2.2 + rangs * 3 + 0.8;
+  }
+  const valeurs = methode === "butee" ? series.map(s => s.fin) : pieces.map(s => s.fin);
+  const cotes = placerLibelles(valeurs.map(v => ({ valeur: v, x: x(v), texte: libelleCote(v) })), largeur, mesurer);
   let niveaux = 1;
   for (const cote of cotes) {
     niveaux = Math.max(niveaux, cote.niveau + 1);
-    const yy = h + 4.2 + cote.niveau * 3.5;
-    elements.push(`<path d="M${cote.x} ${h}V${yy - 2.4}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/><text x="${cote.labelX}" y="${yy}" font-size="2.293" font-family="PlexSans" font-weight="normal" text-anchor="middle" fill="${PDF_INK.text}">${libelleCote(cote.valeur)}</text>`);
+    const yy = yCotes + 4.2 + cote.niveau * 3.5;
+    const coude = yCotes + 1.2;
+    elements.push(`<path d="M${cote.x} ${h}V${coude}L${cote.labelX} ${yy - 2.4}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/><text x="${cote.labelX}" y="${yy}" font-size="2.293" font-family="PlexSans" font-weight="normal" text-anchor="middle" fill="${PDF_INK.text}">${cote.texte}</text>`);
   }
-  const hauteur = top + h + 6 + (niveaux - 1) * 3.5;
+  const hauteur = top + yCotes + 6 + (niveaux - 1) * 3.5;
   const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${largeur}" height="${hauteur}" viewBox="0 0 ${largeur} ${hauteur}" font-family="PlexSans" style="font-variant-numeric:tabular-nums"><g transform="translate(0 ${top})">${elements.join("")}</g></svg>`;
   return { source, hauteur };
 }
