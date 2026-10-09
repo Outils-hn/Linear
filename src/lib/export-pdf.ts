@@ -373,7 +373,7 @@ export async function exporterPDF(
     doc.setTextColor(...themeRgb("piece-ink"));
     doc.setFont("PlexSans", "bold");
     doc.setFontSize(9);
-    doc.text(`Chute finale : ${fmt(barre.chute)} mm — ${barre.chuteReutilisable ? "Réutilisable" : "Déchet"}`, margin, y);
+    doc.text(`Chute finale : ${fmt(barre.chute)} mm — ${barre.chuteReutilisable ? `Réutilisable — À conserver - ${libelleProfil(barre.profil)}` : "Déchet"}`, margin, y);
     y += 4;
 
     doc.setFont("PlexSans", "normal");

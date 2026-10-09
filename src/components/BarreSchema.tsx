@@ -95,7 +95,7 @@ export function BarreSchema({ barre, traitScie, pieceIds, libelle }: Props) {
       <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={[0, barre.longueurBrute]}/>
     </Button>
     <div className="mt-1 flex justify-between text-[10px] text-muted-foreground"><span>0</span><span>{fmt(barre.longueurBrute)} mm</span></div>
-    <div className="mt-1 text-xs text-muted-foreground">Marge début : {fmt(barre.margeDebut ?? 0)} mm · Marge fin : {fmt(barre.margeFin ?? 0)} mm · Chute : <span className={barre.chuteReutilisable ? "font-semibold text-warning" : "font-semibold text-muted-foreground"}>{fmt(barre.chute)} mm — {barre.chuteReutilisable ? `Réutilisable (≥ ${fmt(SEUIL_CHUTE_REUTILISABLE)} mm)` : "Déchet"}</span></div>
+    <div className="mt-1 text-xs text-muted-foreground">Marge début : {fmt(barre.margeDebut ?? 0)} mm · Marge fin : {fmt(barre.margeFin ?? 0)} mm · Chute : <span className={barre.chuteReutilisable ? "font-semibold text-warning" : "font-semibold text-muted-foreground"}>{fmt(barre.chute)} mm — {barre.chuteReutilisable ? `Réutilisable (≥ ${fmt(barre.seuilChute ?? SEUIL_CHUTE_REUTILISABLE)} mm)` : "Déchet"}</span></div>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="w-[calc(100%-2rem)] max-w-6xl sm:max-w-6xl">
         <DialogHeader><DialogTitle>{libelle ?? `Barre n°${barre.index}`}</DialogTitle><DialogDescription>Cotes mesurées depuis l’extrémité brute de la barre</DialogDescription></DialogHeader>
