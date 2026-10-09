@@ -4,3 +4,5 @@
 - Screen and PDF share one hex piece palette (piece-colors.ts) so colors match exactly.
 - Result verification lives in src/lib/verification.ts and recomputes everything from the bars without calling the engine, so it can catch engine bugs independently.
 - Project backups (.json) carry a format version (src/lib/backup.ts); readers reject newer versions so future formats stay compatible.
+- Bar grouping and segment coordinates live in the browser-safe bar-drawing module; screen and PDF consume placed results without changing optimization or verification.
+- Atelier PDF drawings use dynamically loaded svg2pdf.js and SVG geometry; collision-aware dimensions and measured table pagination keep print content legible.
