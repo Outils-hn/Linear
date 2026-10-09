@@ -33,6 +33,7 @@ export interface OptionsExportPDF {
   stock?: StockBarre[];
   longueursProfils?: Record<string, number>;
   infos: InfosProjet;
+  verification?: { ok: boolean; problemes: string[] };
 }
 
 export interface GroupeBarres {
@@ -247,7 +248,32 @@ export function exporterPDF(
   const bilan = `${resultat.longueurTotale} mm = ${resultat.longueurUtile} pièces + ${resultat.longueurTraitsScie} traits de scie + ${resultat.longueurMarges} marges + ${resultat.longueurChutes} chutes`;
   const lignesBilan = doc.splitTextToSize(bilan, pageWidth - 2 * margin);
   doc.text(lignesBilan, margin, y);
-  y += lignesBilan.length * 4 + 4;
+  y += lignesBilan.length * 4 + 2;
+  const verif = options.verification;
+  if (verif) {
+    const ok = verif.ok;
+    const txt = ok ? "Vérification OK" : `Erreur de calcul (${verif.problemes.length})`;
+    doc.setFont("helvetica", "bold");
+    doc.setFillColor(...((ok ? [22, 163, 74] : [220, 38, 38]) as [number, number, number]));
+    const w = doc.getTextWidth(txt) + 6;
+    doc.roundedRect(margin, y, w, 6, 1.5, 1.5, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.text(txt, margin + 3, y + 4.2);
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "normal");
+    y += 9;
+    if (!ok) {
+      doc.setTextColor(185, 28, 28);
+      for (const pb of verif.problemes) {
+        const l = doc.splitTextToSize(`• ${pb}`, pageWidth - 2 * margin);
+        doc.text(l, margin, y);
+        y += l.length * 4;
+      }
+      doc.setTextColor(20, 20, 20);
+      y += 2;
+    }
+  }
+  y += 2;
 
   if (resultat.profils.length > 0) {
     autoTable(doc, {
