@@ -1,19 +1,19 @@
 import { describe, expect, test } from "bun:test";
-import { optimiser, type OptionsOptimisation, type Piece } from "./optimizer";
+import { optimiser } from "./optimizer";
 import { calculerReperes } from "./export-pdf";
 
-const options: OptionsOptimisation = {
+const options = {
   longueurBarreBruteDefaut: 1000,
   longueurBarreUtileDefaut: 1000,
   margeSecurite: 0,
   traitScie: 5,
   strategie: "min-barres",
 };
-const pieces = (lengths: number[]): Piece[] => lengths.map((longueur, i) => ({ id: String(i), nom: `P${i}`, longueur, quantite: 1 }));
+const pieces = (lengths) => lengths.map((longueur, i) => ({ id: String(i), nom: `P${i}`, longueur, quantite: 1 }));
 
 describe("Comptabilité atelier sans changer les placements", () => {
   for (const modeUltra of [false, true]) {
-    for (const strategie of ["min-barres", "priorite-stock"] as const) {
+    for (const strategie of ["min-barres", "priorite-stock"]) {
       test(`${strategie}, ultra=${modeUltra} : trait final et fermeture du bilan`, () => {
         for (const [lengths, traits, chute] of [
           [[500, 495], 5, 0],
@@ -21,7 +21,7 @@ describe("Comptabilité atelier sans changer les placements", () => {
           [[997], 3, 0],
           [[500, 490], 10, 0],
           [[1000], 0, 0],
-        ] as [number[], number, number][]) {
+        ]) {
           const r = optimiser(pieces(lengths), { ...options, modeUltra, strategie });
           expect(r.nbBarres).toBe(1);
           expect(r.barres[0].coupes.length).toBe(lengths.length);
@@ -33,7 +33,7 @@ describe("Comptabilité atelier sans changer les placements", () => {
     }
   }
   test("marges aux trois positions et cotes brutes", () => {
-    for (const [positionMarge, debut, fin] of [["debut", 100, 0], ["fin", 0, 100], ["deux-bouts", 50, 50]] as const) {
+    for (const [positionMarge, debut, fin] of [["debut", 100, 0], ["fin", 0, 100], ["deux-bouts", 50, 50]]) {
       const r = optimiser(pieces([400]), { ...options, longueurBarreUtileDefaut: 900, margeSecurite: 100, positionMarge });
       expect(r.barres[0].margeDebut).toBe(debut);
       expect(r.barres[0].margeFin).toBe(fin);
