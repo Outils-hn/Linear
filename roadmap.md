@@ -21,4 +21,4 @@
 - [x] Vérifier les cartes, le PDF et les tests de non-régression ; corriger le titre de profilé isolé en fin de page.
 - [x] Alléger les cellules éditables, harmoniser les en-têtes et intégrer les unités aux paramètres ; vérifier à l’écran.
 - [x] Réaligner les paramètres en pleine largeur et les longueurs par profilé sur une ligne, sans unités dans les libellés ni majuscules forcées ; vérifier à l’écran.
-- [ ] Corriger les contrastes sombres des tableaux, du bouton et des textes secondaires ; vérifier que le mode clair reste inchangé.
+- [x] Corriger les contrastes sombres des tableaux, du bouton et des textes secondaires ; vérifier que le mode clair reste inchangé.
