@@ -19,4 +19,4 @@
 - [x] Mettre le rendement brut en grande carte sans changer les calculs.
 - [x] Retoucher le PDF : sans badge, Plex Sans tabulaire, formats français, alignements, repères et tableaux aérés.
 - [x] Vérifier les cartes, le PDF et les tests de non-régression ; corriger le titre de profilé isolé en fin de page.
-- [ ] Alléger les cellules éditables, harmoniser les en-têtes et intégrer les unités aux paramètres ; vérifier à l’écran.
+- [x] Alléger les cellules éditables, harmoniser les en-têtes et intégrer les unités aux paramètres ; vérifier à l’écran.

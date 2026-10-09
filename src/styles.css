@@ -189,7 +189,7 @@ table td:has(input[type="number"]), table td.tabular-nums { text-align: right; f
 table th.numeric { text-align: right; }
 table thead th { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--piece-ink); }
 table td:has(input) { padding-left: 0; padding-right: 0; }
-table td input { padding-left: 12px; padding-right: 12px; }
+table td input { padding-left: 11px; padding-right: 11px; }
 table input[type="number"] { appearance: textfield; }
 table input[type="number"]::-webkit-inner-spin-button,
 table input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
