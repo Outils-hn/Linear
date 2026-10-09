@@ -161,7 +161,9 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
       }
       out = [...m.values()];
     }
-    return { out, erreurs, nValides: valides.length };
+    const barreUnique = barreVals.length > 0 && barreVals.every((b) => b === barreVals[0]) ? barreVals[0] : null;
+    const barreVariee = barreVals.length > 1 && barreUnique === null;
+    return { out, erreurs, nValides: valides.length, barreUnique, barreVariee };
   }, [rows, roles, header, fusion, longueurBarre]);
 
   const doImport = (mode: "replace" | "append") => {
