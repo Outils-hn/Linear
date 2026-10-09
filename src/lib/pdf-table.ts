@@ -8,16 +8,17 @@ export function tableauAtelier(doc: jsPDF, options: UserOptions) {
   const bottom = doc.internal.pageSize.getHeight() - margin;
   const table = __createTable(doc, {
     ...options,
-    styles: { ...options.styles, font: "PlexSans", textColor: themeRgb("piece-ink") },
-    headStyles: { ...options.headStyles, font: "PlexSans" },
+    styles: { cellPadding: { top: 2.4, bottom: 2.4, left: 2, right: 2 }, minCellHeight: 8, ...options.styles, font: "PlexSans", textColor: themeRgb("piece-ink") },
+    headStyles: { ...options.headStyles, font: "PlexSans", fontStyle: "bold", textColor: themeRgb("piece-ink") },
     footStyles: { ...options.footStyles, font: "PlexSans" },
     alternateRowStyles: { fillColor: themeRgb("pdf-table-stripe") },
     didParseCell: data => {
       options.didParseCell?.(data);
-      if (data.section !== "head" && /^\s*[\d.,]/.test(data.cell.text.join(""))) {
-        data.cell.styles.font = "PlexMono";
-        data.cell.styles.fontStyle = "normal";
-        data.cell.styles.halign = "right";
+      data.cell.styles.font = "PlexSans";
+      data.cell.styles.halign = options.columnStyles?.[data.column.dataKey]?.halign ?? options.styles?.halign ?? "left";
+      if (data.section === "head") {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.textColor = themeRgb("piece-ink");
       }
     },
     rowPageBreak: "avoid", showFoot: "lastPage",

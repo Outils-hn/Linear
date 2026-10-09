@@ -211,7 +211,7 @@ export async function exporterPDF(
       ],
     ],
     theme: "grid",
-    styles: { fontSize: 9, halign: "center" },
+    styles: { fontSize: 9, halign: "right" },
     headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
     margin: { left: margin, right: margin },
   });
@@ -224,19 +224,8 @@ export async function exporterPDF(
   doc.text(lignesBilan, margin, y);
   y += lignesBilan.length * 4 + 2;
   const verif = options.verification;
-  if (verif) {
-    const ok = verif.ok;
-    const txt = ok ? "Vérification OK" : `Erreur de calcul (${verif.problemes.length})`;
-    doc.setFont("PlexSans", "bold");
-    doc.setFillColor(...(ok ? themeRgb("pdf-success") : themeRgb("pdf-error")));
-    const w = doc.getTextWidth(txt) + 6;
-    doc.roundedRect(margin, y, w, 6, 1.5, 1.5, "F");
-    doc.setTextColor(...themeRgb("cut-separator"));
-    doc.text(txt, margin + 3, y + 4.2);
-    doc.setTextColor(...themeRgb("piece-ink"));
+  if (verif && !verif.ok) {
     doc.setFont("PlexSans", "normal");
-    y += 9;
-    if (!ok) {
       doc.setTextColor(...themeRgb("pdf-error"));
       for (const pb of verif.problemes) {
         const l = doc.splitTextToSize(`• ${pb}`, pageWidth - 2 * margin);
@@ -245,7 +234,6 @@ export async function exporterPDF(
       }
       doc.setTextColor(...themeRgb("piece-ink"));
       y += 2;
-    }
   }
   y += 2;
 
@@ -262,7 +250,7 @@ export async function exporterPDF(
       ]),
       foot: [["Total", "", `${fmt(resultat.nbBarres)}`, `${fmt(resultat.rendement, 1)} %`, `${fmt(resultat.longueurChutes)} mm`]],
       theme: "grid",
-      styles: { fontSize: 9, halign: "center" },
+      styles: { fontSize: 9, halign: "right" },
       headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
       footStyles: { fillColor: themeRgb("pdf-table-stripe"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
       columnStyles: { 0: { halign: "left" } },
@@ -304,9 +292,9 @@ export async function exporterPDF(
       },
       columnStyles: {
         0: { cellWidth: "auto", halign: "left" },
-        1: { cellWidth: 36, halign: "center" },
-        2: { cellWidth: 30, halign: "center" },
-        3: { cellWidth: 30, halign: "center" },
+        1: { cellWidth: 36, halign: "left" },
+        2: { cellWidth: 30, halign: "right" },
+        3: { cellWidth: 30, halign: "right" },
       },
       margin: { left: margin, right: margin },
     });
@@ -404,7 +392,7 @@ export async function exporterPDF(
       head: [["#", "Pièce", "Longueur de coupe", "Quantité", "Repère cumulé (mm)"]],
       didParseCell: ({ cell, column, section }) => {
         if (column.index !== 4) return;
-        doc.setFont(section === "head" ? "PlexSans" : "PlexMono", "normal");
+        doc.setFont("PlexSans", section === "head" ? "bold" : "normal");
         doc.setFontSize(9);
         const text = cell.text.join(" ");
         cell.text = [text];
@@ -418,10 +406,10 @@ export async function exporterPDF(
       headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading") },
       margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 12, halign: "center" },
+        0: { cellWidth: 12, halign: "right" },
         1: { cellWidth: 32 },
         2: { cellWidth: 36, halign: "right" },
-        3: { cellWidth: 20, halign: "center" },
+        3: { cellWidth: 20, halign: "right" },
         4: { cellWidth: 80, halign: "right", overflow: "visible" },
       },
     });
@@ -433,6 +421,7 @@ export async function exporterPDF(
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
+    doc.setFont("PlexSans", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...themeRgb("pdf-muted"));
     doc.text(`Page ${fmt(i)} / ${fmt(totalPages)}`, pageWidth - margin, pageHeight - 8, {

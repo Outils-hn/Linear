@@ -890,10 +890,10 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
             {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
             <div className="grid gap-4 sm:grid-cols-2">
               <StatCard large label="Barres utilisées" value={`${fmt(resultat.nbBarres)}`} hint={strategie === "priorite-stock" ? `${fmt(resultat.nbBarresStock)} stock + ${fmt(resultat.nbBarresDefaut)} base` : `${fmt(resultat.longueurTotale)} mm au total`} />
-              <StatCard large label="Rendement hors chutes réutilisables" value={`${fmt(resultat.rendementHorsChutesReutilisables, 1)} %`} hint={`${fmt(resultat.longueurTotale - resultat.longueurChutesReutilisables)} mm consommés`} />
+              <StatCard large label="Rendement brut" value={`${fmt(resultat.rendement, 1)} %`} hint={`${fmt(resultat.longueurUtile)} mm utiles`} />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              <StatCard label="Rendement brut" value={`${fmt(resultat.rendement, 1)} %`} hint={`${fmt(resultat.longueurUtile)} mm utiles`} />
+              <StatCard label="Rendement hors chutes réutilisables" value={`${fmt(resultat.rendementHorsChutesReutilisables, 1)} %`} hint={`${fmt(resultat.longueurTotale - resultat.longueurChutesReutilisables)} mm consommés`} />
               <StatCard label="Chutes totales" value={`${fmt(resultat.longueurChutes)} mm`} hint={`${fmt(resultat.pourcentageChutes, 1)} % de la matière`} />
               <StatCard label="Chutes réutilisables" value={`${fmt(resultat.longueurChutesReutilisables)} mm`} hint={`Déchets : ${fmt(resultat.longueurDechets)} mm`} accent="warning" />
             </div>
