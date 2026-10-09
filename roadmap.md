@@ -16,3 +16,6 @@
 - [x] Style PDF harmonisé sans changer son contenu ni sa mise en page.
 - [x] Vérifier écran, PDF et non-régression des calculs.
 - [x] Retouches : textes des barres, formats français, chutes plus visibles et repères cumulés sans retour à la ligne ; vérifier écran et PDF.
+- [ ] Mettre le rendement brut en grande carte sans changer les calculs.
+- [ ] Retoucher le PDF : sans badge, Plex Sans tabulaire, formats français, alignements, repères et tableaux aérés.
+- [ ] Vérifier les cartes, le PDF et les tests de non-régression.
