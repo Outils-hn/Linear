@@ -493,11 +493,16 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <Select value={positionMarge} onValueChange={(v) => {
                   const position = v as PositionMarge;
                   setPositionMarge(position);
-                  setResultat((r) => r ? { ...r, barres: r.barres.map((b) => {
-                    const marge = Math.max(0, b.longueurBrute - b.longueurBarre);
-                    const debut = position === "fin" ? 0 : position === "deux-bouts" ? marge / 2 : marge;
-                    return { ...b, margeDebut: debut, margeFin: marge - debut };
-                  }) } : r);
+                  setResultat((r) => {
+                    if (!r) return r;
+                    const maj = (b: (typeof r.barres)[number]) => {
+                      const marge = Math.max(0, b.longueurBrute - b.longueurBarre);
+                      const debut = position === "fin" ? 0 : position === "deux-bouts" ? marge / 2 : marge;
+                      return { ...b, margeDebut: debut, margeFin: marge - debut };
+                    };
+                    const profils = r.profils.map((rp) => ({ ...rp, resultat: { ...rp.resultat, barres: rp.resultat.barres.map(maj) } }));
+                    return { ...r, profils, barres: profils.flatMap((rp) => rp.resultat.barres) };
+                  });
                 }}>
                   <SelectTrigger id="position-marge"><SelectValue /></SelectTrigger>
                   <SelectContent>
