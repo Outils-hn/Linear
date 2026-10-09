@@ -7,6 +7,7 @@ import {
   Trash2,
   FileDown,
   Calculator,
+  Loader2,
   Package,
   LogOut,
   History,
@@ -26,7 +27,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -126,7 +126,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [positionMarge, setPositionMarge] = useState<PositionMarge>("debut");
   const [traitScie, setTraitScie] = useState(3);
   const [strategie, setStrategie] = useState<Strategie>("min-barres");
-  const [modeUltra, setModeUltra] = useState(false);
+  const [enCours, setEnCours] = useState(false);
   const [stock, setStock] = useState<StockBarre[]>([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
   const [resultat, setResultat] = useState<ResultatMulti | null>(null);
@@ -215,17 +215,25 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       traitScie: ts,
       strategie: st,
       stock: st === "priorite-stock" ? s : [],
-      modeUltra,
       seuilsProfils: overrides?.seuilsProfils ?? seuilsProfils,
       seuilChuteDefaut: overrides?.seuilChute ?? seuilChute,
     });
   };
 
   const lancer = () => {
-    setResultat(calculer());
+    if (enCours) return;
+    setEnCours(true);
+    // Laisse le navigateur afficher l'état « en cours » avant un éventuel SmartCut.
     setTimeout(() => {
-      document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" });
-    }, 50);
+      try {
+        setResultat(calculer());
+      } finally {
+        setEnCours(false);
+      }
+      setTimeout(() => {
+        document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    }, 30);
   };
 
   const exporter = (force = false) => {
@@ -716,7 +724,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  disabled={pieces.length === 0}
+                  disabled={pieces.length === 0 || enCours}
+                  aria-busy={enCours}
                   onClick={async () => {
                     try {
                       const n = await copierPourExcel(pieces);
@@ -732,7 +741,8 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  disabled={pieces.length === 0}
+                  disabled={pieces.length === 0 || enCours}
+                  aria-busy={enCours}
                   onClick={async () => {
                     try {
                       await telechargerExcel(pieces, resultat, { chantier, numeroTache, date: dateProjet });
@@ -828,28 +838,14 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               </Table>
 
               <div className="mt-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <label
-                  htmlFor="mode-ultra"
-                  className="flex flex-1 cursor-pointer items-start gap-3 rounded-md border border-border bg-muted/40 p-3"
-                >
-                  <Switch id="mode-ultra" checked={modeUltra} onCheckedChange={setModeUltra} />
-                  <span className="flex flex-col">
-                    <span className="text-sm font-medium text-foreground">
-                      🚀 Mode Optimisation Ultra <span className="text-primary">(SmartCut)</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Prend 2 secondes de plus mais teste des milliers de combinaisons pour
-                      économiser un maximum de barres.
-                    </span>
-                  </span>
-                </label>
                 <Button
                   onClick={lancer}
                   size="lg"
                   className="optimization-launch gap-2 sm:self-end"
-                  disabled={pieces.length === 0}
+                  disabled={pieces.length === 0 || enCours}
+                  aria-busy={enCours}
                 >
-                  <Calculator className="h-4 w-4" /> Lancer l'optimisation
+                  {enCours ? <><Loader2 className="h-4 w-4 animate-spin" /> Optimisation en cours...</> : <><Calculator className="h-4 w-4" /> Lancer l'optimisation</>}
                 </Button>
               </div>
             </CardContent>
@@ -949,6 +945,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <span className={"h-1.5 w-1.5 rounded-full " + (verification.ok ? "bg-success" : "bg-destructive")} />
                 {verification.ok ? "Vérification OK" : `Erreur de calcul (${verification.problemes.length})`}
               </div>}
+              {(resultat.optimal ? <div className="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/5 px-3 py-1 text-xs text-success"><span className="h-1.5 w-1.5 rounded-full bg-success" />Résultat optimal</div> : <div title={`Borne minimale théorique : ${fmt(resultat.borneMin)} barres`} className="inline-flex cursor-help items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />Meilleur résultat trouvé</div>)}
             </div>
             {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
             <div className="grid gap-4 sm:grid-cols-2">
