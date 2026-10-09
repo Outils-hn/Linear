@@ -27,3 +27,4 @@
 - [x] Ajouter les modes PDF des chutes, choix et notes sauvegardés avec le projet et compatibles JSON.
 - [x] Adapter le PDF et ajouter les étiquettes facultatives, sans modifier les calculs.
 - [x] Vérifier les trois modes, sauvegardes, étiquettes et non-régression ; inspecter les PDF et corriger l’espace inutilisé des étiquettes longues.
+- [x] Mettre en valeur la synthèse (bandeau Barres à commander / Rendement, colonnes et Total en gras) à l'écran et dans le PDF ; vérifier le rendu.

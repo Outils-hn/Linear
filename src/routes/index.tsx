@@ -948,6 +948,29 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               {(resultat.optimal ? <div className="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/5 px-3 py-1 text-xs text-success"><span className="h-1.5 w-1.5 rounded-full bg-success" />Résultat optimal</div> : <div title={`Borne minimale théorique : ${fmt(resultat.borneMin)} barres`} className="inline-flex cursor-help items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />Meilleur résultat trouvé</div>)}
             </div>
             {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
+            <div className="rounded-lg border-2 border-foreground/70 px-5 py-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-3">
+                <div className="space-y-1.5">
+                  {(resultat.profils.length > 1
+                    ? resultat.profils.map((rp) => ({ profil: libelleProfil(rp.profil), nb: rp.resultat.nbBarres, lb: rp.longueurBarre }))
+                    : [{ profil: null, nb: resultat.nbBarres, lb: resultat.profils[0]?.longueurBarre ?? longueurBarre }]
+                  ).map((ligne, i) => (
+                    <p key={i} className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-sm text-foreground">
+                        Barres à commander{ligne.profil ? ` · ${ligne.profil}` : ""} :
+                      </span>
+                      <span className="font-display text-2xl font-bold tabular-nums text-primary">
+                        {fmt(ligne.nb)} x {fmt(ligne.lb)} mm
+                      </span>
+                    </p>
+                  ))}
+                </div>
+                <p className="flex items-baseline gap-x-2">
+                  <span className="text-sm text-foreground">Rendement :</span>
+                  <span className="font-display text-2xl font-bold tabular-nums text-primary">{fmt(resultat.rendement, 1)} %</span>
+                </p>
+              </div>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <StatCard large label="Barres utilisées" value={`${fmt(resultat.nbBarres)}`} hint={strategie === "priorite-stock" ? `${fmt(resultat.nbBarresStock)} stock + ${fmt(resultat.nbBarresDefaut)} base` : `${fmt(resultat.longueurTotale)} mm au total`} />
               <StatCard large label="Rendement" value={`${fmt(resultat.rendement, 1)} %`} hint={`${fmt(resultat.longueurUtile)} mm de pièces / ${fmt(resultat.longueurTotale)} mm de matière achetée`} />

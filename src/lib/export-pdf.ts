@@ -206,6 +206,36 @@ export async function exporterPDF(
   doc.setFont("PlexSans", "bold");
   doc.text("Synthèse du projet", margin, y);
   y += 3;
+  // Bandeau des informations essentielles — mise en valeur par taille et gras (lisible en noir et blanc).
+  const itemsBandeau: { label: string; valeur: string }[] =
+    resultat.profils.length > 1
+      ? resultat.profils.map((rp) => ({
+          label: `Barres à commander · ${libelleProfil(rp.profil)} : `,
+          valeur: `${fmt(rp.resultat.nbBarres)} x ${fmt(rp.longueurBarre)} mm`,
+        }))
+      : [{
+          label: "Barres à commander : ",
+          valeur: `${fmt(resultat.nbBarres)} x ${fmt(resultat.profils[0]?.longueurBarre ?? longueurBarreBrute)} mm`,
+        }];
+  itemsBandeau.push({ label: "Rendement : ", valeur: `${fmt(resultat.rendement, 1)} %` });
+  const interligneBandeau = 9;
+  const hauteurBandeau = itemsBandeau.length * interligneBandeau + 7;
+  if (y + hauteurBandeau > pageHeight - margin) { doc.addPage(); y = margin; }
+  doc.setFontSize(18);
+  doc.setFont("PlexSans", "bold");
+  doc.setDrawColor(...themeRgb("pdf-heading"));
+  doc.setLineWidth(0.5);
+  doc.rect(margin, y, pageWidth - 2 * margin, hauteurBandeau);
+  let yBandeau = y + 4 + 6.5;
+  for (const item of itemsBandeau) {
+    doc.setTextColor(...themeRgb("piece-ink"));
+    doc.text(item.label, margin + 5, yBandeau);
+    doc.setTextColor(...themeRgb("pdf-primary"));
+    doc.text(item.valeur, margin + 5 + doc.getTextWidth(item.label), yBandeau);
+    yBandeau += interligneBandeau;
+  }
+  doc.setTextColor(...themeRgb("piece-ink"));
+  y += hauteurBandeau + 7;
   autoTable(doc, {
     startY: y,
     head: [sansTypes ? ["Barres utilisées", "Rendement", "Chutes totales"] : ["Barres utilisées", "Rendement", "Chutes réutilisables", "Perte définitive", "Chutes totales"]],
@@ -221,6 +251,9 @@ export async function exporterPDF(
     theme: "grid",
     styles: { fontSize: 9, halign: "right" },
     headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
+    didParseCell: (data) => {
+      if (data.section === "body" && (data.column.index === 0 || data.column.index === 1)) data.cell.styles.fontStyle = "bold";
+    },
     margin: { left: margin, right: margin },
   });
   // @ts-expect-error lastAutoTable
@@ -275,7 +308,7 @@ export async function exporterPDF(
       theme: "grid",
       styles: { fontSize: 9, halign: "right" },
       headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
-      footStyles: { fillColor: themeRgb("pdf-table-stripe"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
+      footStyles: { fillColor: themeRgb("pdf-total-row"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
       columnStyles: { 0: { halign: "left" } },
       margin: { left: margin, right: margin },
     });
