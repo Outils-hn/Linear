@@ -346,7 +346,7 @@ function solveCuttingStockSubset(
   capacity: number,
   kerf: number,
   upperBound: number,
-  maxMs = 3000,
+  maxMs = 1200,
 ): SubsetResult | null {
   const n = lengths.length;
   const patterns = enumAllPatterns(lengths, capacity, kerf, demands);
