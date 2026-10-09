@@ -7,3 +7,7 @@
 - [x] Élargir la présentation et ajuster les colonnes et les actions sans changer les calculs.
 - [x] Harmoniser « Profilé » à l’écran, en PDF et en Excel, avec compatibilité de l’import.
 - [x] Vérifier la présentation et les exports.
+- [ ] Étape 2 : regrouper les barres identiques sans modifier les résultats.
+- [ ] Dessins SVG interactifs, infobulles, légende et agrandissement avec zoom de zone.
+- [ ] PDF via svg2pdf.js, cotes sans chevauchement et pagination des tableaux.
+- [ ] Tests de non-régression, interactions écran et inspection visuelle du PDF.
