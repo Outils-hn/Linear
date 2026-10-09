@@ -19,6 +19,8 @@ import { POSITION_MARGE_LABELS } from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
 import { libelleProfil, type ResultatMulti } from "./multi-profil";
 import { chutesAConserver } from "./chutes";
+import { optionsChutesDefaut, choixBarre, choixChute, chutesSelectionnees, type OptionsChutesPDF } from "./offcut-settings";
+import { ajouterEtiquettes } from "./offcut-labels-pdf";
 
 const STRATEGIE_LABELS: Record<Strategie, string> = {
   "min-barres": "Minimum de barres",
@@ -43,6 +45,7 @@ export interface OptionsExportPDF {
   longueursProfils?: Record<string, number>;
   infos: InfosProjet;
   verification?: { ok: boolean; problemes: string[] };
+  chutesPDF?: OptionsChutesPDF;
 }
 
 export interface GroupeCoupe {
@@ -117,6 +120,9 @@ export async function exporterPDF(
   const margin = 15;
   const pieceIds = pieces.map((p) => p.id);
   const matiere = bilanMatiere(resultat);
+  const chutesPDF = options.chutesPDF ?? optionsChutesDefaut();
+  const sansTypes = chutesPDF.mode === "none";
+  const consigne = chutesPDF.mode === "instruction";
 
   doc.setFillColor(...themeRgb("pdf-heading"));
   doc.rect(0, 0, pageWidth, 28, "F");
@@ -202,9 +208,9 @@ export async function exporterPDF(
   y += 3;
   autoTable(doc, {
     startY: y,
-    head: [["Barres utilisées", "Rendement", "Chutes réutilisables", "Perte définitive", "Chutes totales"]],
+    head: [sansTypes ? ["Barres utilisées", "Rendement", "Chutes totales"] : ["Barres utilisées", "Rendement", "Chutes réutilisables", "Perte définitive", "Chutes totales"]],
     body: [
-      [
+      sansTypes ? [`${fmt(resultat.nbBarres)}`, `${fmt(resultat.rendement, 1)} %`, `${fmt(resultat.longueurChutes)} mm`] : [
         `${fmt(resultat.nbBarres)}`,
         `${fmt(resultat.rendement, 1)} %`,
         `${fmt(resultat.longueurChutesReutilisables)} mm (${fmt(matiere.parts[1].affiche, 1)} %)`,
@@ -225,6 +231,7 @@ export async function exporterPDF(
   const lignesBilan = doc.splitTextToSize(bilan, pageWidth - 2 * margin);
   doc.text(lignesBilan, margin, y);
   y += lignesBilan.length * 4 + 2;
+  if (!sansTypes) {
   doc.text("Perte définitive : matière réellement jetée (déchets + traits de scie + marges)", margin, y);
   y += 5;
   const lignesRepartition = doc.splitTextToSize(matiere.repartition, pageWidth - 2 * margin);
@@ -238,6 +245,7 @@ export async function exporterPDF(
     xPart += largeur;
   }
   y += 8;
+  }
   const verif = options.verification;
   if (verif && !verif.ok) {
     doc.setFont("PlexSans", "normal");
@@ -276,24 +284,31 @@ export async function exporterPDF(
   }
 
   // ---- Chutes à conserver ----
-  const chutesProfils = chutesAConserver(resultat);
-  if (chutesProfils.length > 0) {
+  const toutesChutes = chutesAConserver(resultat);
+  const chutesProfils = consigne ? chutesSelectionnees(toutesChutes, chutesPDF) : toutesChutes;
+  if (!sansTypes && chutesProfils.length > 0) {
+    if (y + 25 > pageHeight - margin) { doc.addPage(); y = margin; }
     doc.setFontSize(11);
     doc.setFont("PlexSans", "bold");
     doc.setTextColor(...themeRgb("piece-ink"));
-    doc.text("Chutes à conserver", margin, y);
+    doc.text(consigne ? "Chutes à conserver" : "Chutes conservables", margin, y);
     y += 3;
+    if (!consigne) {
+      doc.setFont("PlexSans", "normal"); doc.setFontSize(8);
+      doc.text("À titre indicatif : longueurs supérieures au seuil de réutilisation", margin, y + 2);
+      y += 7;
+    }
     autoTable(doc, {
       startY: y,
-      head: [["Profilé", "Longueur de chute (mm)", "Quantité", "Barres d’origine"]],
+      head: [["Profilé", "Longueur (mm)", "Quantité", "Barres d’origine", ...(consigne ? ["Note"] : [])]],
       body: chutesProfils.flatMap((g) => [
-        ...g.lignes.map((l) => [libelleProfil(g.profil), fmt(l.longueur), fmt(l.quantite), l.origine]),
-        [`Total ${libelleProfil(g.profil)}`, `${fmt(g.totalMm / 1000, 2)} m linéaires`, "", ""],
+        ...g.lignes.map((l) => [libelleProfil(g.profil), fmt(l.longueur), fmt(l.quantite), l.origine, ...(consigne ? [choixChute(chutesPDF, l).note] : [])]),
+        [`Total ${libelleProfil(g.profil)}`, `${fmt(g.totalMm / 1000, 2)} m linéaires`, "", "", ...(consigne ? [""] : [])],
       ]),
       theme: "grid",
       styles: { fontSize: 9 },
       headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
-      columnStyles: { 0: { halign: "left" }, 1: { halign: "right", cellWidth: 44 }, 2: { halign: "right", cellWidth: 22 }, 3: { halign: "left" } },
+      columnStyles: { 0: { halign: "left" }, 1: { halign: "right", cellWidth: consigne ? 30 : 44 }, 2: { halign: "right", cellWidth: 20 }, 3: { halign: "left" }, ...(consigne ? { 4: { halign: "left" as const, cellWidth: 55 } } : {}) },
       didParseCell: (data) => {
         if (data.section === "body" && String(data.row.raw && (data.row.raw as string[])[0]).startsWith("Total ")) data.cell.styles.fontStyle = "bold";
       },
@@ -370,9 +385,13 @@ export async function exporterPDF(
     const qte = g.barres.length;
 
     const nbGroupes = grouperCoupesConsecutives(barre.coupes, traitScie).length;
-    const dessin = dessinBarrePDF(doc, barre, traitScie, pieceIds, pageWidth - 2 * margin);
+    const choix = choixBarre(chutesPDF, barre);
+    const aConserver = consigne && barre.chuteReutilisable && choix.conserver;
+    const dessin = dessinBarrePDF(doc, barre, traitScie, pieceIds, pageWidth - 2 * margin, aConserver, sansTypes);
+    doc.setFont("PlexSans", "bold"); doc.setFontSize(9);
+    const consigneLignes: string[] = aConserver ? doc.splitTextToSize(`À CONSERVER - NE PAS JETER${choix.note.trim() ? ` — ${choix.note.trim()}` : ""}`, pageWidth - 2 * margin) : [];
     // Long tables must span pages; keep the profile heading with its first drawing.
-    const hauteurEstimee = Math.min(70 + nbGroupes * 10 + Math.max(0, dessin.hauteur - 20), pageHeight - 2 * margin - 9);
+    const hauteurEstimee = Math.min(70 + nbGroupes * 10 + Math.max(0, dessin.hauteur - 20) + consigneLignes.length * 4, pageHeight - 2 * margin - 9);
     if (y + hauteurEstimee > pageHeight - margin) {
       doc.addPage();
       y = margin;
@@ -416,8 +435,17 @@ export async function exporterPDF(
     doc.setTextColor(...themeRgb("piece-ink"));
     doc.setFont("PlexSans", "bold");
     doc.setFontSize(9);
-    doc.text(`Chute finale : ${fmt(barre.chute)} mm — ${barre.chuteReutilisable ? `Réutilisable — À conserver - ${libelleProfil(barre.profil)}` : "Déchet"}`, margin, y);
+    doc.text(`Chute finale : ${fmt(barre.chute)} mm${sansTypes ? "" : barre.chuteReutilisable ? aConserver ? ` — À conserver - ${libelleProfil(barre.profil)}` : consigne ? " — Non retenue" : " — Conservable" : " — Déchet"}`, margin, y);
     y += 4;
+    if (aConserver) {
+      doc.setTextColor(...themeRgb("pdf-print-ink"));
+      for (const ligne of consigneLignes) {
+        if (y + 4 > pageHeight - margin) { doc.addPage(); y = margin; }
+        doc.text(ligne, margin, y); y += 4;
+      }
+      y += 2;
+      doc.setTextColor(...themeRgb("piece-ink"));
+    }
 
     doc.setFont("PlexSans", "normal");
     doc.setFontSize(8);
@@ -464,6 +492,8 @@ export async function exporterPDF(
     y = doc.lastAutoTable.finalY + 8;
   }
   }
+
+  if (consigne && chutesPDF.etiquettes && chutesProfils.length > 0) ajouterEtiquettes(doc, chutesProfils, chutesPDF, infos, date);
 
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {

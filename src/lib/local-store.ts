@@ -2,6 +2,7 @@
 // Everything lives in localStorage; no network calls.
 
 import type { Piece, StockBarre } from "./optimizer";
+import type { OptionsChutesPDF } from "./offcut-settings";
 
 const PROFILES_KEY = "linear:profiles:v1";
 const PROJECTS_KEY = (profileId: string) => `linear:projects:v1:${profileId}`;
@@ -28,6 +29,7 @@ export interface LocalProject {
   longueurs_profils?: Record<string, number>;
   seuils_profils?: Record<string, number>;
   seuil_chute?: number;
+  chutes_pdf?: OptionsChutesPDF;
   created_at: string;
   updated_at: string;
 }

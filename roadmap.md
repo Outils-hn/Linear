@@ -23,3 +23,6 @@
 - [x] Réaligner les paramètres en pleine largeur et les longueurs par profilé sur une ligne, sans unités dans les libellés ni majuscules forcées ; vérifier à l’écran.
 - [x] Corriger les contrastes sombres des tableaux, du bouton et des textes secondaires ; vérifier que le mode clair reste inchangé.
 - [x] Remplacer les indicateurs matière à l’écran, dans le PDF et Excel ; vérifier le cas 6000 mm et la répartition à 100 %.
+- [x] Ajouter les modes PDF des chutes, choix et notes sauvegardés avec le projet et compatibles JSON.
+- [x] Adapter le PDF et ajouter les étiquettes facultatives, sans modifier les calculs.
+- [x] Vérifier les trois modes, sauvegardes, étiquettes et non-régression ; inspecter les PDF et corriger l’espace inutilisé des étiquettes longues.
