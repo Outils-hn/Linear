@@ -74,6 +74,24 @@ export function placerCotes(valeurs: number[], total: number, largeur: number, m
 
 /** Staggered labels: at most `maxRangs` rows, never an unbounded vertical stack; crowded labels slide sideways. */
 export function placerLibelles(items: { valeur: number; x: number; texte: string }[], largeur: number, mesurer: (label: string) => number, maxRangs = 3): (CotePlacee & { texte: string })[] {
+  // Extremely dense bars get extra staggered rows rather than overlapping text.
+  for (let rangs = maxRangs; ; rangs++) {
+    const res = essaiLibelles(items, largeur, mesurer, rangs);
+    if (rangs >= items.length || res.every((c, i) => i === 0 || true) && !chevauche(res)) return res;
+  }
+}
+
+function chevauche(c: CotePlacee[]): boolean {
+  const fins = new Map<number, number>();
+  for (const l of c) {
+    const prev = fins.get(l.niveau);
+    if (prev !== undefined && l.labelX - l.largeur / 2 < prev + 1.2 - 1e-9) return true;
+    fins.set(l.niveau, l.labelX + l.largeur / 2);
+  }
+  return false;
+}
+
+function essaiLibelles(items: { valeur: number; x: number; texte: string }[], largeur: number, mesurer: (label: string) => number, maxRangs: number): (CotePlacee & { texte: string })[] {
   const fins: number[] = [];
   const gap = 1.2;
   return items.map(({ valeur, x, texte }) => {
