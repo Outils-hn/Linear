@@ -101,10 +101,11 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   initialText: string;
   longueurBarre: number;
+  onSetBarre: (v: number) => void;
   onImport: (pieces: Omit<Piece, "id">[], mode: "replace" | "append", info: { lignes: number; ignorees: number }) => void;
 }
 
-export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarre, onImport }: Props) {
+export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarre, onSetBarre, onImport }: Props) {
   const [text, setText] = useState("");
   const [roles, setRoles] = useState<ColRole[]>([]);
   const [header, setHeader] = useState(false);
