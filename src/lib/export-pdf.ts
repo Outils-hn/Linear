@@ -1,4 +1,5 @@
 import { formatNombre as fmt } from "./format-number";
+import { bilanMatiere } from "./material-summary";
 import { jsPDF } from "jspdf";
 import { installerPolicesPDF } from "./pdf-fonts";
 import { themeRgb } from "./visual-theme";
@@ -115,6 +116,7 @@ export async function exporterPDF(
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
   const pieceIds = pieces.map((p) => p.id);
+  const matiere = bilanMatiere(resultat);
 
   doc.setFillColor(...themeRgb("pdf-heading"));
   doc.rect(0, 0, pageWidth, 28, "F");
@@ -200,15 +202,14 @@ export async function exporterPDF(
   y += 3;
   autoTable(doc, {
     startY: y,
-    head: [["Barres utilisées", "Rendement brut", "Hors chutes réutilisables", "Chutes totales", "Réutilisables", "Déchets"]],
+    head: [["Barres utilisées", "Rendement", "Chutes réutilisables", "Perte définitive", "Chutes totales"]],
     body: [
       [
         `${fmt(resultat.nbBarres)}`,
         `${fmt(resultat.rendement, 1)} %`,
-        `${fmt(resultat.rendementHorsChutesReutilisables, 1)} %`,
+        `${fmt(resultat.longueurChutesReutilisables)} mm (${fmt(matiere.parts[1].affiche, 1)} %)`,
+        `${fmt(matiere.perte)} mm (${fmt(matiere.parts[2].affiche, 1)} %)`,
         `${fmt(resultat.longueurChutes)} mm (${fmt(resultat.pourcentageChutes, 1)} %)`,
-        `${fmt(resultat.longueurChutesReutilisables)} mm`,
-        `${fmt(resultat.longueurDechets)} mm`,
       ],
     ],
     theme: "grid",
@@ -224,6 +225,19 @@ export async function exporterPDF(
   const lignesBilan = doc.splitTextToSize(bilan, pageWidth - 2 * margin);
   doc.text(lignesBilan, margin, y);
   y += lignesBilan.length * 4 + 2;
+  doc.text("Perte définitive : matière réellement jetée (déchets + traits de scie + marges)", margin, y);
+  y += 5;
+  const lignesRepartition = doc.splitTextToSize(matiere.repartition, pageWidth - 2 * margin);
+  doc.text(lignesRepartition, margin, y);
+  y += lignesRepartition.length * 4;
+  let xPart = margin;
+  for (const [i, part] of matiere.parts.entries()) {
+    const largeur = (pageWidth - 2 * margin) * part.pourcentage / 100;
+    doc.setFillColor(...themeRgb(["piece-1", "warning", "hatch"][i]));
+    doc.rect(xPart, y, largeur, 3, "F");
+    xPart += largeur;
+  }
+  y += 8;
   const verif = options.verification;
   if (verif && !verif.ok) {
     doc.setFont("PlexSans", "normal");
@@ -241,7 +255,7 @@ export async function exporterPDF(
   if (resultat.profils.length > 0) {
     autoTable(doc, {
       startY: y,
-      head: [["Profilé", "Longueur de barre", "Sous-total barres", "Rendement brut", "Chutes"]],
+      head: [["Profilé", "Longueur de barre", "Sous-total barres", "Rendement", "Chutes"]],
       body: resultat.profils.map((rp) => [
         libelleProfil(rp.profil),
         `${fmt(rp.longueurBarre)} mm`,

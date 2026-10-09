@@ -1,4 +1,5 @@
 import { formatNombre as fmt } from "@/lib/format-number";
+import { bilanMatiere } from "@/lib/material-summary";
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
@@ -127,6 +128,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [stock, setStock] = useState<StockBarre[]>([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
   const [resultat, setResultat] = useState<ResultatMulti | null>(null);
+  const matiere = resultat ? bilanMatiere(resultat) : null;
   const [longueursProfils, setLongueursProfils] = useState<Record<string, number>>({});
   const [seuilsProfils, setSeuilsProfils] = useState<Record<string, number>>({});
   const [seuilChute, setSeuilChute] = useState(500);
@@ -944,12 +946,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
             {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
             <div className="grid gap-4 sm:grid-cols-2">
               <StatCard large label="Barres utilisées" value={`${fmt(resultat.nbBarres)}`} hint={strategie === "priorite-stock" ? `${fmt(resultat.nbBarresStock)} stock + ${fmt(resultat.nbBarresDefaut)} base` : `${fmt(resultat.longueurTotale)} mm au total`} />
-              <StatCard large label="Rendement brut" value={`${fmt(resultat.rendement, 1)} %`} hint={`${fmt(resultat.longueurUtile)} mm utiles`} />
+              <StatCard large label="Rendement" value={`${fmt(resultat.rendement, 1)} %`} hint={`${fmt(resultat.longueurUtile)} mm de pièces / ${fmt(resultat.longueurTotale)} mm de matière achetée`} />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              <StatCard label="Rendement hors chutes réutilisables" value={`${fmt(resultat.rendementHorsChutesReutilisables, 1)} %`} hint={`${fmt(resultat.longueurTotale - resultat.longueurChutesReutilisables)} mm consommés`} />
+              <StatCard label="Chutes réutilisables" value={`${fmt(resultat.longueurChutesReutilisables)} mm (${fmt(matiere?.parts[1].affiche ?? 0, 1)} %)`} hint="De la matière achetée" accent="warning" />
+              <StatCard label="Perte définitive" value={`${fmt(matiere?.perte ?? 0)} mm (${fmt(matiere?.parts[2].affiche ?? 0, 1)} %)`} hint="Matière réellement jetée" />
               <StatCard label="Chutes totales" value={`${fmt(resultat.longueurChutes)} mm`} hint={`${fmt(resultat.pourcentageChutes, 1)} % de la matière`} />
-              <StatCard label="Chutes réutilisables" value={`${fmt(resultat.longueurChutesReutilisables)} mm`} hint={`Déchets : ${fmt(resultat.longueurDechets)} mm`} accent="warning" />
             </div>
 
             <ChutesAConserver resultat={resultat} />
@@ -957,11 +959,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
             <div className="border-y border-border py-4 text-sm tabular-nums">
               <h2 className="mb-1 font-semibold">Bilan matière</h2>
               <p>{fmt(resultat.longueurTotale)} mm = {fmt(resultat.longueurUtile)} pièces + {fmt(resultat.longueurTraitsScie)} traits de scie + {fmt(resultat.longueurMarges)} marges + {fmt(resultat.longueurChutes)} chutes</p>
+              <p className="mt-2">{matiere?.repartition}</p>
               <div aria-label="Répartition du bilan matière" className="mt-4 flex h-3 w-full overflow-hidden rounded-sm">
-                {[{ label: "Pièces", value: resultat.longueurUtile, style: "bg-piece-1" }, { label: "Traits de scie", value: resultat.longueurTraitsScie, style: "bg-heading" }, { label: "Marges", value: resultat.longueurMarges, style: "margin-hatch bg-muted" }, { label: "Chutes", value: resultat.longueurChutes, style: "offcut-hatch" }].map(segment => <div key={segment.label} title={`${segment.label} : ${fmt(segment.value)} mm`} className={segment.style} style={{ width: `${segment.value / resultat.longueurTotale * 100}%` }} />)}
+                {matiere?.parts.map((part, i) => <div key={i} title={`${["Pièces", "Chutes réutilisables", "Perte définitive"][i]} : ${fmt(part.value)} mm (${fmt(part.affiche, 1)} %)`} className={["bg-piece-1", "reusable-hatch", "offcut-hatch"][i]} style={{ width: `${part.pourcentage}%` }} />)}
               </div>
               <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-                {[{ label: "Pièces", value: resultat.longueurUtile, style: "bg-piece-1" }, { label: "Traits de scie", value: resultat.longueurTraitsScie, style: "bg-heading" }, { label: "Marges", value: resultat.longueurMarges, style: "margin-hatch bg-muted" }, { label: "Chutes", value: resultat.longueurChutes, style: "offcut-hatch" }].map(segment => <span key={segment.label} className="flex items-center gap-2"><i className={"h-2.5 w-2.5 rounded-sm " + segment.style} />{segment.label} <span className="font-mono text-foreground">{fmt(segment.value)} mm</span></span>)}
+                {matiere?.parts.map((part, i) => <span key={i} className="flex items-center gap-2"><i className={"h-2.5 w-2.5 rounded-sm " + ["bg-piece-1", "reusable-hatch", "offcut-hatch"][i]} />{["Pièces", "Chutes réutilisables", "Perte définitive"][i]} <span className="font-mono text-foreground">{fmt(part.value)} mm</span></span>)}
               </div>
             </div>
 
