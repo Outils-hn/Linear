@@ -511,6 +511,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 onOpenChange={setPasteOpen}
                 initialText={pasteText}
                 longueurBarre={longueurBarre}
+                onSetBarre={(v) => { setLongueurBarre(v); toast.success(`Barre de base réglée sur ${v} mm`); }}
                 onImport={(list, mode, info) => {
                   const nouvelles = list.map((x) => ({ ...x, id: nextId() }));
                   setPieces((p) => (mode === "replace" ? nouvelles : [...p, ...nouvelles]));

@@ -6,13 +6,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Piece } from "@/lib/optimizer";
 
-type ColRole = "repere" | "longueur" | "quantite" | "ignorer";
+type ColRole = "repere" | "longueur" | "quantite" | "barre" | "ignorer";
 const MAP_KEY = "linear:excel-colmap:v1";
 
 export function parseNombre(s: string): number {
   const c = (s ?? "").replace(/[\s\u00A0\u202F]/g, "").replace(",", ".");
   if (c === "" || !/^-?\d*\.?\d+$/.test(c)) return NaN;
   return Number(c);
+}
+
+// Extrait le nombre d'une cellule en ignorant le texte autour (unités, espaces insécables)
+function extraireNombre(s: string): { valeur: number; unite: string } | null {
+  const c = (s ?? "").replace(/[\s\u00A0\u202F]/g, "").replace(",", ".");
+  const m = c.match(/(-?\d*\.?\d+)([a-zA-Z]*)/);
+  if (!m) return null;
+  return { valeur: Number(m[1]), unite: (m[2] ?? "").toLowerCase() };
+}
+
+export function parseLongueur(s: string): number {
+  const e = extraireNombre(s);
+  if (!e) return NaN;
+  if (e.unite === "cm") return e.valeur * 10;
+  if (e.unite === "m") return e.valeur * 1000;
+  if (e.unite === "" || e.unite === "mm") return e.valeur;
+  return NaN; // unité inconnue
+}
+
+export function parseQuantite(s: string): number {
+  const e = extraireNombre(s);
+  if (!e) return NaN;
+  if (e.unite === "" || /^(pces?|pcs?|u|unites?|x)$/.test(e.unite)) return e.valeur;
+  return NaN;
 }
 
 function splitRows(text: string): string[][] {
@@ -26,6 +50,7 @@ function splitRows(text: string): string[][] {
 function roleFromHeader(h: string): ColRole | null {
   const s = h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   if (/^(rep|designation|profil|nom|ref)/.test(s)) return "repere";
+  if (/^(barre|stock)/.test(s)) return "barre";
   if (/^(long|l$|l\s|lg)/.test(s)) return "longueur";
   if (/^(qte|qt|quantite|nb|nombre|q$)/.test(s)) return "quantite";
   return null;
@@ -47,7 +72,7 @@ function detect(rows: string[][], nCols: number): { header: boolean; roles: ColR
     const data = header ? rows.slice(1) : rows;
     const stats = Array.from({ length: nCols }, (_, i) => {
       const vals = data.map((r) => r[i] ?? "").filter((v) => v !== "");
-      const nums = vals.map(parseNombre).filter((n) => !isNaN(n));
+      const nums = vals.map((v) => { const n = parseLongueur(v); return isNaN(n) ? parseNombre(v) : n; }).filter((n) => !isNaN(n));
       const numeric = vals.length > 0 && nums.length / vals.length > 0.8;
       const avg = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
       const ints = nums.every((n) => Number.isInteger(n));
@@ -76,10 +101,11 @@ interface Props {
   onOpenChange: (o: boolean) => void;
   initialText: string;
   longueurBarre: number;
+  onSetBarre: (v: number) => void;
   onImport: (pieces: Omit<Piece, "id">[], mode: "replace" | "append", info: { lignes: number; ignorees: number }) => void;
 }
 
-export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarre, onImport }: Props) {
+export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarre, onSetBarre, onImport }: Props) {
   const [text, setText] = useState("");
   const [roles, setRoles] = useState<ColRole[]>([]);
   const [header, setHeader] = useState(false);
@@ -110,14 +136,16 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
   };
 
   const analyse = useMemo(() => {
-    const iR = roles.indexOf("repere"), iL = roles.indexOf("longueur"), iQ = roles.indexOf("quantite");
+    const iR = roles.indexOf("repere"), iL = roles.indexOf("longueur"), iQ = roles.indexOf("quantite"), iB = roles.indexOf("barre");
     const data = (header ? rows.slice(1) : rows).map((r, k) => ({ r, ligne: k + 1 + (header ? 1 : 0) }));
     const valides: Omit<Piece, "id">[] = [];
     const erreurs: { ligne: number; msg: string }[] = [];
+    const barreVals: number[] = [];
     for (const { r, ligne } of data) {
       const nom = iR >= 0 ? r[iR] ?? "" : "";
-      const L = iL >= 0 ? parseNombre(r[iL] ?? "") : NaN;
-      const Q = iQ >= 0 ? parseNombre(r[iQ] ?? "") : 1;
+      const L = iL >= 0 ? parseLongueur(r[iL] ?? "") : NaN;
+      const Q = iQ >= 0 ? parseQuantite(r[iQ] ?? "") : 1;
+      if (iB >= 0) { const b = parseLongueur(r[iB] ?? ""); if (!isNaN(b) && b > 0) barreVals.push(b); }
       if (iL < 0 || isNaN(L) || L <= 0) { erreurs.push({ ligne, msg: "longueur vide ou non numérique" }); continue; }
       if (L > longueurBarre) { erreurs.push({ ligne, msg: `longueur ${L} > barre ${longueurBarre}` }); continue; }
       if (isNaN(Q) || !Number.isInteger(Q) || Q <= 0) { erreurs.push({ ligne, msg: "quantité non entière ou nulle" }); continue; }
@@ -133,7 +161,9 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
       }
       out = [...m.values()];
     }
-    return { out, erreurs, nValides: valides.length };
+    const barreUnique = barreVals.length > 0 && barreVals.every((b) => b === barreVals[0]) ? barreVals[0] : null;
+    const barreVariee = barreVals.length > 1 && barreUnique === null;
+    return { out, erreurs, nValides: valides.length, barreUnique, barreVariee };
   }, [rows, roles, header, fusion, longueurBarre]);
 
   const doImport = (mode: "replace" | "append") => {
@@ -172,6 +202,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
                           <SelectItem value="repere">Repère</SelectItem>
                           <SelectItem value="longueur">Longueur (mm)</SelectItem>
                           <SelectItem value="quantite">Quantité</SelectItem>
+                          <SelectItem value="barre">Longueur de barre</SelectItem>
                           <SelectItem value="ignorer">Ignorer</SelectItem>
                         </SelectContent>
                       </Select>
@@ -195,6 +226,19 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
               </tbody>
             </table>
             {rows.length > 5 && <p className="p-1 text-xs text-muted-foreground">… {rows.length - 5} autre(s) ligne(s)</p>}
+          </div>
+        )}
+        {analyse.barreUnique !== null && analyse.barreUnique !== longueurBarre && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-xs">
+            <span>Longueur de barre détectée : <strong>{analyse.barreUnique} mm</strong> (actuelle : {longueurBarre} mm)</span>
+            <Button size="sm" variant="outline" onClick={() => onSetBarre(analyse.barreUnique!)}>
+              Utiliser {analyse.barreUnique} mm comme barre de base
+            </Button>
+          </div>
+        )}
+        {analyse.barreVariee && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+            Attention : les longueurs de barre varient d'une ligne à l'autre — la barre de base du calcul n'a pas été modifiée.
           </div>
         )}
         {analyse.erreurs.length > 0 && (
