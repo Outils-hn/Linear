@@ -12,3 +12,4 @@
 - Keep editable-table and measurement-field presentation in shared CSS classes, with shared table-header defaults, so alignment changes do not alter input handlers or calculations.
 - Derive material-loss indicators and balanced display percentages in the browser-safe material-summary module shared by screen, PDF and Excel; preserve engine results and independent verification.
 - Offcut PDF instructions are optional project fields keyed by normalized profile and exact offcut length (the existing recap row); resolve them only in presentation/export, never in optimization, verification, stock or material accounting.
+- Cut method (butée / mètre ruban) and displayed reuse thresholds live in browser-safe src/lib/cut-method.ts; thresholds are read from computed bars (seuilChute), never hard-coded, and dimension labels use bounded staggered rows via placerLibelles.

@@ -42,6 +42,7 @@ import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { ChampNombre } from "@/components/ChampNombre";
 import { LinearMark } from "@/components/LinearMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { lireMethodeCoupe, lignesReperes, METHODES_COUPE, RAPPEL_RUBAN, type MethodeCoupe } from "@/lib/cut-method";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
 import { verifierResultat } from "@/lib/verification";
 import { exporterProjetJson, exporterTousJson, lireJson } from "@/lib/backup";
@@ -136,6 +137,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [seuilsProfils, setSeuilsProfils] = useState<Record<string, number>>({});
   const [seuilChute, setSeuilChute] = useState(500);
   const [chutesPDF, setChutesPDF] = useState<OptionsChutesPDF>(optionsChutesDefaut);
+  const [methodeCoupe, setMethodeCoupe] = useState<MethodeCoupe>("butee");
   const [pdfWarnOpen, setPdfWarnOpen] = useState(false);
   const [verifCtx, setVerifCtx] = useState<{ pieces: Piece[]; traitScie: number } | null>(null);
   const verification = useMemo(
@@ -302,6 +304,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       infos: { chantier, numeroTache, client, date: dateProjet },
       verification: verification ?? undefined,
       chutesPDF,
+      methodeCoupe,
     }).catch(() => toast.error("L’export PDF a échoué. Veuillez réessayer."));
   };
 
@@ -318,6 +321,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     setSeuilsProfils({});
     setSeuilChute(500);
     setChutesPDF(optionsChutesDefaut());
+    setMethodeCoupe("butee");
     setTraitScie(3);
     setStrategie("min-barres");
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
@@ -352,6 +356,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
         seuils_profils: seuilsProfils,
         seuil_chute: seuilChute,
         chutes_pdf: chutesPDF,
+        methode_coupe: methodeCoupe,
       });
       setCurrentProjectId(saved.id);
       if (opts.chantierOverride !== undefined) setChantier(opts.chantierOverride);
@@ -396,6 +401,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     setSeuilsProfils(sp);
     setSeuilChute(sg);
     setChutesPDF(lireOptionsChutes(proj.chutes_pdf));
+    setMethodeCoupe(lireMethodeCoupe(proj.methode_coupe));
     setSidebarOpen(false);
     const r = calculer({
       pieces: loadedPieces,
@@ -680,6 +686,15 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   <SelectTrigger id="position-marge"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(POSITION_MARGE_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="methode-coupe">Méthode de coupe à l'atelier</Label>
+                <Select value={methodeCoupe} onValueChange={(v) => setMethodeCoupe(lireMethodeCoupe(v))}>
+                  <SelectTrigger id="methode-coupe"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(METHODES_COUPE).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -1093,6 +1108,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
 
                       <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} libelle={libelleGroupe(groupe)} />
                       <p className="text-xs text-muted-foreground">Cotes mesurées depuis l’extrémité brute de la barre</p>
+                      {methodeCoupe === "ruban" && <p className="text-xs font-semibold text-foreground">{RAPPEL_RUBAN}</p>}
 
                       <div className="overflow-hidden rounded-md border border-border">
                         <Table>
@@ -1112,7 +1128,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                                 <TableCell className="text-xs font-medium text-foreground">{g.nom}</TableCell>
                                 <TableCell className="text-right text-xs tabular-nums">{fmt(g.longueur)}</TableCell>
                                 <TableCell className="text-right text-xs tabular-nums">{fmt(g.quantite)}</TableCell>
-                                <TableCell className="whitespace-nowrap text-right text-xs tabular-nums">{g.reperes.map(n => fmt(n)).join(" / ")}</TableCell>
+                                <TableCell className="whitespace-nowrap text-right text-xs tabular-nums">{lignesReperes(g.reperes, methodeCoupe).map((l, k) => <div key={k}>{l}</div>)}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>

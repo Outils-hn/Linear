@@ -68,16 +68,43 @@ export interface CotePlacee { valeur: number; x: number; labelX: number; largeur
 export const libelleCote = (valeur: number) => formatNombre(valeur);
 
 export function placerCotes(valeurs: number[], total: number, largeur: number, mesurer: (label: string) => number): CotePlacee[] {
+  return placerLibelles(valeurs.map(valeur => ({ valeur, x: valeur / total * largeur, texte: libelleCote(valeur) })), largeur, mesurer)
+    .map(({ texte: _t, ...c }) => c);
+}
+
+/** Staggered labels: at most `maxRangs` rows, never an unbounded vertical stack; crowded labels slide sideways. */
+export function placerLibelles(items: { valeur: number; x: number; texte: string }[], largeur: number, mesurer: (label: string) => number, maxRangs = 3): (CotePlacee & { texte: string })[] {
+  // Extremely dense bars get extra staggered rows rather than overlapping text.
+  for (let rangs = maxRangs; ; rangs++) {
+    const res = essaiLibelles(items, largeur, mesurer, rangs);
+    if (rangs >= items.length || !chevauche(res)) return res;
+  }
+}
+
+function chevauche(c: CotePlacee[]): boolean {
+  const fins = new Map<number, number>();
+  for (const l of c) {
+    const prev = fins.get(l.niveau);
+    if (prev !== undefined && l.labelX - l.largeur / 2 < prev + 1.2 - 1e-9) return true;
+    fins.set(l.niveau, l.labelX + l.largeur / 2);
+  }
+  return false;
+}
+
+function essaiLibelles(items: { valeur: number; x: number; texte: string }[], largeur: number, mesurer: (label: string) => number, maxRangs: number): (CotePlacee & { texte: string })[] {
   const fins: number[] = [];
-  return valeurs.map(valeur => {
-    const x = valeur / total * largeur;
-    const w = Math.min(largeur, mesurer(libelleCote(valeur)));
-    const labelX = Math.max(w / 2, Math.min(largeur - w / 2, x));
-    const gauche = labelX - w / 2;
-    let niveau = fins.findIndex(fin => gauche >= fin + 1.2);
-    if (niveau < 0) niveau = fins.length;
+  const gap = 1.2;
+  return items.map(({ valeur, x, texte }) => {
+    const w = Math.min(largeur, mesurer(texte));
+    let labelX = Math.max(w / 2, Math.min(largeur - w / 2, x));
+    let niveau = fins.findIndex(fin => labelX - w / 2 >= fin + gap);
+    if (niveau < 0 && fins.length < maxRangs) niveau = fins.length;
+    if (niveau < 0) {
+      niveau = fins.indexOf(Math.min(...fins));
+      labelX = Math.min(largeur - w / 2, fins[niveau] + gap + w / 2);
+    }
     fins[niveau] = labelX + w / 2;
-    return { valeur, x, labelX, largeur: w, niveau };
+    return { valeur, x, labelX, largeur: w, niveau, texte };
   });
 }
 

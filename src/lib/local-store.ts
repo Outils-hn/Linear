@@ -30,6 +30,7 @@ export interface LocalProject {
   seuils_profils?: Record<string, number>;
   seuil_chute?: number;
   chutes_pdf?: OptionsChutesPDF;
+  methode_coupe?: "butee" | "ruban";
   created_at: string;
   updated_at: string;
 }
