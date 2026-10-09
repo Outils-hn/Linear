@@ -31,7 +31,7 @@ import { toast } from "sonner";
 
 import { AuthForm } from "@/components/AuthForm";
 import { POSITION_MARGE_LABELS, type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
-import { BarreSchema } from "@/components/BarreSchema";
+import { BarreSchema, LegendeBarres } from "@/components/BarreSchema";
 import { optimiserParProfil, listeProfils, libelleProfil, longueurPourProfil, type ResultatMulti } from "@/lib/multi-profil";
 import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { LinearMark } from "@/components/LinearMark";
@@ -55,7 +55,7 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Linear ·" },
+      { title: "Linear · Optimisation de découpe en atelier" },
       { property: "og:title", content: "Linear · Optimisation de découpe en atelier" },
       { property: "og:description", content: "Plans de découpe linéaire, bilan matière, chutes réutilisables et fiches de débit pour l’atelier." },
       { property: "og:type", content: "website" },
@@ -222,7 +222,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       return;
     }
     setPdfWarnOpen(false);
-    exporterPDF(resultat, pieces, {
+    void exporterPDF(resultat, pieces, {
       longueurBarreBrute: longueurBarre,
       longueurBarreUtile: longueurUtile,
       margeSecurite,
@@ -233,7 +233,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       stock: strategie === "priorite-stock" ? stock : [],
       infos: { chantier, numeroTache, client, date: dateProjet },
       verification: verification ?? undefined,
-    });
+    }).catch(() => toast.error("L’export PDF a échoué. Veuillez réessayer."));
   };
 
   const nouveauProjet = () => {
@@ -947,6 +947,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-10">
+                <LegendeBarres pieces={pieces} pieceIds={pieceIds} />
                 {resultat.profils.map((rp) => (
                 <div key={rp.profil || "_"} className="space-y-8">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-2 border-foreground/80 pb-2">
@@ -967,17 +968,17 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <h3 className="text-sm font-semibold">
                           {libelleGroupe(groupe)}
+                          {qte > 1 && <span className="ml-2 inline-flex rounded border border-border bg-muted px-2 py-0.5 text-xs tabular-nums">x {qte}</span>}
                           <span className="ml-2 font-normal text-muted-foreground">
                             · {barre.longueurBrute} mm
                             {barre.longueurBrute !== barre.longueurBarre
                               ? ` (utile ${barre.longueurBarre} mm)`
                               : ""}· {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
-                            {qte > 1 ? ` · Quantité : ${qte} barres identiques` : ""}
                           </span>
                         </h3>
                       </div>
 
-                      <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} />
+                      <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} libelle={libelleGroupe(groupe)} />
                       <p className="text-xs text-muted-foreground">Cotes mesurées depuis l’extrémité brute de la barre</p>
 
                       <div className="overflow-hidden rounded-md border border-border">

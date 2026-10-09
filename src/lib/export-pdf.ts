@@ -1,5 +1,9 @@
 import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import { tableauAtelier as autoTable } from "./pdf-table";
+import { dessinBarrePDF } from "./bar-svg-pdf";
+import { grouperBarresIdentiques, libelleGroupe, libelleCote } from "./bar-drawing";
+export { grouperBarresIdentiques, libelleGroupe } from "./bar-drawing";
+export type { GroupeBarres } from "./bar-drawing";
 import type {
   Piece,
   Strategie,
@@ -34,12 +38,6 @@ export interface OptionsExportPDF {
   longueursProfils?: Record<string, number>;
   infos: InfosProjet;
   verification?: { ok: boolean; problemes: string[] };
-}
-
-export interface GroupeBarres {
-  barres: BarreOptimisee[];
-  signature: string;
-  reference: BarreOptimisee;
 }
 
 export interface GroupeCoupe {
@@ -92,36 +90,7 @@ export function grouperCoupesConsecutives(
   return groupes;
 }
 
-function signatureBarre(b: BarreOptimisee): string {
-  return (
-    `${b.profil ?? ""}|${b.origine}|${b.longueurBrute}|${b.longueurBarre}|` +
-    b.coupes.map((c) => `${c.pieceId}:${c.longueur}`).join(",") +
-    `|c=${b.chute}|m=${b.margeDebut ?? 0}:${b.margeFin ?? 0}`
-  );
-}
-
-export function grouperBarresIdentiques(barres: BarreOptimisee[]): GroupeBarres[] {
-  const map = new Map<string, GroupeBarres>();
-  for (const b of barres) {
-    const sig = signatureBarre(b);
-    const g = map.get(sig);
-    if (g) g.barres.push(b);
-    else map.set(sig, { signature: sig, reference: b, barres: [b] });
-  }
-  return [...map.values()].sort((a, b) => a.barres[0].index - b.barres[0].index);
-}
-
-export function libelleGroupe(g: GroupeBarres): string {
-  const suffixe = g.reference.origine === "stock" ? " (stock)" : "";
-  if (g.barres.length === 1) return `Barre n°${g.barres[0].index}${suffixe}`;
-  const indices = g.barres.map((b) => b.index).sort((a, b) => a - b);
-  const contigu = indices.every((v, i) => i === 0 || v === indices[i - 1] + 1);
-  if (contigu)
-    return `Barres n°${indices[0]} à n°${indices[indices.length - 1]}${suffixe}`;
-  return `Barres n°${indices.join(", n°")}${suffixe}`;
-}
-
-export function exporterPDF(
+export async function exporterPDF(
   resultat: ResultatMulti,
   pieces: Piece[],
   options: OptionsExportPDF,
@@ -135,6 +104,7 @@ export function exporterPDF(
     stock,
     infos,
   } = options;
+  const { svg2pdf } = await import("svg2pdf.js");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -361,7 +331,9 @@ export function exporterPDF(
     const qte = g.barres.length;
 
     const nbGroupes = grouperCoupesConsecutives(barre.coupes, traitScie).length;
-    const hauteurEstimee = 70 + nbGroupes * 10;
+    const dessin = dessinBarrePDF(doc, barre, traitScie, pieceIds, pageWidth - 2 * margin);
+    // Long tables must span pages; keep the profile heading with its first drawing.
+    const hauteurEstimee = Math.min(70 + nbGroupes * 10 + Math.max(0, dessin.hauteur - 20), pageHeight - 2 * margin - 9);
     if (y + hauteurEstimee > pageHeight - margin) {
       doc.addPage();
       y = margin;
@@ -375,7 +347,7 @@ export function exporterPDF(
     if (qte > 1) {
       doc.setFontSize(10);
       doc.setTextColor(220, 38, 38);
-      doc.text(`Quantité : ${qte} barres identiques`, pageWidth - margin, y, {
+      doc.text(`x ${qte}`, pageWidth - margin, y, {
         align: "right",
       });
     }
@@ -395,152 +367,12 @@ export function exporterPDF(
     );
     y += 4;
 
-    const schemaX = margin;
-    const schemaY = y;
-    const schemaW = pageWidth - 2 * margin;
-    const schemaH = 14;
     const margeDebut = barre.margeDebut ?? 0;
     const margeFin = barre.margeFin ?? 0;
-    let cursorMm = margeDebut;
-    const mmToPx = (mm: number) => (mm / barre.longueurBrute) * schemaW;
-
-    const hachurer = (x: number, w: number, reutilisable: boolean, marge = false) => {
-      if (w <= 0) return;
-      if (reutilisable) doc.setFillColor(248, 184, 74);
-      else doc.setFillColor(232, 232, 232);
-      doc.rect(x, schemaY, w, schemaH, "F");
-      if (reutilisable) doc.setDrawColor(177, 99, 18);
-      else doc.setDrawColor(110, 110, 110);
-      doc.setLineWidth(0.15);
-      for (let d = -schemaH; d < w; d += marge ? 1.5 : 3) {
-        const start = Math.max(0, -d);
-        const end = Math.min(schemaH, w - d);
-        if (end > start) doc.line(x + d + start, schemaY + start, x + d + end, schemaY + end);
-      }
-    };
-
-    doc.setFillColor(240, 240, 240);
-    doc.rect(schemaX, schemaY, schemaW, schemaH, "F");
-    hachurer(schemaX, mmToPx(margeDebut), false, true);
-
     const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie, margeDebut);
-
-    coupesGroupes.forEach((gp, gi) => {
-      const x = schemaX + mmToPx(cursorMm);
-      const w = mmToPx(gp.largeurMm);
-      const hex = hexColorForPieceId(gp.pieceId, pieceIds);
-      const r = parseInt(hex.slice(1, 3), 16);
-      const gg = parseInt(hex.slice(3, 5), 16);
-      const bb = parseInt(hex.slice(5, 7), 16);
-      doc.setFillColor(r, gg, bb);
-      doc.rect(x, schemaY, w, schemaH, "F");
-
-      for (let k = 1; k < gp.quantite && traitScie > 0; k++) {
-        doc.setFillColor(30, 30, 30);
-        doc.rect(schemaX + mmToPx(cursorMm + k * gp.longueur + (k - 1) * traitScie), schemaY, mmToPx(traitScie), schemaH, "F");
-      }
-
-      // Séparateur vertical à chaque coupe, même pour des pièces regroupées
-      doc.setDrawColor(20, 20, 20);
-      doc.setLineWidth(0.35);
-      for (let k = 0; k < gp.quantite; k++) {
-        const debut = cursorMm + k * (gp.longueur + (traitScie > 0 ? traitScie : 0));
-        const x1 = schemaX + mmToPx(debut);
-        const x2 = schemaX + mmToPx(debut + gp.longueur);
-        doc.line(x1, schemaY, x1, schemaY + schemaH);
-        doc.line(x2, schemaY, x2, schemaY + schemaH);
-      }
-
-      doc.setTextColor(255, 255, 255);
-      const cx = x + w / 2;
-      const cy = schemaY + schemaH / 2;
-      const padding = 1.2;
-      const maxW = Math.max(0, w - padding * 2);
-
-      const fitFontSize = (txt: string, weight: "bold" | "normal", start: number, min: number) => {
-        doc.setFont("helvetica", weight);
-        let size = start;
-        while (size > min) {
-          doc.setFontSize(size);
-          if (doc.getTextWidth(txt) <= maxW) return size;
-          size -= 0.5;
-        }
-        doc.setFontSize(min);
-        return min;
-      };
-
-      if (maxW >= 4) {
-        const ligne2 =
-          gp.quantite > 1 ? `${gp.longueur}mm x${gp.quantite}` : `${gp.longueur} mm`;
-        const canTwoLines = schemaH >= 9;
-        if (canTwoLines) {
-          const sNom = fitFontSize(gp.nom, "bold", 8, 4);
-          const sLng = fitFontSize(ligne2, "normal", 7, 4);
-          const ptToMm = 0.3528;
-          const offNom = (sNom * ptToMm) / 2 + 0.2;
-          const offLng = (sLng * ptToMm) / 2 + 0.2;
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(sNom);
-          doc.text(gp.nom, cx, cy - offNom, { align: "center", baseline: "middle" });
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(sLng);
-          doc.text(ligne2, cx, cy + offLng, { align: "center", baseline: "middle" });
-        } else {
-          const combo = `${gp.nom} (${ligne2})`;
-          const s = fitFontSize(combo, "bold", 7, 4);
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(s);
-          doc.text(combo, cx, cy, { align: "center", baseline: "middle" });
-        }
-      }
-
-      cursorMm += gp.largeurMm;
-      if (gi < coupesGroupes.length - 1 && traitScie > 0) {
-        const xt = schemaX + mmToPx(cursorMm);
-        doc.setFillColor(30, 30, 30);
-        doc.rect(xt, schemaY, mmToPx(traitScie), schemaH, "F");
-        cursorMm += traitScie;
-      }
-    });
-
-    const traitFinal = Math.max(0, barre.longueurTraitsScie - Math.max(0, barre.coupes.length - 1) * traitScie);
-    if (traitFinal > 0) {
-      doc.setFillColor(30, 30, 30);
-      doc.rect(schemaX + mmToPx(cursorMm), schemaY, mmToPx(traitFinal), schemaH, "F");
-      cursorMm += traitFinal;
-    }
-    if (barre.chute > 0) {
-      const x = schemaX + mmToPx(cursorMm);
-      const w = mmToPx(barre.chute);
-      hachurer(x, w, barre.chuteReutilisable);
-      if (w > 14) {
-        doc.setTextColor(20, 20, 20);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(7);
-        doc.text(`Chute ${barre.chute} mm`, x + w / 2, schemaY + schemaH / 2 + 1, {
-          align: "center",
-        });
-      }
-    }
-    hachurer(schemaX + mmToPx(barre.longueurBrute - margeFin), mmToPx(margeFin), false, true);
-
-    // Repères cumulés sous la barre (graduations)
-    const reperesBarre = calculerReperes(barre.coupes, traitScie, margeDebut);
-    const tickY = schemaY + schemaH;
-    doc.setDrawColor(60, 60, 60);
-    doc.setTextColor(20, 20, 20);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.5);
-    let lastLabelX = -Infinity;
-    reperesBarre.forEach((r) => {
-      const xr = schemaX + mmToPx(r);
-      doc.line(xr, tickY, xr, tickY + 1.6);
-      if (xr - lastLabelX >= 8) {
-        doc.text(`${r}`, xr, tickY + 4.2, { align: "center" });
-        lastLabelX = xr;
-      }
-    });
-    y += schemaH + 12;
+    const svg = new DOMParser().parseFromString(dessin.source, "image/svg+xml").documentElement;
+    await svg2pdf(svg, doc, { x: margin, y, width: pageWidth - 2 * margin, height: dessin.hauteur });
+    y += dessin.hauteur + 6;
 
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "bold");
@@ -561,7 +393,7 @@ export function exporterPDF(
       c.nom,
       `${c.longueur} mm`,
       `${c.quantite}`,
-      c.reperes.join(" / "),
+      c.reperes.map(libelleCote).join(" / "),
     ]);
     autoTable(doc, {
       startY: y,
