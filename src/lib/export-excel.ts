@@ -7,8 +7,8 @@ function numFR(n: number): string {
 
 export function lignesPieces(pieces: Piece[]): string[][] {
   return [
-    ["Repère", "Longueur (mm)", "Quantité"],
-    ...pieces.map((p) => [p.nom, numFR(p.longueur), String(p.quantite)]),
+    ["Repère", "Longueur (mm)", "Quantité", "Profile"],
+    ...pieces.map((p) => [p.nom, numFR(p.longueur), String(p.quantite), (p.profil ?? "").trim()]),
   ];
 }
 
@@ -29,23 +29,23 @@ export async function telechargerExcel(pieces: Piece[], resultat: ResultatOptimi
   const wb = XLSX.utils.book_new();
 
   const wsPieces = XLSX.utils.aoa_to_sheet(lignesPieces(pieces));
-  wsPieces["!cols"] = [{ wch: 24 }, { wch: 14 }, { wch: 10 }];
-  for (const ref of ["A1", "B1", "C1"]) {
+  wsPieces["!cols"] = [{ wch: 24 }, { wch: 14 }, { wch: 10 }, { wch: 18 }];
+  for (const ref of ["A1", "B1", "C1", "D1"]) {
     if (wsPieces[ref]) wsPieces[ref].s = { font: { bold: true } };
   }
   XLSX.utils.book_append_sheet(wb, wsPieces, "Pieces");
 
   if (resultat && resultat.nbBarres > 0) {
     const rows: (string | number)[][] = [
-      ["Barre n°", "Longueur de barre (mm)", "Pièces coupées", "Chute (mm)", "Utilisation (%)"],
+      ["Profile", "Barre n°", "Longueur de barre (mm)", "Pièces coupées", "Chute (mm)", "Utilisation (%)"],
     ];
     for (const b of resultat.barres) {
       const coupes = b.coupes.map((c) => `${c.nom ? c.nom + " " : ""}${c.longueur}`).join(" + ");
       const utilisation = b.longueurBarre > 0 ? (b.longueurUtilisee / b.longueurBarre) * 100 : 0;
-      rows.push([b.index, b.longueurBrute, coupes, b.chute, Math.round(utilisation * 10) / 10]);
+      rows.push([(b.profil ?? "").trim(), b.index, b.longueurBrute, coupes, b.chute, Math.round(utilisation * 10) / 10]);
     }
     const wsRes = XLSX.utils.aoa_to_sheet(rows);
-    wsRes["!cols"] = [{ wch: 9 }, { wch: 22 }, { wch: 60 }, { wch: 11 }, { wch: 14 }];
+    wsRes["!cols"] = [{ wch: 18 }, { wch: 9 }, { wch: 22 }, { wch: 60 }, { wch: 11 }, { wch: 14 }];
     XLSX.utils.book_append_sheet(wb, wsRes, "Resultats");
   }
 

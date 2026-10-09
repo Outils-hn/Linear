@@ -25,6 +25,7 @@ export interface LocalProject {
   strategie: string;
   pieces: Piece[];
   stock: StockBarre[];
+  longueurs_profils?: Record<string, number>;
   created_at: string;
   updated_at: string;
 }

@@ -1,7 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type {
-  ResultatOptimisation,
   Piece,
   Strategie,
   BarreOptimisee,
@@ -10,6 +9,7 @@ import type {
 } from "./optimizer";
 import { POSITION_MARGE_LABELS } from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
+import { libelleProfil, type ResultatMulti } from "./multi-profil";
 
 const STRATEGIE_LABELS: Record<Strategie, string> = {
   "min-barres": "Minimum de barres",
@@ -31,6 +31,7 @@ export interface OptionsExportPDF {
   traitScie: number;
   strategie: Strategie;
   stock?: StockBarre[];
+  longueursProfils?: Record<string, number>;
   infos: InfosProjet;
 }
 
@@ -92,7 +93,7 @@ export function grouperCoupesConsecutives(
 
 function signatureBarre(b: BarreOptimisee): string {
   return (
-    `${b.origine}|${b.longueurBrute}|${b.longueurBarre}|` +
+    `${b.profil ?? ""}|${b.origine}|${b.longueurBrute}|${b.longueurBarre}|` +
     b.coupes.map((c) => `${c.pieceId}:${c.longueur}`).join(",") +
     `|c=${b.chute}|m=${b.margeDebut ?? 0}:${b.margeFin ?? 0}`
   );
@@ -120,7 +121,7 @@ export function libelleGroupe(g: GroupeBarres): string {
 }
 
 export function exporterPDF(
-  resultat: ResultatOptimisation,
+  resultat: ResultatMulti,
   pieces: Piece[],
   options: OptionsExportPDF,
 ) {
@@ -246,7 +247,30 @@ export function exporterPDF(
   const bilan = `${resultat.longueurTotale} mm = ${resultat.longueurUtile} pièces + ${resultat.longueurTraitsScie} traits de scie + ${resultat.longueurMarges} marges + ${resultat.longueurChutes} chutes`;
   const lignesBilan = doc.splitTextToSize(bilan, pageWidth - 2 * margin);
   doc.text(lignesBilan, margin, y);
-  y += lignesBilan.length * 4 + 6;
+  y += lignesBilan.length * 4 + 4;
+
+  if (resultat.profils.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [["Profile", "Longueur de barre", "Sous-total barres", "Rendement brut", "Chutes"]],
+      body: resultat.profils.map((rp) => [
+        libelleProfil(rp.profil),
+        `${rp.longueurBarre} mm`,
+        `${rp.resultat.nbBarres}`,
+        `${rp.resultat.rendement.toFixed(1)} %`,
+        `${rp.resultat.longueurChutes} mm`,
+      ]),
+      foot: [["Total", "", `${resultat.nbBarres}`, `${resultat.rendement.toFixed(1)} %`, `${resultat.longueurChutes} mm`]],
+      theme: "grid",
+      styles: { fontSize: 9, halign: "center" },
+      headStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" },
+      footStyles: { fillColor: [248, 250, 252], textColor: [30, 41, 59], fontStyle: "bold" },
+      columnStyles: { 0: { halign: "left" } },
+      margin: { left: margin, right: margin },
+    });
+    // @ts-expect-error lastAutoTable
+    y = doc.lastAutoTable.finalY + 6;
+  }
 
   // ---- Récapitulatif des pièces demandées ----
   const piecesValides = pieces.filter((p) => p.quantite > 0 && p.longueur > 0);
@@ -259,9 +283,9 @@ export function exporterPDF(
     const totalPieces = piecesValides.reduce((s, p) => s + p.quantite, 0);
     autoTable(doc, {
       startY: y,
-      head: [["Repère", "Longueur (mm)", "Quantité requise"]],
-      body: piecesValides.map((p) => [p.nom, `${p.longueur}`, `${p.quantite}`]),
-      foot: [["Total", "", `${totalPieces}`]],
+      head: [["Repère", "Profile", "Longueur (mm)", "Quantité requise"]],
+      body: piecesValides.map((p) => [p.nom, (p.profil ?? "").trim() || "—", `${p.longueur}`, `${p.quantite}`]),
+      foot: [["Total", "", "", `${totalPieces}`]],
       theme: "grid",
       styles: { fontSize: 9, lineColor: [200, 200, 200], lineWidth: 0.1 },
       headStyles: {
@@ -281,7 +305,8 @@ export function exporterPDF(
       columnStyles: {
         0: { cellWidth: "auto", halign: "left" },
         1: { cellWidth: 36, halign: "center" },
-        2: { cellWidth: 36, halign: "center" },
+        2: { cellWidth: 30, halign: "center" },
+        3: { cellWidth: 30, halign: "center" },
       },
       margin: { left: margin, right: margin },
     });
@@ -290,7 +315,20 @@ export function exporterPDF(
   }
 
 
-  const groupes = grouperBarresIdentiques(resultat.barres);
+  for (const rp of resultat.profils) {
+  if (y + 90 > pageHeight - margin) {
+    doc.addPage();
+    y = margin;
+  }
+  doc.setFillColor(30, 41, 59);
+  doc.rect(margin, y - 4.5, pageWidth - 2 * margin, 7, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`PROFILE : ${libelleProfil(rp.profil).toUpperCase()}`, margin + 2, y);
+  doc.text(`Barre ${rp.longueurBarre} mm  ·  Sous-total : ${rp.resultat.nbBarres} barre(s)`, pageWidth - margin - 2, y, { align: "right" });
+  y += 9;
+  const groupes = grouperBarresIdentiques(rp.resultat.barres);
 
   for (const g of groupes) {
     const barre = g.reference;
@@ -374,6 +412,17 @@ export function exporterPDF(
       for (let k = 1; k < gp.quantite && traitScie > 0; k++) {
         doc.setFillColor(30, 30, 30);
         doc.rect(schemaX + mmToPx(cursorMm + k * gp.longueur + (k - 1) * traitScie), schemaY, mmToPx(traitScie), schemaH, "F");
+      }
+
+      // Séparateur vertical à chaque coupe, même pour des pièces regroupées
+      doc.setDrawColor(20, 20, 20);
+      doc.setLineWidth(0.35);
+      for (let k = 0; k < gp.quantite; k++) {
+        const debut = cursorMm + k * (gp.longueur + (traitScie > 0 ? traitScie : 0));
+        const x1 = schemaX + mmToPx(debut);
+        const x2 = schemaX + mmToPx(debut + gp.longueur);
+        doc.line(x1, schemaY, x1, schemaY + schemaH);
+        doc.line(x2, schemaY, x2, schemaY + schemaH);
       }
 
       doc.setTextColor(255, 255, 255);
@@ -506,6 +555,7 @@ export function exporterPDF(
     });
     // @ts-expect-error
     y = doc.lastAutoTable.finalY + 8;
+  }
   }
 
   const totalPages = doc.getNumberOfPages();

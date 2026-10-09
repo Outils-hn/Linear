@@ -12,6 +12,7 @@ export interface Piece {
   nom: string;
   longueur: number;
   quantite: number;
+  profil?: string;
 }
 
 export interface StockBarre {
@@ -39,6 +40,7 @@ export interface BarreOptimisee {
   chuteReutilisable: boolean;
   margeDebut?: number;
   margeFin?: number;
+  profil?: string;
 }
 
 export interface ResultatOptimisation {

@@ -1,15 +1,4 @@
-const PALETTE = [
-  "var(--piece-1)",
-  "var(--piece-2)",
-  "var(--piece-3)",
-  "var(--piece-4)",
-  "var(--piece-5)",
-  "var(--piece-6)",
-  "var(--piece-7)",
-  "var(--piece-8)",
-];
-
-// Hex equivalents for PDF
+// Palette partagée écran + PDF (mêmes couleurs exactes)
 const PALETTE_HEX = [
   "#4a90d9",
   "#5fb47a",
@@ -23,7 +12,7 @@ const PALETTE_HEX = [
 
 export function colorForPieceId(pieceId: string, allIds: string[]): string {
   const idx = Math.max(0, allIds.indexOf(pieceId));
-  return PALETTE[idx % PALETTE.length];
+  return PALETTE_HEX[idx % PALETTE_HEX.length];
 }
 
 export function hexColorForPieceId(pieceId: string, allIds: string[]): string {
