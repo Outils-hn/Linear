@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { grouperBarresIdentiques, libelleGroupe, segmentsBarre, placerCotes, nombreLignesPage, libelleCote } from "./bar-drawing";
 import { optimiserParProfil } from "./multi-profil";
 import { verifierResultat } from "./verification";
+import { formatNombre } from "./format-number";
 
 const barre = { index: 1, profil: "Tube", origine: "defaut", longueurBrute: 6000, longueurBarre: 5900, margeDebut: 100, margeFin: 0, longueurTraitsScie: 6, chute: 3494, chuteReutilisable: true, coupes: [{ pieceId: "a", nom: "A", longueur: 1200 }, { pieceId: "a", nom: "A", longueur: 1200 }] };
 describe("Dessins atelier sans modification du calcul", () => {
@@ -32,7 +33,10 @@ describe("Dessins atelier sans modification du calcul", () => {
     expect(nombreLignesPage(Array(2).fill(10), 30)).toBe(2);
   });
   test("les cotes décimales restent compactes sans modifier les valeurs", () => {
-    expect(libelleCote(200.20000000000002)).toBe("200.2");
+    expect(libelleCote(200.20000000000002)).toBe("200,2");
+    expect(formatNombre(94.9, 1)).toBe("94,9");
+    expect(formatNombre(18000)).toBe("18\u202f000");
+    expect(formatNombre(5445.5)).toBe("5\u202f445,5");
     const values = Array.from({ length: 80 }, (_, i) => 100 + i * 43.7);
     const cotes = placerCotes(values, 6000, 180, text => text.length * 1.5);
     expect(cotes.map(c => c.valeur)).toEqual(values);

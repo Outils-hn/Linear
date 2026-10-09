@@ -30,13 +30,12 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     if (s.type === "piece") {
       elements.push(`<path d="M${left} 0V${h}M${left + w} 0V${h}" stroke="${PDF_INK.paper}" stroke-width="0.53" fill="none"/>`);
       if (w >= 4) {
-        for (const [label, yy, bold, initial] of [[s.nom, 6, false, 8], [`${formatNombre(s.longueur)} mm`, 10, false, 7]] as const) {
-          doc.setFont(label === s.nom ? "PlexSans" : "PlexMono", "normal");
-          let pt = initial as number;
-          doc.setFontSize(pt);
-          while (pt > 4 && doc.getTextWidth(label) > w - 2.4) { pt -= 0.5; doc.setFontSize(pt); }
-          if (doc.getTextWidth(label) <= w - 2.4) elements.push(`<text x="${left + w / 2}" y="${yy}" font-size="${pt * 0.352778}" font-family="${label === s.nom ? "PlexSans" : "PlexMono"}" font-weight="normal" fill="${PDF_INK.text}" text-anchor="middle">${escapeXml(label)}</text>`);
-        }
+        doc.setFont("PlexSans", "normal");
+        doc.setFontSize(9);
+        const longueur = `${formatNombre(s.longueur)} mm`;
+        const complet = s.nom ? `${s.nom} · ${longueur}` : longueur;
+        const label = doc.getTextWidth(complet) <= w - 2.4 ? complet : longueur;
+        if (doc.getTextWidth(label) <= w - 2.4) elements.push(`<text x="${left + w / 2}" y="8" font-size="3.175" letter-spacing="0" font-family="PlexSans" font-weight="normal" fill="${PDF_INK.text}" text-anchor="middle">${escapeXml(label)}</text>`);
       }
     } else if ((s.type === "reutilisable" || s.type === "dechet") && w > 14) {
       elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">Chute ${formatNombre(s.longueur)} mm</text>`);

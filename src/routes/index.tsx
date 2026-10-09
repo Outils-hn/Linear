@@ -344,7 +344,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     }
     refreshProjects();
     setImportConflits(null);
-    toast.success(`${liste.length} projet(s) importé(s)`);
+    toast.success(`${fmt(liste.length)} projet(s) importé(s)`);
   };
 
   const importerJson = async (file: File) => {
@@ -658,7 +658,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                   onClick={async () => {
                     try {
                       const n = await copierPourExcel(pieces);
-                      toast.success(`${n} ligne${n > 1 ? "s" : ""} copiée${n > 1 ? "s" : ""}, collez-les dans Excel avec Ctrl+V`);
+                      toast.success(`${fmt(n)} ligne${n > 1 ? "s" : ""} copiée${n > 1 ? "s" : ""}, collez-les dans Excel avec Ctrl+V`);
                     } catch {
                       toast.error("Copie impossible : autorisez l'accès au presse-papiers");
                     }
@@ -692,14 +692,14 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 initialText={pasteText}
                 longueurBarre={longueurBarre}
                 longueurMax={(pr) => Math.max(0, longueurPourProfil(pr, longueursProfils, longueurBarre) - margeSecurite)}
-                onSetBarre={(v) => { setLongueurBarre(v); toast.success(`Barre de base réglée sur ${v} mm`); }}
+                onSetBarre={(v) => { setLongueurBarre(v); toast.success(`Barre de base réglée sur ${fmt(v)} mm`); }}
                 onImport={(list, mode, info) => {
                   const nouvelles = list.map((x) => ({ ...x, id: nextId() }));
                   setPieces((p) => (mode === "replace" ? nouvelles : [...p, ...nouvelles]));
                   const total = list.reduce((s, x) => s + x.quantite, 0);
                   toast.success(
-                    `${total} pièces importées (${info.lignes} lignes)` +
-                      (info.ignorees ? `, ${info.ignorees} ligne${info.ignorees > 1 ? "s" : ""} ignorée${info.ignorees > 1 ? "s" : ""}` : ""),
+                    `${fmt(total)} pièces importées (${fmt(info.lignes)} lignes)` +
+                      (info.ignorees ? `, ${fmt(info.ignorees)} ligne${info.ignorees > 1 ? "s" : ""} ignorée${info.ignorees > 1 ? "s" : ""}` : ""),
                   );
                 }}
               />
@@ -923,7 +923,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-2 border-foreground/80 pb-2">
                   <h3 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Profilé : {libelleProfil(rp.profil)}</h3>
                   <span className="text-xs text-muted-foreground tabular-nums">
-                    Barre {fmt(rp.longueurBarre)} mm · Sous-total : <span className="font-semibold text-foreground">{fmt(rp.resultat.nbBarres)} barre{rp.resultat.nbBarres > 1 ? "s" : ""}</span> · Rendement {rp.resultat.rendement.toFixed(1)} %
+                    Barre {fmt(rp.longueurBarre)} mm · Sous-total : <span className="font-semibold text-foreground">{fmt(rp.resultat.nbBarres)} barre{rp.resultat.nbBarres > 1 ? "s" : ""}</span> · Rendement {fmt(rp.resultat.rendement, 1)} %
                   </span>
                 </div>
                 {grouperBarresIdentiques(rp.resultat.barres).map((groupe) => {

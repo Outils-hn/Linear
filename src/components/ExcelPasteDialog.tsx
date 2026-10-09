@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Piece } from "@/lib/optimizer";
+import { formatNombre as fmt } from "@/lib/format-number";
 
 type ColRole = "repere" | "longueur" | "quantite" | "profil" | "barre" | "ignorer";
 const MAP_KEY = "linear:excel-colmap:v1";
@@ -151,7 +152,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
       const Q = iQ >= 0 ? parseQuantite(r[iQ] ?? "") : 1;
       if (iB >= 0) { const b = parseLongueur(r[iB] ?? ""); if (!isNaN(b) && b > 0) barreVals.push(b); }
       if (iL < 0 || isNaN(L) || L <= 0) { erreurs.push({ ligne, msg: "longueur vide ou non numérique" }); continue; }
-      if (L > max) { erreurs.push({ ligne, msg: `longueur ${L} > barre ${max}${profil ? ` (${profil})` : ""}` }); continue; }
+      if (L > max) { erreurs.push({ ligne, msg: `longueur ${fmt(L)} > barre ${fmt(max)}${profil ? ` (${profil})` : ""}` }); continue; }
       if (isNaN(Q) || !Number.isInteger(Q) || Q <= 0) { erreurs.push({ ligne, msg: "quantité non entière ou nulle" }); continue; }
       valides.push({ nom, longueur: L, quantite: Q, ...(profil ? { profil } : {}) });
     }
@@ -230,14 +231,14 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
                 })}
               </tbody>
             </table>
-            {rows.length > 5 && <p className="p-1 text-xs text-muted-foreground">… {rows.length - 5} autre(s) ligne(s)</p>}
+            {rows.length > 5 && <p className="p-1 text-xs text-muted-foreground">… {fmt(rows.length - 5)} autre(s) ligne(s)</p>}
           </div>
         )}
         {analyse.barreUnique !== null && analyse.barreUnique !== longueurBarre && (
           <div className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-xs">
-            <span>Longueur de barre détectée : <strong>{analyse.barreUnique} mm</strong> (actuelle : {longueurBarre} mm)</span>
-            <Button size="sm" variant="outline" onClick={() => onSetBarre(analyse.barreUnique!)}>
-              Utiliser {analyse.barreUnique} mm comme barre de base
+            <span>Longueur de barre détectée : <strong>{fmt(analyse.barreUnique)} mm</strong> (actuelle : {fmt(longueurBarre)} mm)</span>
+            <Button size="sm" variant="outline" onClick={() => { if (analyse.barreUnique !== null) onSetBarre(analyse.barreUnique); }}>
+              Utiliser {fmt(analyse.barreUnique)} mm comme barre de base
             </Button>
           </div>
         )}
@@ -249,7 +250,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
         {analyse.erreurs.length > 0 && (
           <div className="max-h-28 overflow-auto rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
             {analyse.erreurs.map((e) => (
-              <div key={e.ligne}>Ligne {e.ligne} : {e.msg}</div>
+              <div key={e.ligne}>Ligne {fmt(e.ligne)} : {e.msg}</div>
             ))}
           </div>
         )}
@@ -259,7 +260,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
             <Label htmlFor="fusion">Fusionner les doublons</Label>
           </div>
           <span className="text-muted-foreground">
-            {analyse.nValides} ligne(s) valide(s) · {analyse.erreurs.length} invalide(s)
+            {fmt(analyse.nValides)} ligne(s) valide(s) · {fmt(analyse.erreurs.length)} invalide(s)
           </span>
         </div>
         <DialogFooter>
