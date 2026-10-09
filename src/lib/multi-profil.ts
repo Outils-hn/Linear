@@ -9,7 +9,7 @@ export interface ResultatProfil {
 export type ResultatMulti = ResultatOptimisation & { profils: ResultatProfil[] };
 
 export const nomProfil = (p?: string) => (p ?? "").trim();
-export const libelleProfil = (p?: string) => nomProfil(p) || "Sans profil";
+export const libelleProfil = (p?: string) => nomProfil(p) || "Sans profilé";
 
 export function listeProfils(pieces: Piece[]): string[] {
   const out: string[] = [];
