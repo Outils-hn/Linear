@@ -77,7 +77,7 @@ export function placerLibelles(items: { valeur: number; x: number; texte: string
   // Extremely dense bars get extra staggered rows rather than overlapping text.
   for (let rangs = maxRangs; ; rangs++) {
     const res = essaiLibelles(items, largeur, mesurer, rangs);
-    if (rangs >= items.length || res.every((c, i) => i === 0 || true) && !chevauche(res)) return res;
+    if (rangs >= items.length || !chevauche(res)) return res;
   }
 }
 
