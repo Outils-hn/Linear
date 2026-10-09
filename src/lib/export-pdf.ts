@@ -1,3 +1,4 @@
+import { formatNombre as fmt } from "./format-number";
 import { jsPDF } from "jspdf";
 import { installerPolicesPDF } from "./pdf-fonts";
 import { themeRgb } from "./visual-theme";
@@ -155,14 +156,14 @@ export async function exporterPDF(
   doc.setFontSize(9);
   const ligneLongueur =
     margeSecurite > 0
-      ? `Barre de base : ${longueurBarreBrute} mm (calculé sur ${longueurBarreUtile} mm après marge)`
-      : `Barre de base : ${longueurBarreBrute} mm`;
+      ? `Barre de base : ${fmt(longueurBarreBrute)} mm (calculé sur ${fmt(longueurBarreUtile)} mm après marge)`
+      : `Barre de base : ${fmt(longueurBarreBrute)} mm`;
   doc.text(ligneLongueur, margin, y);
   y += 4;
-  doc.text(`Trait de scie : ${traitScie} mm`, margin, y);
+  doc.text(`Trait de scie : ${fmt(traitScie)} mm`, margin, y);
   y += 4;
   if (margeSecurite > 0) {
-    doc.text(`Marge de rafraîchissement / sécurité : ${margeSecurite} mm — ${POSITION_MARGE_LABELS[options.positionMarge ?? "debut"]}`, margin, y);
+    doc.text(`Marge de rafraîchissement / sécurité : ${fmt(margeSecurite)} mm — ${POSITION_MARGE_LABELS[options.positionMarge ?? "debut"]}`, margin, y);
     y += 4;
   }
   doc.text(`Stratégie : ${STRATEGIE_LABELS[strategie]}`, margin, y);
@@ -177,12 +178,12 @@ export async function exporterPDF(
       doc.setFont("PlexSans", "normal");
       for (const s of stockValide) {
         const suffixe = s.appliquerMarge === false ? " (sans marge)" : "";
-        doc.text(`• ${s.quantite} × ${s.longueur} mm${suffixe}`, margin + 4, y);
+        doc.text(`• ${fmt(s.quantite)} × ${fmt(s.longueur)} mm${suffixe}`, margin + 4, y);
         y += 4;
       }
       doc.setFont("PlexSans", "bold");
       doc.text(
-        `Utilisées : ${resultat.nbBarresStock} barre(s) stock + ${resultat.nbBarresDefaut} barre(s) de base`,
+        `Utilisées : ${fmt(resultat.nbBarresStock)} barre(s) stock + ${fmt(resultat.nbBarresDefaut)} barre(s) de base`,
         margin,
         y,
       );
@@ -201,12 +202,12 @@ export async function exporterPDF(
     head: [["Barres utilisées", "Rendement brut", "Hors chutes réutilisables", "Chutes totales", "Réutilisables", "Déchets"]],
     body: [
       [
-        `${resultat.nbBarres}`,
-        `${resultat.rendement.toFixed(1)} %`,
-        `${resultat.rendementHorsChutesReutilisables.toFixed(1)} %`,
-        `${resultat.longueurChutes} mm (${resultat.pourcentageChutes.toFixed(1)} %)`,
-        `${resultat.longueurChutesReutilisables} mm`,
-        `${resultat.longueurDechets} mm`,
+        `${fmt(resultat.nbBarres)}`,
+        `${fmt(resultat.rendement, 1)} %`,
+        `${fmt(resultat.rendementHorsChutesReutilisables, 1)} %`,
+        `${fmt(resultat.longueurChutes)} mm (${fmt(resultat.pourcentageChutes, 1)} %)`,
+        `${fmt(resultat.longueurChutesReutilisables)} mm`,
+        `${fmt(resultat.longueurDechets)} mm`,
       ],
     ],
     theme: "grid",
@@ -218,7 +219,7 @@ export async function exporterPDF(
   y = doc.lastAutoTable.finalY + 8;
   doc.setFont("PlexSans", "normal");
   doc.setFontSize(9);
-  const bilan = `${resultat.longueurTotale} mm = ${resultat.longueurUtile} pièces + ${resultat.longueurTraitsScie} traits de scie + ${resultat.longueurMarges} marges + ${resultat.longueurChutes} chutes`;
+  const bilan = `${fmt(resultat.longueurTotale)} mm = ${fmt(resultat.longueurUtile)} pièces + ${fmt(resultat.longueurTraitsScie)} traits de scie + ${fmt(resultat.longueurMarges)} marges + ${fmt(resultat.longueurChutes)} chutes`;
   const lignesBilan = doc.splitTextToSize(bilan, pageWidth - 2 * margin);
   doc.text(lignesBilan, margin, y);
   y += lignesBilan.length * 4 + 2;
@@ -254,12 +255,12 @@ export async function exporterPDF(
       head: [["Profilé", "Longueur de barre", "Sous-total barres", "Rendement brut", "Chutes"]],
       body: resultat.profils.map((rp) => [
         libelleProfil(rp.profil),
-        `${rp.longueurBarre} mm`,
-        `${rp.resultat.nbBarres}`,
-        `${rp.resultat.rendement.toFixed(1)} %`,
-        `${rp.resultat.longueurChutes} mm`,
+        `${fmt(rp.longueurBarre)} mm`,
+        `${fmt(rp.resultat.nbBarres)}`,
+        `${fmt(rp.resultat.rendement, 1)} %`,
+        `${fmt(rp.resultat.longueurChutes)} mm`,
       ]),
-      foot: [["Total", "", `${resultat.nbBarres}`, `${resultat.rendement.toFixed(1)} %`, `${resultat.longueurChutes} mm`]],
+      foot: [["Total", "", `${fmt(resultat.nbBarres)}`, `${fmt(resultat.rendement, 1)} %`, `${fmt(resultat.longueurChutes)} mm`]],
       theme: "grid",
       styles: { fontSize: 9, halign: "center" },
       headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
@@ -283,8 +284,8 @@ export async function exporterPDF(
     autoTable(doc, {
       startY: y,
       head: [["Repère", "Profilé", "Longueur (mm)", "Quantité requise"]],
-      body: piecesValides.map((p) => [p.nom, (p.profil ?? "").trim() || "—", `${p.longueur}`, `${p.quantite}`]),
-      foot: [["Total", "", "", `${totalPieces}`]],
+      body: piecesValides.map((p) => [p.nom, (p.profil ?? "").trim() || "—", `${fmt(p.longueur)}`, `${fmt(p.quantite)}`]),
+      foot: [["Total", "", "", `${fmt(totalPieces)}`]],
       theme: "grid",
       styles: { fontSize: 9, lineColor: themeRgb("hatch"), lineWidth: 0.1 },
       headStyles: {
@@ -325,7 +326,7 @@ export async function exporterPDF(
   doc.setFont("PlexSans", "bold");
   doc.setFontSize(10);
    doc.text(`PROFILÉ : ${libelleProfil(rp.profil).toUpperCase()}`, margin + 2, y);
-  doc.text(`Barre ${rp.longueurBarre} mm  ·  Sous-total : ${rp.resultat.nbBarres} barre(s)`, pageWidth - margin - 2, y, { align: "right" });
+  doc.text(`Barre ${fmt(rp.longueurBarre)} mm  ·  Sous-total : ${fmt(rp.resultat.nbBarres)} barre(s)`, pageWidth - margin - 2, y, { align: "right" });
   y += 9;
   const groupes = grouperBarresIdentiques(rp.resultat.barres);
 
@@ -350,7 +351,7 @@ export async function exporterPDF(
     if (qte > 1) {
       doc.setFontSize(10);
       doc.setTextColor(...themeRgb("pdf-error"));
-      doc.text(`x ${qte}`, pageWidth - margin, y, {
+      doc.text(`x ${fmt(qte)}`, pageWidth - margin, y, {
         align: "right",
       });
     }
@@ -361,10 +362,10 @@ export async function exporterPDF(
     doc.setTextColor(...themeRgb("pdf-muted"));
     const brutInfo =
       barre.longueurBrute !== barre.longueurBarre
-        ? ` (barre ${barre.longueurBrute} mm)`
+        ? ` (barre ${fmt(barre.longueurBrute)} mm)`
         : "";
     doc.text(
-      `Longueur utile : ${barre.longueurBarre} mm${brutInfo}  |  ${barre.coupes.length} coupe(s) par barre`,
+      `Longueur utile : ${fmt(barre.longueurBarre)} mm${brutInfo}  |  ${fmt(barre.coupes.length)} coupe(s) par barre`,
       margin,
       y,
     );
@@ -380,27 +381,36 @@ export async function exporterPDF(
     doc.setTextColor(...themeRgb("piece-ink"));
     doc.setFont("PlexSans", "bold");
     doc.setFontSize(9);
-    doc.text(`Chute finale : ${barre.chute} mm — ${barre.chuteReutilisable ? "Réutilisable" : "Déchet"}`, margin, y);
+    doc.text(`Chute finale : ${fmt(barre.chute)} mm — ${barre.chuteReutilisable ? "Réutilisable" : "Déchet"}`, margin, y);
     y += 4;
 
     doc.setFont("PlexSans", "normal");
     doc.setFontSize(8);
-    doc.text(`Marge début : ${margeDebut} mm | Marge fin : ${margeFin} mm`, margin, y);
+    doc.text(`Marge début : ${fmt(margeDebut)} mm | Marge fin : ${fmt(margeFin)} mm`, margin, y);
     y += 4;
     doc.text("Cotes mesurées depuis l’extrémité brute de la barre", margin, y);
     y += 5;
 
     doc.setFont("PlexSans", "normal");
     const body: string[][] = coupesGroupes.map((c, i) => [
-      `${i + 1}`,
+      `${fmt(i + 1)}`,
       c.nom,
-      `${c.longueur} mm`,
-      `${c.quantite}`,
+      `${fmt(c.longueur)} mm`,
+      `${fmt(c.quantite)}`,
       c.reperes.map(libelleCote).join(" / "),
     ]);
     autoTable(doc, {
       startY: y,
       head: [["#", "Pièce", "Longueur de coupe", "Quantité", "Repère cumulé (mm)"]],
+      didParseCell: ({ cell, column, section }) => {
+        if (column.index !== 4) return;
+        doc.setFont(section === "head" ? "PlexSans" : "PlexMono", "normal");
+        doc.setFontSize(9);
+        const text = cell.text.join(" ");
+        cell.text = [text];
+        const width = doc.getTextWidth(text);
+        if (width > 76) cell.styles.fontSize = 9 * 76 / width;
+      },
       body,
       theme: "striped",
       pageBreak: "avoid",
@@ -409,9 +419,10 @@ export async function exporterPDF(
       margin: { left: margin, right: margin },
       columnStyles: {
         0: { cellWidth: 12, halign: "center" },
+        1: { cellWidth: 32 },
         2: { cellWidth: 36, halign: "right" },
         3: { cellWidth: 20, halign: "center" },
-        4: { halign: "right", fontStyle: "bold" },
+        4: { cellWidth: 80, halign: "right", overflow: "visible" },
       },
     });
     // @ts-expect-error
@@ -424,7 +435,7 @@ export async function exporterPDF(
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(...themeRgb("pdf-muted"));
-    doc.text(`Page ${i} / ${totalPages}`, pageWidth - margin, pageHeight - 8, {
+    doc.text(`Page ${fmt(i)} / ${fmt(totalPages)}`, pageWidth - margin, pageHeight - 8, {
       align: "right",
     });
     const pied = [

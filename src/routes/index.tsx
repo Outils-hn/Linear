@@ -1,3 +1,4 @@
+import { formatNombre as fmt } from "@/lib/format-number";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -570,7 +571,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 />
                 <p className="text-xs text-muted-foreground">
                   Longueur utile pour l'optimisation :{" "}
-                  <span className="font-semibold text-foreground">{longueurUtile} mm</span>
+                  <span className="font-semibold text-foreground">{fmt(longueurUtile)} mm</span>
                 </p>
                 <Label htmlFor="position-marge">Position de la marge</Label>
                 <Select value={positionMarge} onValueChange={(v) => {
@@ -847,10 +848,10 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                               checked={margeOn}
                               onCheckedChange={(v) => updateStock(s.id, { appliquerMarge: v === true })}
                             />
-                            {margeOn ? `−${margeSecurite} mm` : "Aucune"}
+                            {margeOn ? `−${fmt(margeSecurite)} mm` : "Aucune"}
                           </label>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{utile} mm</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{fmt(utile)} mm</TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
@@ -888,23 +889,23 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
             </div>
             {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
             <div className="grid gap-4 sm:grid-cols-2">
-              <StatCard large label="Barres utilisées" value={`${resultat.nbBarres}`} hint={strategie === "priorite-stock" ? `${resultat.nbBarresStock} stock + ${resultat.nbBarresDefaut} base` : `${resultat.longueurTotale} mm au total`} />
-              <StatCard large label="Rendement hors chutes réutilisables" value={`${resultat.rendementHorsChutesReutilisables.toFixed(1)} %`} hint={`${resultat.longueurTotale - resultat.longueurChutesReutilisables} mm consommés`} />
+              <StatCard large label="Barres utilisées" value={`${fmt(resultat.nbBarres)}`} hint={strategie === "priorite-stock" ? `${fmt(resultat.nbBarresStock)} stock + ${fmt(resultat.nbBarresDefaut)} base` : `${fmt(resultat.longueurTotale)} mm au total`} />
+              <StatCard large label="Rendement hors chutes réutilisables" value={`${fmt(resultat.rendementHorsChutesReutilisables, 1)} %`} hint={`${fmt(resultat.longueurTotale - resultat.longueurChutesReutilisables)} mm consommés`} />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              <StatCard label="Rendement brut" value={`${resultat.rendement.toFixed(1)} %`} hint={`${resultat.longueurUtile} mm utiles`} />
-              <StatCard label="Chutes totales" value={`${resultat.longueurChutes} mm`} hint={`${resultat.pourcentageChutes.toFixed(1)} % de la matière`} />
-              <StatCard label="Chutes réutilisables" value={`${resultat.longueurChutesReutilisables} mm`} hint={`Déchets : ${resultat.longueurDechets} mm`} accent="warning" />
+              <StatCard label="Rendement brut" value={`${fmt(resultat.rendement, 1)} %`} hint={`${fmt(resultat.longueurUtile)} mm utiles`} />
+              <StatCard label="Chutes totales" value={`${fmt(resultat.longueurChutes)} mm`} hint={`${fmt(resultat.pourcentageChutes, 1)} % de la matière`} />
+              <StatCard label="Chutes réutilisables" value={`${fmt(resultat.longueurChutesReutilisables)} mm`} hint={`Déchets : ${fmt(resultat.longueurDechets)} mm`} accent="warning" />
             </div>
 
             <div className="border-y border-border py-4 text-sm tabular-nums">
               <h2 className="mb-1 font-semibold">Bilan matière</h2>
-              <p>{resultat.longueurTotale} mm = {resultat.longueurUtile} pièces + {resultat.longueurTraitsScie} traits de scie + {resultat.longueurMarges} marges + {resultat.longueurChutes} chutes</p>
+              <p>{fmt(resultat.longueurTotale)} mm = {fmt(resultat.longueurUtile)} pièces + {fmt(resultat.longueurTraitsScie)} traits de scie + {fmt(resultat.longueurMarges)} marges + {fmt(resultat.longueurChutes)} chutes</p>
               <div aria-label="Répartition du bilan matière" className="mt-4 flex h-3 w-full overflow-hidden rounded-sm">
-                {[{ label: "Pièces", value: resultat.longueurUtile, style: "bg-piece-1" }, { label: "Traits de scie", value: resultat.longueurTraitsScie, style: "bg-heading" }, { label: "Marges", value: resultat.longueurMarges, style: "margin-hatch bg-muted" }, { label: "Chutes", value: resultat.longueurChutes, style: "offcut-hatch" }].map(segment => <div key={segment.label} title={`${segment.label} : ${segment.value} mm`} className={segment.style} style={{ width: `${segment.value / resultat.longueurTotale * 100}%` }} />)}
+                {[{ label: "Pièces", value: resultat.longueurUtile, style: "bg-piece-1" }, { label: "Traits de scie", value: resultat.longueurTraitsScie, style: "bg-heading" }, { label: "Marges", value: resultat.longueurMarges, style: "margin-hatch bg-muted" }, { label: "Chutes", value: resultat.longueurChutes, style: "offcut-hatch" }].map(segment => <div key={segment.label} title={`${segment.label} : ${fmt(segment.value)} mm`} className={segment.style} style={{ width: `${segment.value / resultat.longueurTotale * 100}%` }} />)}
               </div>
               <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-                {[{ label: "Pièces", value: resultat.longueurUtile, style: "bg-piece-1" }, { label: "Traits de scie", value: resultat.longueurTraitsScie, style: "bg-heading" }, { label: "Marges", value: resultat.longueurMarges, style: "margin-hatch bg-muted" }, { label: "Chutes", value: resultat.longueurChutes, style: "offcut-hatch" }].map(segment => <span key={segment.label} className="flex items-center gap-2"><i className={"h-2.5 w-2.5 rounded-sm " + segment.style} />{segment.label} <span className="font-mono text-foreground">{segment.value} mm</span></span>)}
+                {[{ label: "Pièces", value: resultat.longueurUtile, style: "bg-piece-1" }, { label: "Traits de scie", value: resultat.longueurTraitsScie, style: "bg-heading" }, { label: "Marges", value: resultat.longueurMarges, style: "margin-hatch bg-muted" }, { label: "Chutes", value: resultat.longueurChutes, style: "offcut-hatch" }].map(segment => <span key={segment.label} className="flex items-center gap-2"><i className={"h-2.5 w-2.5 rounded-sm " + segment.style} />{segment.label} <span className="font-mono text-foreground">{fmt(segment.value)} mm</span></span>)}
               </div>
             </div>
 
@@ -922,7 +923,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-2 border-foreground/80 pb-2">
                   <h3 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Profilé : {libelleProfil(rp.profil)}</h3>
                   <span className="text-xs text-muted-foreground tabular-nums">
-                    Barre {rp.longueurBarre} mm · Sous-total : <span className="font-semibold text-foreground">{rp.resultat.nbBarres} barre{rp.resultat.nbBarres > 1 ? "s" : ""}</span> · Rendement {rp.resultat.rendement.toFixed(1)} %
+                    Barre {fmt(rp.longueurBarre)} mm · Sous-total : <span className="font-semibold text-foreground">{fmt(rp.resultat.nbBarres)} barre{rp.resultat.nbBarres > 1 ? "s" : ""}</span> · Rendement {rp.resultat.rendement.toFixed(1)} %
                   </span>
                 </div>
                 {grouperBarresIdentiques(rp.resultat.barres).map((groupe) => {
@@ -939,9 +940,9 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                           {libelleGroupe(groupe)}
                           {qte > 1 && <span className="ml-2 inline-flex rounded border border-border bg-muted px-2 py-0.5 text-xs tabular-nums">x {qte}</span>}
                           <span className="ml-2 font-normal text-muted-foreground">
-                            · {barre.longueurBrute} mm
+                            · {fmt(barre.longueurBrute)} mm
                             {barre.longueurBrute !== barre.longueurBarre
-                              ? ` (utile ${barre.longueurBarre} mm)`
+                              ? ` (utile ${fmt(barre.longueurBarre)} mm)`
                               : ""}· {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
                           </span>
                         </h3>
@@ -955,10 +956,10 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                           <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50">
                               <TableHead className="w-12 text-center text-xs font-semibold text-foreground">#</TableHead>
-                              <TableHead className="text-xs font-semibold text-foreground">Pièce</TableHead>
+                              <TableHead className="w-[25%] text-xs font-semibold text-foreground">Pièce</TableHead>
                               <TableHead className="w-40 text-right text-xs font-semibold text-foreground">Longueur de coupe (mm)</TableHead>
                               <TableHead className="w-24 text-right text-xs font-semibold text-foreground">Quantité</TableHead>
-                              <TableHead className="w-56 text-right text-xs font-semibold text-foreground">Repère cumulé (mm)</TableHead>
+                              <TableHead className="w-[40%] whitespace-nowrap text-right text-xs font-semibold text-foreground">Repère cumulé (mm)</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -966,9 +967,9 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                               <TableRow key={i}>
                                 <TableCell className="text-center text-xs font-semibold text-foreground">{i + 1}</TableCell>
                                 <TableCell className="text-xs font-medium text-foreground">{g.nom}</TableCell>
-                                <TableCell className="text-right text-xs tabular-nums">{g.longueur}</TableCell>
-                                <TableCell className="text-right text-xs tabular-nums">{g.quantite}</TableCell>
-                                <TableCell className="text-right text-xs tabular-nums">{g.reperes.join(" / ")}</TableCell>
+                                <TableCell className="text-right text-xs tabular-nums">{fmt(g.longueur)}</TableCell>
+                                <TableCell className="text-right text-xs tabular-nums">{fmt(g.quantite)}</TableCell>
+                                <TableCell className="whitespace-nowrap text-right text-xs tabular-nums">{g.reperes.map(n => fmt(n)).join(" / ")}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -976,7 +977,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                       </div>
 
                       <p className="text-xs text-muted-foreground">
-                        Chute finale : <span className="font-medium text-foreground">{barre.chute} mm</span>
+                        Chute finale : <span className="font-medium text-foreground">{fmt(barre.chute)} mm</span>
                       </p>
                     </div>
                   );
