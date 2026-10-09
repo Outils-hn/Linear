@@ -3,6 +3,7 @@ import type { BarreOptimisee } from "./optimizer";
 import { segmentsBarre, placerCotes, libelleCote } from "./bar-drawing";
 import { themeHex } from "./visual-theme";
 import { hexColorForPieceId } from "./piece-colors";
+import { formatNombre } from "./format-number";
 
 
 const escapeXml = (value: string) => value.replace(/[<>&"']/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c] ?? c);
@@ -23,13 +24,13 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
       for (let d = -h; d < w; d += step) {
         const a = Math.max(0, -d), b = Math.min(h, w - d);
         const yy = (v: number) => s.type === "reutilisable" ? h - v : v;
-        if (b > a) elements.push(`<line x1="${left + d + a}" y1="${yy(a)}" x2="${left + d + b}" y2="${yy(b)}" stroke="${stroke}" stroke-width="0.1"/>`);
+        if (b > a) elements.push(`<line x1="${left + d + a}" y1="${yy(a)}" x2="${left + d + b}" y2="${yy(b)}" stroke="${stroke}" stroke-width="${s.type === "reutilisable" ? 0.265 : 0.1}"/>`);
       }
     }
     if (s.type === "piece") {
       elements.push(`<path d="M${left} 0V${h}M${left + w} 0V${h}" stroke="${PDF_INK.paper}" stroke-width="0.53" fill="none"/>`);
       if (w >= 4) {
-        for (const [label, yy, bold, initial] of [[s.nom, 6, false, 8], [`${s.longueur} mm`, 10, false, 7]] as const) {
+        for (const [label, yy, bold, initial] of [[s.nom, 6, false, 8], [`${formatNombre(s.longueur)} mm`, 10, false, 7]] as const) {
           doc.setFont(label === s.nom ? "PlexSans" : "PlexMono", "normal");
           let pt = initial as number;
           doc.setFontSize(pt);
@@ -38,7 +39,7 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
         }
       }
     } else if ((s.type === "reutilisable" || s.type === "dechet") && w > 14) {
-      elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">Chute ${s.longueur} mm</text>`);
+      elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">Chute ${formatNombre(s.longueur)} mm</text>`);
     }
   }
   doc.setFont("PlexMono", "normal"); doc.setFontSize(6.5);
