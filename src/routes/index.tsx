@@ -329,7 +329,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 lg:px-8">
           <div className="flex items-center gap-3">
             <LinearMark size={34} />
             <div className="leading-tight">
@@ -418,7 +418,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+      <main className="mx-auto max-w-[1600px] space-y-6 px-6 py-8 lg:px-8">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Informations du projet</CardTitle>
@@ -462,7 +462,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
         </Card>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-1">
+          <Card className="min-w-0 lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-base">Paramètres du profilé</CardTitle>
               <CardDescription>Configuration de la barre de base</CardDescription>
@@ -521,10 +521,10 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               </div>
               {profilsNommes.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Longueur de barre par profile (mm)</Label>
+                  <Label>Longueur de barre par profilé (mm)</Label>
                   {profilsNommes.map((pr) => (
-                    <div key={pr} className="flex items-center gap-2">
-                      <span className="w-28 truncate text-xs font-medium" title={pr}>{pr}</span>
+                    <div key={pr} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-2">
+                      <span className="whitespace-normal break-words text-xs font-medium">{pr}</span>
                       <Input
                         type="number"
                         className="h-8"
@@ -533,7 +533,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                       />
                     </div>
                   ))}
-                  <p className="text-xs text-muted-foreground">Les pièces sans profile utilisent la barre de base.</p>
+                  <p className="text-xs text-muted-foreground">Les pièces sans profilé utilisent la barre de base.</p>
                 </div>
               )}
               <div className="space-y-2">
@@ -556,13 +556,13 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
             </CardContent>
           </Card>
 
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <Card className="min-w-0 lg:col-span-2">
+            <CardHeader className="space-y-4">
               <div>
                 <CardTitle className="text-base">Pièces à couper</CardTitle>
                 <CardDescription>Liste des pièces et quantités requises</CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => { setPasteText(""); setPasteOpen(true); }}>
                   Coller depuis Excel
                 </Button>
@@ -621,14 +621,14 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               />
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table className="lg:table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Repère</TableHead>
-                    <TableHead className="w-40">Longueur (mm)</TableHead>
-                    <TableHead className="w-32">Quantité</TableHead>
-                    <TableHead className="w-40">Profile</TableHead>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="lg:w-[25%]">Repère</TableHead>
+                    <TableHead className="w-40 lg:w-[35%]">Profilé</TableHead>
+                    <TableHead className="w-40 lg:w-[20%]">Longueur (mm)</TableHead>
+                    <TableHead className="w-32 lg:w-[15%]">Quantité</TableHead>
+                    <TableHead className="w-12 lg:w-[5%] lg:px-1"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -636,6 +636,13 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                     <TableRow key={p.id}>
                       <TableCell>
                         <Input value={p.nom} onChange={(e) => updatePiece(p.id, { nom: e.target.value })} />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={p.profil ?? ""}
+                          placeholder="—"
+                          onChange={(e) => updatePiece(p.id, { profil: e.target.value })}
+                        />
                       </TableCell>
                       <TableCell>
                         <Input
@@ -651,19 +658,12 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                           onChange={(e) => updatePiece(p.id, { quantite: Number(e.target.value) || 0 })}
                         />
                       </TableCell>
-                      <TableCell>
-                        <Input
-                          value={p.profil ?? ""}
-                          placeholder="—"
-                          onChange={(e) => updatePiece(p.id, { profil: e.target.value })}
-                        />
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="lg:px-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => removePiece(p.id)}
-                          className="text-muted-foreground hover:text-destructive"
+                          className="text-muted-foreground hover:text-destructive lg:h-8 lg:w-8"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -847,7 +847,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 {resultat.profils.map((rp) => (
                 <div key={rp.profil || "_"} className="space-y-8">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-b-2 border-foreground/80 pb-2">
-                  <h3 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Profile : {libelleProfil(rp.profil)}</h3>
+                  <h3 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Profilé : {libelleProfil(rp.profil)}</h3>
                   <span className="text-xs text-muted-foreground tabular-nums">
                     Barre {rp.longueurBarre} mm · Sous-total : <span className="font-semibold text-foreground">{rp.resultat.nbBarres} barre{rp.resultat.nbBarres > 1 ? "s" : ""}</span> · Rendement {rp.resultat.rendement.toFixed(1)} %
                   </span>

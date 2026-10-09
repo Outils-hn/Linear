@@ -7,7 +7,7 @@ function numFR(n: number): string {
 
 export function lignesPieces(pieces: Piece[]): string[][] {
   return [
-    ["Repère", "Longueur (mm)", "Quantité", "Profile"],
+    ["Repère", "Longueur (mm)", "Quantité", "Profilé"],
     ...pieces.map((p) => [p.nom, numFR(p.longueur), String(p.quantite), (p.profil ?? "").trim()]),
   ];
 }
@@ -37,7 +37,7 @@ export async function telechargerExcel(pieces: Piece[], resultat: ResultatOptimi
 
   if (resultat && resultat.nbBarres > 0) {
     const rows: (string | number)[][] = [
-      ["Profile", "Barre n°", "Longueur de barre (mm)", "Pièces coupées", "Chute (mm)", "Utilisation (%)"],
+      ["Profilé", "Barre n°", "Longueur de barre (mm)", "Pièces coupées", "Chute (mm)", "Utilisation (%)"],
     ];
     for (const b of resultat.barres) {
       const coupes = b.coupes.map((c) => `${c.nom ? c.nom + " " : ""}${c.longueur}`).join(" + ");

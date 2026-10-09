@@ -252,7 +252,7 @@ export function exporterPDF(
   if (resultat.profils.length > 0) {
     autoTable(doc, {
       startY: y,
-      head: [["Profile", "Longueur de barre", "Sous-total barres", "Rendement brut", "Chutes"]],
+      head: [["Profilé", "Longueur de barre", "Sous-total barres", "Rendement brut", "Chutes"]],
       body: resultat.profils.map((rp) => [
         libelleProfil(rp.profil),
         `${rp.longueurBarre} mm`,
@@ -283,7 +283,7 @@ export function exporterPDF(
     const totalPieces = piecesValides.reduce((s, p) => s + p.quantite, 0);
     autoTable(doc, {
       startY: y,
-      head: [["Repère", "Profile", "Longueur (mm)", "Quantité requise"]],
+      head: [["Repère", "Profilé", "Longueur (mm)", "Quantité requise"]],
       body: piecesValides.map((p) => [p.nom, (p.profil ?? "").trim() || "—", `${p.longueur}`, `${p.quantite}`]),
       foot: [["Total", "", "", `${totalPieces}`]],
       theme: "grid",
@@ -325,7 +325,7 @@ export function exporterPDF(
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text(`PROFILE : ${libelleProfil(rp.profil).toUpperCase()}`, margin + 2, y);
+   doc.text(`PROFILÉ : ${libelleProfil(rp.profil).toUpperCase()}`, margin + 2, y);
   doc.text(`Barre ${rp.longueurBarre} mm  ·  Sous-total : ${rp.resultat.nbBarres} barre(s)`, pageWidth - margin - 2, y, { align: "right" });
   y += 9;
   const groupes = grouperBarresIdentiques(rp.resultat.barres);
