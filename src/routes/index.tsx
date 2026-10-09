@@ -553,7 +553,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="lb">Longueur de la barre de base (mm)</Label>
+                <Label htmlFor="lb">Longueur de la barre de base</Label>
                 <div className="parameter-measure">
                 <Input
                   id="lb"
@@ -565,7 +565,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ms">Marge de rafraîchissement / sécurité (mm)</Label>
+                <Label htmlFor="ms">Marge de rafraîchissement / sécurité</Label>
                 <div className="parameter-measure">
                 <Input
                   id="ms"
@@ -601,7 +601,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ts">Épaisseur du trait de scie (mm)</Label>
+                <Label htmlFor="ts">Épaisseur du trait de scie</Label>
                 <div className="parameter-measure">
                 <Input
                   id="ts"
@@ -614,12 +614,13 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               </div>
               {profilsNommes.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Longueur de barre par profilé (mm)</Label>
+                  <Label>Longueur de barre par profilé</Label>
                   {profilsNommes.map((pr) => (
-                    <div key={pr} className="space-y-2">
-                      <label className="block whitespace-normal break-words text-xs font-medium">{pr}
-                      <div className="parameter-measure mt-2">
+                    <div key={pr} className="grid grid-cols-2 items-center gap-2">
+                      <Label htmlFor={`longueur-profile-${pr}`} className="whitespace-normal break-words text-xs font-medium normal-case">{pr}</Label>
+                      <div className="parameter-measure">
                       <Input
+                        id={`longueur-profile-${pr}`}
                         type="number"
                         className="h-8"
                         value={longueursProfils[pr] ?? longueurBarre}
@@ -627,7 +628,6 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                       />
                         <span aria-hidden="true">mm</span>
                       </div>
-                      </label>
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground">Les pièces sans profilé utilisent la barre de base.</p>
@@ -737,6 +737,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                       <TableCell>
                         <Input
                           value={p.profil ?? ""}
+                          className="normal-case"
                           placeholder="—"
                           onChange={(e) => updatePiece(p.id, { profil: e.target.value })}
                         />
