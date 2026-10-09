@@ -28,3 +28,6 @@
 - [x] Adapter le PDF et ajouter les étiquettes facultatives, sans modifier les calculs.
 - [x] Vérifier les trois modes, sauvegardes, étiquettes et non-régression ; inspecter les PDF et corriger l’espace inutilisé des étiquettes longues.
 - [x] Mettre en valeur la synthèse (bandeau Barres à commander / Rendement, colonnes et Total en gras) à l'écran et dans le PDF ; vérifier le rendu.
+- [x] Champs numériques : vide conservé pendant la saisie, sélection au clic, blocage rouge au lancement ; vérifié à l'écran.
+- [ ] Méthode de coupe à l'atelier (butée / mètre ruban) : accolade de série, cotes en quinconce, rappels PDF — en attente de la demande.
+- [ ] Seuil de réutilisation affiché dans les textes et Paramètres du PDF, lu depuis le réglage du profilé — en attente de la demande.
