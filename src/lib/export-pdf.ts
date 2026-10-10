@@ -1,5 +1,6 @@
 import { formatNombre as fmt } from "./format-number";
 import { bilanMatiere } from "./material-summary";
+import { lireStatutMatiere, libelleStatutMatiere, detailsCommande, type StatutMatiere } from "./material-status";
 import { jsPDF } from "jspdf";
 import { installerPolicesPDF } from "./pdf-fonts";
 import { themeRgb } from "./visual-theme";
@@ -48,6 +49,7 @@ export interface OptionsExportPDF {
   verification?: { ok: boolean; problemes: string[] };
   chutesPDF?: OptionsChutesPDF;
   methodeCoupe?: MethodeCoupe;
+  statutMatiere?: StatutMatiere;
 }
 
 export interface GroupeCoupe {
@@ -219,19 +221,31 @@ export async function exporterPDF(
   doc.text("Synthèse du projet", margin, y);
   y += 3;
   // Bandeau des informations essentielles — mise en valeur par taille et gras (lisible en noir et blanc).
-  const itemsBandeau: { label: string; valeur: string }[] =
+  const statutMatiere = lireStatutMatiere(options.statutMatiere);
+  const itemsBandeau: { label: string; valeur: string; sousTitre?: string }[] =
     resultat.profils.length > 1
       ? resultat.profils.map((rp) => ({
-          label: `Barres à commander · ${libelleProfil(rp.profil)} : `,
+          label: `${libelleStatutMatiere(statutMatiere)} · ${libelleProfil(rp.profil)} : `,
           valeur: `${fmt(rp.resultat.nbBarres)} x ${fmt(rp.longueurBarre)} mm`,
         }))
       : [{
-          label: "Barres à commander : ",
+          label: `${libelleStatutMatiere(statutMatiere)} : `,
           valeur: `${fmt(resultat.nbBarres)} x ${fmt(resultat.profils[0]?.longueurBarre ?? longueurBarreBrute)} mm`,
         }];
-  itemsBandeau.push({ label: "Rendement : ", valeur: `${fmt(resultat.rendement, 1)} %` });
-  const interligneBandeau = 9;
-  const hauteurBandeau = itemsBandeau.length * interligneBandeau + 7;
+  for (const item of itemsBandeau) item.sousTitre = detailsCommande(statutMatiere);
+  const dernier = itemsBandeau.at(-1);
+  if (dernier) dernier.sousTitre = [dernier.sousTitre, `${fmt(resultat.longueurTotale)} mm au total`].filter(Boolean).join(" — ");
+  itemsBandeau.push({ label: "Rendement : ", valeur: `${fmt(resultat.rendement, 1)} %`, sousTitre: `${fmt(resultat.longueurUtile)} mm de pièces / ${fmt(resultat.longueurTotale)} mm achetés` });
+  const largeurBandeau = pageWidth - 2 * margin - 10;
+  const lignesBandeau = itemsBandeau.map(item => {
+    doc.setFont("PlexSans", "bold"); doc.setFontSize(18);
+    const label = doc.splitTextToSize(item.label.trim(), largeurBandeau) as string[];
+    const ensemble = doc.getTextWidth(item.label + item.valeur) <= largeurBandeau;
+    doc.setFont("PlexSans", "normal"); doc.setFontSize(8);
+    const sousTitre = item.sousTitre ? doc.splitTextToSize(item.sousTitre, largeurBandeau) as string[] : [];
+    return { item, label, ensemble, sousTitre, hauteur: (ensemble ? 1 : label.length + 1) * 8 + sousTitre.length * 4 + 4 };
+  });
+  const hauteurBandeau = lignesBandeau.reduce((s, l) => s + l.hauteur, 0) + 7;
   if (y + hauteurBandeau > pageHeight - margin) { doc.addPage(); y = margin; }
   doc.setFontSize(18);
   doc.setFont("PlexSans", "bold");
@@ -239,33 +253,32 @@ export async function exporterPDF(
   doc.setLineWidth(0.5);
   doc.rect(margin, y, pageWidth - 2 * margin, hauteurBandeau);
   let yBandeau = y + 4 + 6.5;
-  for (const item of itemsBandeau) {
+  for (const { item, label, ensemble, sousTitre } of lignesBandeau) {
+    doc.setFont("PlexSans", "bold"); doc.setFontSize(18);
     doc.setTextColor(...themeRgb("piece-ink"));
-    doc.text(item.label, margin + 5, yBandeau);
+    if (ensemble) doc.text(item.label, margin + 5, yBandeau);
+    else { doc.text(label, margin + 5, yBandeau, { lineHeightFactor: 1.26 }); yBandeau += label.length * 8; }
     doc.setTextColor(...themeRgb("pdf-primary"));
-    doc.text(item.valeur, margin + 5 + doc.getTextWidth(item.label), yBandeau);
-    yBandeau += interligneBandeau;
+    doc.text(item.valeur, margin + 5 + (ensemble ? doc.getTextWidth(item.label) : 0), yBandeau);
+    yBandeau += 5;
+    doc.setFont("PlexSans", "normal"); doc.setFontSize(8); doc.setTextColor(...themeRgb("pdf-muted"));
+    for (const ligne of sousTitre) { doc.text(ligne, margin + 5, yBandeau); yBandeau += 4; }
+    yBandeau += 7;
   }
   doc.setTextColor(...themeRgb("piece-ink"));
   y += hauteurBandeau + 7;
   autoTable(doc, {
     startY: y,
-    head: [sansTypes ? ["Barres utilisées", "Rendement", "Chutes totales"] : ["Barres utilisées", "Rendement", "Chutes réutilisables", "Perte définitive", "Chutes totales"]],
+    head: [sansTypes ? ["Barres utilisées", "Rendement"] : ["Chutes réutilisables", "Perte définitive"]],
     body: [
-      sansTypes ? [`${fmt(resultat.nbBarres)}`, `${fmt(resultat.rendement, 1)} %`, `${fmt(resultat.longueurChutes)} mm`] : [
-        `${fmt(resultat.nbBarres)}`,
-        `${fmt(resultat.rendement, 1)} %`,
+      sansTypes ? [`${fmt(resultat.nbBarres)}`, `${fmt(resultat.rendement, 1)} %`] : [
         `${fmt(resultat.longueurChutesReutilisables)} mm (${fmt(matiere.parts[1].affiche, 1)} %)`,
         `${fmt(matiere.perte)} mm (${fmt(matiere.parts[2].affiche, 1)} %)`,
-        `${fmt(resultat.longueurChutes)} mm (${fmt(resultat.pourcentageChutes, 1)} %)`,
       ],
     ],
     theme: "grid",
     styles: { fontSize: 9, halign: "right" },
     headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
-    didParseCell: (data) => {
-      if (data.section === "body" && (data.column.index === 0 || data.column.index === 1)) data.cell.styles.fontStyle = "bold";
-    },
     margin: { left: margin, right: margin },
   });
   // @ts-expect-error lastAutoTable
@@ -349,7 +362,7 @@ export async function exporterPDF(
       head: [["Profilé", "Longueur (mm)", "Quantité", "Barres d’origine", ...(consigne ? ["Note"] : [])]],
       body: chutesProfils.flatMap((g) => [
         ...g.lignes.map((l) => [libelleProfil(g.profil), fmt(l.longueur), fmt(l.quantite), l.origine, ...(consigne ? [choixChute(chutesPDF, l).note] : [])]),
-        [`Total ${libelleProfil(g.profil)}`, `${fmt(g.totalMm / 1000, 2)} m linéaires`, "", "", ...(consigne ? [""] : [])],
+        [`Total ${libelleProfil(g.profil)}`, `${fmt(g.totalMm / 1000, 2)} m linéaires réutilisables`, "", "", ...(consigne ? [""] : [])],
       ]),
       theme: "grid",
       styles: { fontSize: 9 },
