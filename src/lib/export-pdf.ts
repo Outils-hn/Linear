@@ -267,11 +267,12 @@ export async function exporterPDF(
   }
   doc.setTextColor(...themeRgb("piece-ink"));
   y += hauteurBandeau + 7;
+  if (!sansTypes) {
   autoTable(doc, {
     startY: y,
-    head: [sansTypes ? ["Barres utilisées", "Rendement"] : ["Chutes réutilisables", "Perte définitive"]],
+    head: [["Chutes réutilisables", "Perte définitive"]],
     body: [
-      sansTypes ? [`${fmt(resultat.nbBarres)}`, `${fmt(resultat.rendement, 1)} %`] : [
+      [
         `${fmt(resultat.longueurChutesReutilisables)} mm (${fmt(matiere.parts[1].affiche, 1)} %)`,
         `${fmt(matiere.perte)} mm (${fmt(matiere.parts[2].affiche, 1)} %)`,
       ],
@@ -283,6 +284,7 @@ export async function exporterPDF(
   });
   // @ts-expect-error lastAutoTable
   y = doc.lastAutoTable.finalY + 8;
+  }
   doc.setFont("PlexSans", "normal");
   doc.setFontSize(9);
   const bilan = `${fmt(resultat.longueurTotale)} mm = ${fmt(resultat.longueurUtile)} pièces + ${fmt(resultat.longueurTraitsScie)} traits de scie + ${fmt(resultat.longueurMarges)} marges + ${fmt(resultat.longueurChutes)} chutes`;
@@ -380,6 +382,8 @@ export async function exporterPDF(
   // ---- Récapitulatif des pièces demandées ----
   const piecesValides = pieces.filter((p) => p.quantite > 0 && p.longueur > 0);
   if (piecesValides.length > 0) {
+    // Keep the section title with the header and at least three table rows.
+    if (y + 12 + Math.min(piecesValides.length + 1, 4) * 9 > pageHeight - margin) { doc.addPage(); y = margin; }
     doc.setFontSize(11);
     doc.setFont("PlexSans", "bold");
     doc.setTextColor(...themeRgb("piece-ink"));
