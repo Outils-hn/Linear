@@ -33,5 +33,5 @@
 - [x] Ajouter le statut matière et ses détails facultatifs au projet local et JSON, écran/PDF.
 - [x] Alléger la synthèse, adapter le titre des chutes et aligner origines/totaux ; Plex Sans tabulaire partout.
 - [x] Vérifier sauvegardes, trois statuts, écran/PDF et non-régression des calculs ; 28 tests passent, 12 pages PDF inspectées, titre isolé et doublon du mode sans chutes corrigés.
-- [ ] Simplifier les cotes écran/PDF aux fins de séries avec priorité à droite ; regrouper les renvois et ajouter le rappel ruban, tableaux inchangés.
-- [ ] Vérifier dessins, PDF et tests de non-régression.
+- [x] Simplifier les cotes écran/PDF aux fins de séries avec priorité à droite ; regrouper les renvois et ajouter le rappel ruban, tableaux inchangés.
+- [x] Vérifier dessins dans les deux modes, inspecter les six pages PDF (aucun défaut visuel), 31 tests passent ; calculs et tableaux inchangés.
