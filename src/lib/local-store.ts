@@ -3,6 +3,7 @@
 
 import type { Piece, StockBarre } from "./optimizer";
 import type { OptionsChutesPDF } from "./offcut-settings";
+import type { StatutMatiere } from "./material-status";
 
 const PROFILES_KEY = "linear:profiles:v1";
 const PROJECTS_KEY = (profileId: string) => `linear:projects:v1:${profileId}`;
@@ -31,6 +32,7 @@ export interface LocalProject {
   seuil_chute?: number;
   chutes_pdf?: OptionsChutesPDF;
   methode_coupe?: "butee" | "ruban";
+  statut_matiere?: StatutMatiere;
   created_at: string;
   updated_at: string;
 }
