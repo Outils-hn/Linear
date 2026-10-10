@@ -89,19 +89,22 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
   if (methode === "butee") {
     // Keep each end dimension attached to its own brace label, not the next cut.
     const groupes = series.filter(s => s.quantite > 1);
-    const accolades = placerLibelles(groupes.map(s => ({ valeur: s.fin, x: (x(s.debut) + x(s.fin)) / 2, texte: `${s.quantite} x ${formatNombre(s.longueur)}` })), largeur, mesurer);
+    const accolades = placerLibelles(groupes.map(s => ({ valeur: s.fin, x: (x(s.debut) + x(s.fin)) / 2, texte: `${s.quantite} x ${formatNombre(s.longueur)}` })), largeur, texte => {
+      const serie = groupes.find(s => `${s.quantite} x ${formatNombre(s.longueur)}` === texte);
+      return Math.max(mesurer(texte), serie ? mesurer(libelleCote(serie.fin)) : 0);
+    });
     let rangs = 0;
     accolades.forEach((a, i) => {
       const s = groupes[i], l = x(s.debut) + 0.3, r = x(s.fin) - 0.3, m = (l + r) / 2, y0 = h + 0.8, y1 = h + 2.2;
       rangs = Math.max(rangs, a.niveau + 1);
-      const ty = y1 + 3.6 + a.niveau * 3;
+      const ty = y1 + 3.6 + a.niveau * 6;
       elements.push(`<path d="M${l} ${y0}Q${l} ${y1} ${l + 1} ${y1}H${m - 0.8}L${m} ${y1 + 0.8}L${m + 0.8} ${y1}H${r - 1}Q${r} ${y1} ${r} ${y0}" stroke="${PDF_INK.text}" stroke-width="0.18" fill="none"/>`);
       if (a.niveau > 0 || Math.abs(a.labelX - m) > 0.5) elements.push(`<path d="M${m} ${y1 + 0.8}L${a.labelX} ${ty - 2}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/>`);
       elements.push(`<text x="${a.labelX}" y="${ty}" font-size="2.293" font-family="PlexSans" font-weight="bold" text-anchor="middle" fill="${PDF_INK.text}">${escapeXml(a.texte)}</text>`);
       elements.push(`<text x="${a.labelX}" y="${ty + 3}" font-size="2.293" font-family="PlexSans" font-weight="normal" text-anchor="middle" fill="${PDF_INK.text}">${libelleCote(s.fin)}</text>`);
       reservees.push({ labelX: a.labelX, largeur: Math.max(a.largeur, mesurer(libelleCote(s.fin))) });
     });
-    if (rangs) yCotes = h + 2.2 + rangs * 3 + 4.8;
+    if (rangs) yCotes = h + 2.2 + rangs * 6 + 1.8;
   }
   const cotes = methode === "butee"
     ? cotesPiecesSeulesPDF(series, x, largeur, mesurer, reservees)

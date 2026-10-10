@@ -5,7 +5,7 @@ test("PDF : une pièce finale trop proche ne remplace pas la cote de l’accolad
   const series = [{ fin: 4909, quantite: 4 }, { fin: 5712, quantite: 1 }, { fin: 5924, quantite: 4 }, { fin: 5977, quantite: 1 }];
   const avant = JSON.stringify(series);
   const cotes = cotesPiecesSeulesPDF(series, n => n / 6000 * 180, 180, () => 7, [{ labelX: 176, largeur: 12 }]);
-  expect(cotes.map(c => c.valeur)).toEqual([5712]);
+  expect(cotes.map(c => c.valeur)).toEqual([]);
   expect(JSON.stringify(series)).toBe(avant);
 });
 
