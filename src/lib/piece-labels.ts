@@ -45,6 +45,7 @@ export function etiquettesPieces(
       labels.push({ gauche: left, droite: right, lignes: [grouped], taille: LABEL_BASE_PX, ligneTableau: row + 1, niveau: 0 });
       return;
     }
+    const debutLabels = labels.length;
     for (const s of run) {
       const [gauche, droite] = bounds(s.debut, s.fin);
       if (droite <= gauche) continue;
@@ -61,6 +62,12 @@ export function etiquettesPieces(
         }
       }
       labels.push({ gauche, droite, lignes, taille, ligneTableau: row + 1, niveau: 0 });
+    }
+    // A fallback points to the consecutive-run table row, not to each tiny cut.
+    const visibles = labels.slice(debutLabels);
+    if (visibles.some(l => !l.lignes.length)) {
+      labels.splice(debutLabels, visibles.length, ...visibles.filter(l => l.lignes.length));
+      if (right > left) labels.push({ gauche: left, droite: right, lignes: [], taille: LABEL_BASE_PX, ligneTableau: row + 1, niveau: 0 });
     }
   });
   const ends: number[] = [];
