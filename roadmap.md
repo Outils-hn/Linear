@@ -30,6 +30,6 @@
 - [x] Mettre en valeur la synthèse (bandeau Barres à commander / Rendement, colonnes et Total en gras) à l'écran et dans le PDF ; vérifier le rendu.
 - [x] Champs numériques : vide conservé pendant la saisie, sélection au clic, blocage rouge au lancement ; vérifié à l'écran.
 - [x] Méthode de coupe (butée / mètre ruban) et seuil de réutilisation visible dans le PDF.
-- [ ] Ajouter le statut matière et ses détails facultatifs au projet local et JSON, écran/PDF.
-- [ ] Alléger la synthèse, adapter le titre des chutes et aligner origines/totaux ; Plex Sans tabulaire partout.
-- [ ] Vérifier sauvegardes, trois statuts, écran/PDF et non-régression des calculs.
+- [x] Ajouter le statut matière et ses détails facultatifs au projet local et JSON, écran/PDF.
+- [x] Alléger la synthèse, adapter le titre des chutes et aligner origines/totaux ; Plex Sans tabulaire partout.
+- [x] Vérifier sauvegardes, trois statuts, écran/PDF et non-régression des calculs ; 28 tests passent, 12 pages PDF inspectées, titre isolé et doublon du mode sans chutes corrigés.
