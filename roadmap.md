@@ -1,4 +1,5 @@
 # Corrections Linear
+- [x] PDF uniquement : cotes associées à leurs accolades, pièces seules trop proches omises et total des chutes sur une ligne ; 10 tests réussis, PDF butée/ruban/consigne et cas final 50 mm inspectés, sans défaut restant.
 - [x] Adapter les étiquettes écran/PDF par mesure réelle, cascade et regroupement ; cas atelier et pièces très étroites vérifiés, lettres coupées du PDF et hauteur écran corrigées.
 - [x] Couleurs des pièces et hachures écran/PDF.
 - [x] Bilan matière fermé et deux rendements.
