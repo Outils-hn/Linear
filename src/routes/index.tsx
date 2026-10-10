@@ -1,5 +1,6 @@
 import { formatNombre as fmt } from "@/lib/format-number";
 import { bilanMatiere } from "@/lib/material-summary";
+import { lireStatutMatiere, libelleStatutMatiere, detailsCommande, STATUTS_MATIERE, type StatutMatiere } from "@/lib/material-status";
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import {
@@ -138,6 +139,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
   const [seuilChute, setSeuilChute] = useState(500);
   const [chutesPDF, setChutesPDF] = useState<OptionsChutesPDF>(optionsChutesDefaut);
   const [methodeCoupe, setMethodeCoupe] = useState<MethodeCoupe>("butee");
+  const [statutMatiere, setStatutMatiere] = useState<StatutMatiere>(() => lireStatutMatiere());
   const [pdfWarnOpen, setPdfWarnOpen] = useState(false);
   const [verifCtx, setVerifCtx] = useState<{ pieces: Piece[]; traitScie: number } | null>(null);
   const verification = useMemo(
@@ -305,6 +307,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       verification: verification ?? undefined,
       chutesPDF,
       methodeCoupe,
+      statutMatiere,
     }).catch(() => toast.error("L’export PDF a échoué. Veuillez réessayer."));
   };
 
@@ -322,6 +325,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     setSeuilChute(500);
     setChutesPDF(optionsChutesDefaut());
     setMethodeCoupe("butee");
+    setStatutMatiere(lireStatutMatiere());
     setTraitScie(3);
     setStrategie("min-barres");
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
@@ -357,6 +361,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
         seuil_chute: seuilChute,
         chutes_pdf: chutesPDF,
         methode_coupe: methodeCoupe,
+        statut_matiere: statutMatiere,
       });
       setCurrentProjectId(saved.id);
       if (opts.chantierOverride !== undefined) setChantier(opts.chantierOverride);
@@ -402,6 +407,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
     setSeuilChute(sg);
     setChutesPDF(lireOptionsChutes(proj.chutes_pdf));
     setMethodeCoupe(lireMethodeCoupe(proj.methode_coupe));
+    setStatutMatiere(lireStatutMatiere(proj.statut_matiere));
     setSidebarOpen(false);
     const r = calculer({
       pieces: loadedPieces,
@@ -629,6 +635,18 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               <Label htmlFor="date">Date</Label>
               <Input id="date" type="date" value={dateProjet} onChange={(e) => setDateProjet(e.target.value)} />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="statut-matiere">Statut de la matière</Label>
+              <Select value={statutMatiere.statut} onValueChange={v => setStatutMatiere(s => ({ ...s, statut: lireStatutMatiere({ statut: v }).statut }))}>
+                <SelectTrigger id="statut-matiere" className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>{Object.entries(STATUTS_MATIERE).map(([v, label]) => <SelectItem key={v} value={v}>{label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            {statutMatiere.statut === "commandee" && <>
+              <div className="space-y-2"><Label htmlFor="date-commande">Date de commande</Label><Input id="date-commande" type="date" value={statutMatiere.dateCommande} onChange={e => setStatutMatiere(s => ({ ...s, dateCommande: e.target.value }))} /></div>
+              <div className="space-y-2"><Label htmlFor="fournisseur">Fournisseur</Label><Input id="fournisseur" value={statutMatiere.fournisseur} onChange={e => setStatutMatiere(s => ({ ...s, fournisseur: e.target.value }))} /></div>
+              <div className="space-y-2"><Label htmlFor="numero-commande">N° de commande</Label><Input id="numero-commande" value={statutMatiere.numeroCommande} onChange={e => setStatutMatiere(s => ({ ...s, numeroCommande: e.target.value }))} /></div>
+            </>}
           </CardContent>
         </Card>
 
@@ -1027,30 +1045,32 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                     ? resultat.profils.map((rp) => ({ profil: libelleProfil(rp.profil), nb: rp.resultat.nbBarres, lb: rp.longueurBarre }))
                     : [{ profil: null, nb: resultat.nbBarres, lb: resultat.profils[0]?.longueurBarre ?? longueurBarre }]
                   ).map((ligne, i) => (
-                    <p key={i} className="flex flex-wrap items-baseline gap-x-2">
+                    <div key={i}>
+                    <p className="flex flex-wrap items-baseline gap-x-2">
                       <span className="text-sm text-foreground">
-                        Barres à commander{ligne.profil ? ` · ${ligne.profil}` : ""} :
+                        {libelleStatutMatiere(statutMatiere)}{ligne.profil ? ` · ${ligne.profil}` : ""} :
                       </span>
                       <span className="font-display text-2xl font-bold tabular-nums text-primary">
                         {fmt(ligne.nb)} x {fmt(ligne.lb)} mm
                       </span>
                     </p>
+                    {detailsCommande(statutMatiere) && <p className="mt-1 text-sm tabular-nums text-muted-foreground">— {detailsCommande(statutMatiere)}</p>}
+                    </div>
                   ))}
+                  <p className="text-xs tabular-nums text-muted-foreground">{fmt(resultat.longueurTotale)} mm au total</p>
                 </div>
+                <div className="space-y-1.5 min-w-0">
                 <p className="flex items-baseline gap-x-2">
                   <span className="text-sm text-foreground">Rendement :</span>
                   <span className="font-display text-2xl font-bold tabular-nums text-primary">{fmt(resultat.rendement, 1)} %</span>
                 </p>
+                <p className="text-xs tabular-nums text-muted-foreground">{fmt(resultat.longueurUtile)} mm de pièces / {fmt(resultat.longueurTotale)} mm achetés</p>
+                </div>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <StatCard large label="Barres utilisées" value={`${fmt(resultat.nbBarres)}`} hint={strategie === "priorite-stock" ? `${fmt(resultat.nbBarresStock)} stock + ${fmt(resultat.nbBarresDefaut)} base` : `${fmt(resultat.longueurTotale)} mm au total`} />
-              <StatCard large label="Rendement" value={`${fmt(resultat.rendement, 1)} %`} hint={`${fmt(resultat.longueurUtile)} mm de pièces / ${fmt(resultat.longueurTotale)} mm de matière achetée`} />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
               <StatCard label="Chutes réutilisables" value={`${fmt(resultat.longueurChutesReutilisables)} mm (${fmt(matiere?.parts[1].affiche ?? 0, 1)} %)`} hint="De la matière achetée" accent="warning" />
               <StatCard label="Perte définitive" value={`${fmt(matiere?.perte ?? 0)} mm (${fmt(matiere?.parts[2].affiche ?? 0, 1)} %)`} hint="Matière réellement jetée" />
-              <StatCard label="Chutes totales" value={`${fmt(resultat.longueurChutes)} mm`} hint={`${fmt(resultat.pourcentageChutes, 1)} % de la matière`} />
             </div>
 
             <ChutesAConserver resultat={resultat} options={chutesPDF} onChange={setChutesPDF} />
@@ -1279,7 +1299,7 @@ function StatCard({
         <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
         <div
           className={
-            "mt-2 font-mono font-normal " + (large ? "text-5xl text-primary " : "text-2xl ") +
+            "mt-2 font-sans tabular-nums font-normal break-words " + (large ? "text-5xl text-primary " : "text-2xl ") +
             (accent === "success"
               ? "text-[color:var(--color-success)]"
               : accent === "warning"
@@ -1300,7 +1320,7 @@ function ChutesAConserver({ resultat, options, onChange }: { resultat: ResultatM
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Chutes à conserver</CardTitle>
+        <CardTitle className="text-base">{options.mode === "instruction" ? "Chutes à conserver" : options.mode === "indicative" ? "Chutes conservables" : "Chutes réutilisables"}</CardTitle>
         <CardDescription>Par profilé, de la plus longue à la plus courte</CardDescription>
       </CardHeader>
       <CardContent>
@@ -1315,7 +1335,7 @@ function ChutesAConserver({ resultat, options, onChange }: { resultat: ResultatM
                   <TableHead className="w-[30%]">Profilé</TableHead>
                   <TableHead className="w-[20%] text-right">Longueur de chute (mm)</TableHead>
                   <TableHead className="w-[15%] text-right">Quantité</TableHead>
-                  <TableHead>Barres d’origine</TableHead>
+                  <TableHead className="text-left">Barres d’origine</TableHead>
                   {options.mode === "instruction" && <><TableHead>À conserver</TableHead><TableHead className="min-w-56">Note</TableHead></>}
                 </TableRow>
               </TableHeader>
@@ -1327,7 +1347,7 @@ function ChutesAConserver({ resultat, options, onChange }: { resultat: ResultatM
                         <TableCell className="text-xs normal-case">{libelleProfil(g.profil)}</TableCell>
                         <TableCell className="text-right text-xs tabular-nums">{fmt(l.longueur)}</TableCell>
                         <TableCell className="text-right text-xs tabular-nums">{fmt(l.quantite)}</TableCell>
-                        <TableCell className="text-xs tabular-nums">{l.origine}</TableCell>
+                        <TableCell className="text-left text-xs tabular-nums">{l.origine}</TableCell>
                         {options.mode === "instruction" && <>
                           <TableCell><Checkbox aria-label={`À conserver : ${libelleProfil(g.profil)}, ${fmt(l.longueur)} mm`} checked={choixChute(options, l).conserver} onCheckedChange={v => onChange({ ...options, choix: { ...options.choix, [cleChute(g.profil, l.longueur)]: { ...choixChute(options, l), conserver: v === true } } })} /></TableCell>
                           <TableCell><Input aria-label={`Note : ${libelleProfil(g.profil)}, ${fmt(l.longueur)} mm`} value={choixChute(options, l).note} onChange={e => onChange({ ...options, choix: { ...options.choix, [cleChute(g.profil, l.longueur)]: { ...choixChute(options, l), note: e.target.value } } })} /></TableCell>
@@ -1336,7 +1356,8 @@ function ChutesAConserver({ resultat, options, onChange }: { resultat: ResultatM
                     ))}
                     <TableRow className="bg-muted/40 hover:bg-muted/40">
                       <TableCell className="text-xs font-semibold normal-case">Total {libelleProfil(g.profil)}</TableCell>
-                      <TableCell colSpan={options.mode === "instruction" ? 5 : 3} className="text-xs font-semibold tabular-nums">{fmt(g.totalMm / 1000, 2)} m linéaires réutilisables{options.mode === "instruction" && ` · ${fmt(g.lignes.filter(l => choixChute(options, l).conserver).reduce((s, l) => s + l.longueur * l.quantite, 0) / 1000, 2)} m à conserver`}</TableCell>
+                      <TableCell className="text-right text-xs font-semibold tabular-nums">{fmt(g.totalMm / 1000, 2)} m linéaires réutilisables{options.mode === "instruction" && ` · ${fmt(g.lignes.filter(l => choixChute(options, l).conserver).reduce((s, l) => s + l.longueur * l.quantite, 0) / 1000, 2)} m à conserver`}</TableCell>
+                      <TableCell colSpan={options.mode === "instruction" ? 4 : 2} />
                     </TableRow>
                   </Fragment>
                 ))}

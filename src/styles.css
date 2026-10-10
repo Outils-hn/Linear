@@ -42,7 +42,7 @@
   --color-piece-7: var(--piece-7);
   --color-piece-8: var(--piece-8);
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-mono: 'IBM Plex Sans', system-ui, sans-serif;
   --font-display: 'IBM Plex Sans', system-ui, sans-serif;
   --color-heading: var(--heading);
   --color-piece-ink: var(--piece-ink);
@@ -185,7 +185,7 @@
 
 .rail-page { background: transparent; }
 .font-display, h1, h2, h3 { color: var(--heading); }
-.tabular-nums, input[type="number"], svg text { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.tabular-nums, .font-mono, input[type="number"], svg text { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
 .bar-piece-label { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; }
 input[type="number"] { text-align: right; }
 table thead { background: var(--table-header-surface); }
@@ -193,7 +193,7 @@ table tbody tr:nth-child(even) { background: color-mix(in oklab, var(--muted) 30
 table tr { height: 36px; }
 table td, table th { padding-top: 2px; padding-bottom: 2px; }
 table input { height: 30px; }
-table td:has(input[type="number"]), table td.tabular-nums { text-align: right; font-family: var(--font-mono); }
+table td:has(input[type="number"]) { text-align: right; }
 table th.numeric { text-align: right; }
 table thead th { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--table-heading); }
 .dark table thead tr { background: var(--table-header-surface); }
