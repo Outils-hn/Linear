@@ -1,7 +1,7 @@
 import type { jsPDF } from "jspdf";
 import type { BarreOptimisee } from "./optimizer";
-import { segmentsBarre, placerLibelles, libelleCote } from "./bar-drawing";
-import { seriesPieces, type MethodeCoupe } from "./cut-method";
+import { segmentsBarre, placerLibelles, cotesFinSeries } from "./bar-drawing";
+import { seriesPieces, DETAIL_COTES_RUBAN, type MethodeCoupe } from "./cut-method";
 import { themeHex } from "./visual-theme";
 import { hexColorForPieceId } from "./piece-colors";
 import { formatNombre } from "./format-number";
@@ -81,16 +81,14 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     });
     if (rangs) yCotes = h + 2.2 + rangs * 3 + 1.8;
   }
-  const valeurs = methode === "butee" ? series.map(s => s.fin) : pieces.map(s => s.fin);
-  const cotes = placerLibelles(valeurs.map(v => ({ valeur: v, x: x(v), texte: libelleCote(v) })), largeur, mesurer);
-  let niveaux = 1;
+  const cotes = cotesFinSeries(series, x, largeur, mesurer, 1.2);
   for (const cote of cotes) {
-    niveaux = Math.max(niveaux, cote.niveau + 1);
-    const yy = yCotes + 4.2 + cote.niveau * 3.5;
+    const yy = yCotes + 4.2;
     const coude = yCotes + 1.2;
-    elements.push(`<path d="M${cote.x} ${h}V${coude}L${cote.labelX} ${yy - 2.4}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/><text x="${cote.labelX}" y="${yy}" font-size="2.293" font-family="PlexSans" font-weight="normal" text-anchor="middle" fill="${PDF_INK.text}">${cote.texte}</text>`);
+    elements.push(`<path d="M${cote.x} ${h}V${coude}L${cote.labelX} ${yy - 2.4}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/><text x="${cote.labelX}" y="${yy}" font-size="2.293" font-family="PlexSans" font-weight="normal" text-anchor="middle" fill="${PDF_INK.text}">${formatNombre(cote.valeur)}</text>`);
   }
-  const hauteur = top + yCotes + 6 + (niveaux - 1) * 3.5;
+  if (methode === "ruban") elements.push(`<text x="0" y="${yCotes + 9}" font-size="2.293" fill="${PDF_INK.text}">${DETAIL_COTES_RUBAN}</text>`);
+  const hauteur = top + yCotes + (methode === "ruban" ? 11 : 6);
   const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${largeur}" height="${hauteur}" viewBox="0 0 ${largeur} ${hauteur}" font-family="PlexSans" style="font-variant-numeric:tabular-nums"><g transform="translate(0 ${top})">${elements.join("")}</g></svg>`;
   return { source, hauteur };
 }

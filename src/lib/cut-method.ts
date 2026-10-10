@@ -8,6 +8,7 @@ export const METHODES_COUPE: Record<MethodeCoupe, string> = {
 };
 
 export const RAPPEL_RUBAN = "Mesurer toutes les cotes depuis le bout brut, sans déplacer le mètre";
+export const DETAIL_COTES_RUBAN = "Détail de toutes les cotes dans le tableau ci-dessous";
 
 export const lireMethodeCoupe = (v: unknown): MethodeCoupe => (v === "ruban" ? "ruban" : "butee");
 

@@ -67,6 +67,26 @@ export interface CotePlacee { valeur: number; x: number; labelX: number; largeur
 // Remove binary floating-point artefacts in drawing labels only.
 export const libelleCote = (valeur: number) => formatNombre(valeur);
 
+/** One horizontal row; discard left labels when measured bounds collide. */
+export function cotesFinSeries(
+  series: { fin: number }[], position: (mm: number) => number, largeur: number,
+  mesurer: (label: string) => number, espace = 4,
+): CotePlacee[] {
+  const retenues: CotePlacee[] = [];
+  let bordDroit = Infinity;
+  for (let i = series.length - 1; i >= 0; i--) {
+    const valeur = series[i].fin, x = position(valeur);
+    if (x < 0 || x > largeur) continue;
+    const w = mesurer(libelleCote(valeur));
+    if (w > largeur) continue;
+    const labelX = Math.max(w / 2, Math.min(largeur - w / 2, x));
+    if (labelX + w / 2 + espace > bordDroit) continue;
+    retenues.push({ valeur, x, labelX, largeur: w, niveau: 0 });
+    bordDroit = labelX - w / 2;
+  }
+  return retenues.reverse();
+}
+
 export function placerCotes(valeurs: number[], total: number, largeur: number, mesurer: (label: string) => number): CotePlacee[] {
   return placerLibelles(valeurs.map(valeur => ({ valeur, x: valeur / total * largeur, texte: libelleCote(valeur) })), largeur, mesurer)
     .map(({ texte: _t, ...c }) => c);
