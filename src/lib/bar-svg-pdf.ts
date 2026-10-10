@@ -1,6 +1,6 @@
 import type { jsPDF } from "jspdf";
 import type { BarreOptimisee } from "./optimizer";
-import { segmentsBarre, placerLibelles, cotesFinSeries } from "./bar-drawing";
+import { segmentsBarre, placerLibelles, cotesFinSeries, libelleCote, type CotePlacee } from "./bar-drawing";
 import { seriesPieces, DETAIL_COTES_RUBAN, type MethodeCoupe } from "./cut-method";
 import { themeHex } from "./visual-theme";
 import { hexColorForPieceId } from "./piece-colors";
@@ -9,6 +9,25 @@ import { etiquettesPieces, MM_PER_PX, LABEL_BASE_PX } from "./piece-labels";
 
 
 const escapeXml = (value: string) => value.replace(/[<>&"']/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c] ?? c);
+
+/** PDF only: single-piece dimensions never slide beneath a neighbouring brace. */
+export function cotesPiecesSeulesPDF(
+  series: { fin: number; quantite: number }[], position: (mm: number) => number,
+  largeur: number, mesurer: (texte: string) => number,
+  reservees: { labelX: number; largeur: number }[], espace = 1.2,
+): CotePlacee[] {
+  const occupees = [...reservees];
+  const retenues: CotePlacee[] = [];
+  for (const serie of [...series].reverse()) {
+    if (serie.quantite !== 1) continue;
+    const x = position(serie.fin), w = mesurer(libelleCote(serie.fin));
+    if (x - w / 2 < 0 || x + w / 2 > largeur) continue;
+    if (occupees.some(c => Math.abs(c.labelX - x) < (c.largeur + w) / 2 + espace)) continue;
+    retenues.push({ valeur: serie.fin, x, labelX: x, largeur: w, niveau: 0 });
+    occupees.push({ labelX: x, largeur: w });
+  }
+  return retenues.reverse();
+}
 
 export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: number, ids: string[], largeur: number, conserver = false, masquerTypes = false, methode: MethodeCoupe = "butee") {
   const PDF_INK = { text: themeHex("piece-ink"), paper: themeHex("cut-separator"), waste: themeHex("waste"), hatch: themeHex("hatch"), reusable: themeHex("offcut-paper"), reusableHatch: themeHex("warning"), kerf: themeHex("cut-separator") };
@@ -66,8 +85,9 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
   const series = seriesPieces(pieces);
   const mesurer = (txt: string) => doc.getTextWidth(txt);
   let yCotes = h;
+  const reservees: { labelX: number; largeur: number }[] = [];
   if (methode === "butee") {
-    // Brace under each run of identical pieces; only the run's end dimension below.
+    // Keep each end dimension attached to its own brace label, not the next cut.
     const groupes = series.filter(s => s.quantite > 1);
     const accolades = placerLibelles(groupes.map(s => ({ valeur: s.fin, x: (x(s.debut) + x(s.fin)) / 2, texte: `${s.quantite} x ${formatNombre(s.longueur)}` })), largeur, mesurer);
     let rangs = 0;
@@ -78,10 +98,14 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
       elements.push(`<path d="M${l} ${y0}Q${l} ${y1} ${l + 1} ${y1}H${m - 0.8}L${m} ${y1 + 0.8}L${m + 0.8} ${y1}H${r - 1}Q${r} ${y1} ${r} ${y0}" stroke="${PDF_INK.text}" stroke-width="0.18" fill="none"/>`);
       if (a.niveau > 0 || Math.abs(a.labelX - m) > 0.5) elements.push(`<path d="M${m} ${y1 + 0.8}L${a.labelX} ${ty - 2}" stroke="${PDF_INK.hatch}" stroke-width="0.1" fill="none"/>`);
       elements.push(`<text x="${a.labelX}" y="${ty}" font-size="2.293" font-family="PlexSans" font-weight="bold" text-anchor="middle" fill="${PDF_INK.text}">${escapeXml(a.texte)}</text>`);
+      elements.push(`<text x="${a.labelX}" y="${ty + 3}" font-size="2.293" font-family="PlexSans" font-weight="normal" text-anchor="middle" fill="${PDF_INK.text}">${libelleCote(s.fin)}</text>`);
+      reservees.push({ labelX: a.labelX, largeur: Math.max(a.largeur, mesurer(libelleCote(s.fin))) });
     });
-    if (rangs) yCotes = h + 2.2 + rangs * 3 + 1.8;
+    if (rangs) yCotes = h + 2.2 + rangs * 3 + 4.8;
   }
-  const cotes = cotesFinSeries(series, x, largeur, mesurer, 1.2);
+  const cotes = methode === "butee"
+    ? cotesPiecesSeulesPDF(series, x, largeur, mesurer, reservees)
+    : cotesFinSeries(series, x, largeur, mesurer, 1.2);
   for (const cote of cotes) {
     const yy = yCotes + 4.2;
     const coude = yCotes + 1.2;

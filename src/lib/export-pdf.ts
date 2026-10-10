@@ -371,7 +371,17 @@ export async function exporterPDF(
       headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
       columnStyles: { 0: { halign: "left" }, 1: { halign: "right", cellWidth: consigne ? 30 : 44 }, 2: { halign: "right", cellWidth: 20 }, 3: { halign: "left" }, ...(consigne ? { 4: { halign: "left" as const, cellWidth: 55 } } : {}) },
       didParseCell: (data) => {
-        if (data.section === "body" && String(data.row.raw && (data.row.raw as string[])[0]).startsWith("Total ")) data.cell.styles.fontStyle = "bold";
+        if (data.section === "body" && String(data.row.raw && (data.row.raw as string[])[0]).startsWith("Total ")) {
+          data.cell.styles.fontStyle = "bold";
+          if (data.column.index === 1) {
+            doc.setFont("PlexSans", "bold"); doc.setFontSize(9);
+            const disponible = (consigne ? 30 : 44) - 4;
+            const complet = String((data.row.raw as string[])[1]);
+            const texte = doc.getTextWidth(complet) <= disponible ? complet : complet.replace("m linéaires réutilisables", "m réutilisables");
+            data.cell.text = [texte];
+            data.cell.styles.fontSize = Math.min(9, 9 * disponible / Math.max(doc.getTextWidth(texte), 1));
+          }
+        }
       },
       margin: { left: margin, right: margin },
     });
