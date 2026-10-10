@@ -31,4 +31,11 @@ describe("Étiquettes adaptatives sans changement des coupes", () => {
     }
     expect(layout([piece("Montant", 0, 60)], 100, 20)[0].lignes).toEqual(["60"]);
   });
+  test("un seul renvoi centré par série de petites pièces", () => {
+    const cuts = [piece("A", 0, 9), piece("A", 12, 9), piece("A", 24, 9), piece("B", 36, 9), piece("A", 48, 9)];
+    const labels = layout(cuts);
+    const refs = labels.filter(l => !l.lignes.length);
+    expect(refs.map(l => l.ligneTableau)).toEqual([1, 2, 3]);
+    expect([refs[0].gauche, refs[0].droite]).toEqual([0, 33]);
+  });
 });

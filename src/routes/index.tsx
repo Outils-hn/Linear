@@ -1126,7 +1126,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                         </h3>
                       </div>
 
-                      <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} libelle={libelleGroupe(groupe)} />
+                      <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} libelle={libelleGroupe(groupe)} methodeCoupe={methodeCoupe} />
                       <p className="text-xs text-muted-foreground">Cotes mesurées depuis l’extrémité brute de la barre</p>
                       {methodeCoupe === "ruban" && <p className="text-xs font-semibold text-foreground">{RAPPEL_RUBAN}</p>}
 

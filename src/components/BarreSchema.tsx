@@ -3,14 +3,15 @@ import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import type { BarreOptimisee, Piece } from "@/lib/optimizer";
 import { SEUIL_CHUTE_REUTILISABLE } from "@/lib/optimizer";
 import { colorForPieceId } from "@/lib/piece-colors";
-import { segmentsBarre, type SegmentBarre } from "@/lib/bar-drawing";
+import { segmentsBarre, cotesFinSeries, type SegmentBarre } from "@/lib/bar-drawing";
+import { seriesPieces, DETAIL_COTES_RUBAN, type MethodeCoupe } from "@/lib/cut-method";
 import { formatNombre as fmt } from "@/lib/format-number";
 import { etiquettesPieces, LABEL_BASE_PX } from "@/lib/piece-labels";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
-interface Props { barre: BarreOptimisee; traitScie: number; pieceIds: string[]; libelle?: string }
+interface Props { barre: BarreOptimisee; traitScie: number; pieceIds: string[]; libelle?: string; methodeCoupe?: MethodeCoupe }
 
 function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: Props & { zone: [number, number]; regle?: boolean; onZone?: (zone: [number, number]) => void }) {
   const id = useId().replace(/:/g, "");
@@ -44,8 +45,14 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
     return context.measureText(text).width;
   }) : [];
   const references = labels.filter(l => !l.lignes.length);
+  const cotes = fontReady ? cotesFinSeries(seriesPieces(segments.filter(s => s.type === "piece")), x, largeur, text => {
+    const context = mesure.current;
+    if (!context) return Infinity;
+    context.font = '400 10px "IBM Plex Sans"';
+    return context.measureText(text).width;
+  }) : [];
   const top = regle ? 45 : references.length ? (Math.max(...references.map(l => l.niveau)) + 1) * 16 + 4 : 0;
-  const height = regle ? 256 : top + barHeight;
+  const height = regle ? 256 : top + barHeight + 23;
   const pos = (e: PointerEvent<SVGSVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     return Math.max(zone[0], Math.min(zone[1], zone[0] + (e.clientX - r.left) / r.width * span));
@@ -92,6 +99,12 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
           </text>
         </g>;
       })}
+      <g data-dimensions="series" className="fill-piece-ink stroke-hatch" fontSize="10" pointerEvents="none">
+        {cotes.map(c => <g key={c.valeur}>
+          <path d={`M${c.x} ${top + barHeight}V${top + barHeight + 5}L${c.labelX} ${top + barHeight + 10}`} fill="none" strokeWidth="0.5" />
+          <text x={c.labelX} y={top + barHeight + 19} textAnchor="middle" stroke="none">{fmt(c.valeur)}</text>
+        </g>)}
+      </g>
       {regle && <g className="fill-foreground stroke-muted-foreground" fontSize="12">
         <line x1="0" x2={largeur} y1="155" y2="155"/>
         {ticks.map(n => <g key={n}><line x1={x(n)} x2={x(n)} y1="155" y2="165"/><text x={Math.max(25, Math.min(largeur - 25, x(n)))} y="185" textAnchor="middle" stroke="none">{fmt(n)}</text></g>)}
@@ -105,7 +118,7 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
   </div>;
 }
 
-export function BarreSchema({ barre, traitScie, pieceIds, libelle }: Props) {
+export function BarreSchema({ barre, traitScie, pieceIds, libelle, methodeCoupe = "butee" }: Props) {
   const [open, setOpen] = useState(false);
   const [zone, setZone] = useState<[number, number]>([0, barre.longueurBrute]);
   const zoom = (factor: number) => {
@@ -117,7 +130,7 @@ export function BarreSchema({ barre, traitScie, pieceIds, libelle }: Props) {
     <Button variant="ghost" aria-label={`Agrandir ${libelle ?? `barre ${barre.index}`}`} className="block h-auto w-full rounded-md border border-border p-0 hover:bg-transparent" onClick={() => { setZone([0, barre.longueurBrute]); setOpen(true); }}>
       <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={[0, barre.longueurBrute]}/>
     </Button>
-    <div className="mt-1 flex justify-between text-[10px] text-muted-foreground"><span>0</span><span>{fmt(barre.longueurBrute)} mm</span></div>
+    {methodeCoupe === "ruban" && <p className="mt-1 text-left text-xs text-muted-foreground">{DETAIL_COTES_RUBAN}</p>}
     <div className="mt-1 text-xs text-muted-foreground">Marge début : {fmt(barre.margeDebut ?? 0)} mm · Marge fin : {fmt(barre.margeFin ?? 0)} mm · Chute : <span className={barre.chuteReutilisable ? "font-semibold text-warning" : "font-semibold text-muted-foreground"}>{fmt(barre.chute)} mm — {barre.chuteReutilisable ? `Réutilisable (≥ ${fmt(barre.seuilChute ?? SEUIL_CHUTE_REUTILISABLE)} mm)` : "Déchet"}</span></div>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="w-[calc(100%-2rem)] max-w-6xl sm:max-w-6xl">
