@@ -53,7 +53,42 @@ export function borneMinimale(pieces: Piece[], utile: number, traitScie: number)
   return Math.ceil((total + n * k) / (utile + k) - 1e-9);
 }
 
-const plusGrandeChuteReutilisable = (r: ResultatOptimisation) =>
+export interface PieceTropLongue {
+  id: string;
+  nom: string;
+  longueur: number;
+  profil: string;
+  longueurUtile: number;
+}
+
+/**
+ * Pièces impossibles à placer car plus longues que la plus grande barre utile
+ * de leur profilé (barre par défaut ou barre de stock attribuée à ce profilé).
+ * Même règle d'attribution du stock que optimiserParProfil.
+ */
+export function piecesTropLongues(
+  pieces: Piece[],
+  longueurs: Record<string, number>,
+  options: { longueurBarreDefaut: number; margeSecurite: number; stock?: OptionsOptimisation["stock"] },
+): PieceTropLongue[] {
+  const profils = listeProfils(pieces);
+  const profilStock = profils.includes("") ? "" : profils[0];
+  const out: PieceTropLongue[] = [];
+  for (const p of pieces) {
+    if (!(p.longueur > 0) || !(p.quantite > 0)) continue;
+    const profil = nomProfil(p.profil);
+    const utileDefaut = Math.max(0, longueurPourProfil(profil, longueurs, options.longueurBarreDefaut) - options.margeSecurite);
+    const utilesStock = profil === profilStock
+      ? (options.stock ?? []).filter((s) => s.quantite > 0 && s.longueur > 0)
+          .map((s) => s.longueur - (s.appliquerMarge === false ? 0 : options.margeSecurite))
+      : [];
+    const utile = Math.max(utileDefaut, ...utilesStock);
+    if (p.longueur > utile) out.push({ id: p.id, nom: p.nom, longueur: p.longueur, profil, longueurUtile: utile });
+  }
+  return out;
+}
+
+const plusGrandeChuteReutilisable =(r: ResultatOptimisation) =>
   r.barres.reduce((m, b) => (b.chuteReutilisable && b.chute > m ? b.chute : m), 0);
 
 export function optimiserParProfil(
