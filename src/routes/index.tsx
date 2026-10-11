@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   Download,
   Upload,
+  TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -976,6 +977,23 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               </Button>
             </CardHeader>
             <CardContent>
+              {(() => {
+                // Le stock n'a pas de profilé : avec plusieurs profilés, il est attribué
+                // à un seul (même règle que optimiserParProfil). On le dit clairement.
+                const profils = listeProfils(pieces);
+                if (profils.length < 2 || stock.length === 0) return null;
+                const profilStock = profils.includes("") ? "" : profils[0];
+                return (
+                  <div role="alert" className="mb-4 flex gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      Le stock ne gère pas encore les profilés : avec plusieurs profilés, ces barres sont toutes
+                      attribuées à <strong>« {libelleProfil(profilStock)} »</strong>. Vérifiez qu'il s'agit bien de ce profilé,
+                      ou optimisez chaque profilé dans un projet séparé.
+                    </span>
+                  </div>
+                );
+              })()}
               <Table>
                 <TableHeader>
                   <TableRow>
