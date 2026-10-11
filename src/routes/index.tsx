@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { AuthForm } from "@/components/AuthForm";
 import { POSITION_MARGE_LABELS, type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema, LegendeBarres } from "@/components/BarreSchema";
-import { optimiserParProfil, listeProfils, libelleProfil, longueurPourProfil, seuilPourProfil, type ResultatMulti } from "@/lib/multi-profil";
+import { optimiserParProfil, listeProfils, libelleProfil, longueurPourProfil, seuilPourProfil, piecesTropLongues, type ResultatMulti } from "@/lib/multi-profil";
 import { chutesAConserver } from "@/lib/chutes";
 import { OffcutPDFOptions } from "@/components/OffcutPDFOptions";
 import { optionsChutesDefaut, lireOptionsChutes, cleChute, choixChute, type OptionsChutesPDF } from "@/lib/offcut-settings";
@@ -269,6 +269,23 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
       setErreursChamps(erreurs);
       toast.error(
         `Optimisation impossible : ${problemes.join(", ")}${erreurs.size > problemes.length ? "…" : ""} ${erreurs.size > 1 ? "sont vides ou à 0" : "est vide ou à 0"}.`,
+      );
+      return;
+    }
+    // Bloque aussi les pièces plus longues que la barre utile de leur profilé :
+    // ce n'est pas une erreur de calcul, mais une saisie impossible à débiter.
+    const tropLongues = piecesTropLongues(pieces, longueursProfils, {
+      longueurBarreDefaut: longueurBarre,
+      margeSecurite,
+      stock: strategie === "priorite-stock" ? stock : [],
+    });
+    if (tropLongues.length > 0) {
+      setErreursChamps(new Set(tropLongues.map((p) => `piece-${p.id}-longueur`)));
+      const details = tropLongues
+        .slice(0, 3)
+        .map((p) => `« ${p.nom || "sans repère"} » (${fmt(p.longueur)} mm) est plus longue que la barre utile (${fmt(p.longueurUtile)} mm)`);
+      toast.error(
+        `Optimisation impossible : ${details.join(" ; ")}${tropLongues.length > 3 ? ` ; et ${tropLongues.length - 3} autre(s)` : ""}.`,
       );
       return;
     }
