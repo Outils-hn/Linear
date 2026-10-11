@@ -117,7 +117,15 @@ function optimiserFFD(
   poolDefaut: PoolBarre,
   traitScie: number,
 ): BarreOptimisee[] {
-  const tri = [...items].sort((a, b) => b.longueur - a.longueur);
+  return bestFitDansOrdre([...items].sort((a, b) => b.longueur - a.longueur), poolDefaut, traitScie);
+}
+
+// Best-Fit sur un ordre de pièces imposé (l'ordre décroissant donne le BFD classique).
+function bestFitDansOrdre(
+  tri: Item[],
+  poolDefaut: PoolBarre,
+  traitScie: number,
+): BarreOptimisee[] {
   const barres: BarreOptimisee[] = [];
   for (const item of tri) {
     let place = false;
@@ -143,6 +151,43 @@ function optimiserFFD(
     }
   }
   return barres;
+}
+
+// Générateur pseudo-aléatoire à graine fixe : mêmes pièces => même résultat.
+function aleaGraine(graine: number): () => number {
+  let s = graine >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Multi-départs : rejoue le Best-Fit sur des ordres "presque décroissants"
+// (longueurs légèrement bruitées) et garde la solution avec le moins de barres.
+// Fonctionne quel que soit le nombre de longueurs distinctes.
+function optimiserMultiDeparts(
+  items: Item[],
+  poolDefaut: PoolBarre,
+  traitScie: number,
+  borneMin: number,
+  maxMs = 500,
+): BarreOptimisee[] {
+  let meilleur = optimiserFFD(items, poolDefaut, traitScie);
+  const alea = aleaGraine(items.length * 7919 + Math.round(poolDefaut.longueurUtile));
+  const fin = Date.now() + maxMs;
+  for (let essai = 0; Date.now() < fin && meilleur.length > borneMin; essai++) {
+    const bruit = 0.05 + 0.5 * alea();
+    const ordre = items
+      .map((it) => ({ it, cle: it.longueur * (1 + (alea() - 0.5) * bruit) }))
+      .sort((a, b) => b.cle - a.cle)
+      .map((o) => o.it);
+    const essaiBarres = bestFitDansOrdre(ordre, poolDefaut, traitScie);
+    if (essaiBarres.length < meilleur.length) meilleur = essaiBarres;
+  }
+  return meilleur;
 }
 
 // ------------------------------------------------------------------
@@ -198,6 +243,9 @@ function patternFill(p: number[], lengths: number[], kerf: number): number {
   return total;
 }
 
+// Garde-fou mémoire du branch-and-bound quand il y a beaucoup de longueurs distinctes.
+const MAX_PATRONS_NOEUD = 20_000;
+
 function solveCuttingStockBnB(
   lengths: number[], // triées desc
   demands: number[],
@@ -244,6 +292,11 @@ function solveCuttingStockBnB(
     if (barsSoFar + lb >= best) return;
 
     const patterns = enumPatterns(lengths, capacity, kerf, remaining, pivot);
+    if (patterns.length > MAX_PATRONS_NOEUD) {
+      // Trop de combinaisons pour ce noeud : on garde la meilleure solution connue.
+      exhaustive = false;
+      return;
+    }
     // Trier : patrons les plus remplis d'abord (resserre la borne supérieure)
     patterns.sort((a, b) => patternFill(b, lengths, kerf) - patternFill(a, lengths, kerf));
 
@@ -447,8 +500,14 @@ function optimiserMinBarres(
   poolDefaut: PoolBarre,
   traitScie: number,
 ): BarreOptimisee[] {
-  // 1) Solution de base (BFD) qui servira aussi de borne supérieure.
-  const ffd = optimiserFFD(items, poolDefaut, traitScie);
+  // 1) Solution de base : BFD + multi-départs, qui sert aussi de borne supérieure.
+  const capaciteBase = poolDefaut.longueurUtile;
+  const placables = items.filter((i) => i.longueur > 0 && i.longueur <= capaciteBase);
+  const k = Math.max(0, traitScie);
+  const borneSimple = Math.ceil(
+    (placables.reduce((s, i) => s + i.longueur, 0) + placables.length * k) / (capaciteBase + k) - 1e-9,
+  );
+  const ffd = optimiserMultiDeparts(items, poolDefaut, traitScie, borneSimple);
 
   // 2) Regrouper les items par longueur unique pour le solveur de patrons.
   //    On garde une file par longueur pour préserver les noms / pieceId.
@@ -467,24 +526,27 @@ function optimiserMinBarres(
   const capacity = poolDefaut.longueurUtile;
   const demands = uniqueLens.map((L) => byLen.get(L)!.length);
 
-  // Garde-fou : si trop de longueurs distinctes, on s'en tient au FFD/BFD pour
-  // éviter une explosion combinatoire (rare en pratique).
-  if (uniqueLens.length > 8) return ffd;
+  // Déjà à la borne minimale : impossible de faire mieux.
+  if (ffd.length <= borneSimple) return ffd;
 
-  // 2a) Solveur "subset-LP" : trouve souvent l'optimum exact très vite.
   let bestBars: number[][] = [];
   let bestCount = ffd.length;
 
-  const subset = solveCuttingStockSubset(
-    uniqueLens,
-    demands,
-    capacity,
-    traitScie,
-    ffd.length,
-  );
-  if (subset && subset.total < bestCount) {
-    bestBars = subset.bars;
-    bestCount = subset.total;
+  // 2a) Solveur "subset-LP" : exact et rapide, mais combinatoire. Réservé aux
+  //     cas à 8 longueurs distinctes ou moins ; au-delà, le branch-and-bound
+  //     (limité en temps) et le multi-départs prennent le relais.
+  if (uniqueLens.length <= 8) {
+    const subset = solveCuttingStockSubset(
+      uniqueLens,
+      demands,
+      capacity,
+      traitScie,
+      ffd.length,
+    );
+    if (subset && subset.total < bestCount) {
+      bestBars = subset.bars;
+      bestCount = subset.total;
+    }
   }
 
   // 2b) Branch-and-bound, avec la meilleure borne supérieure trouvée.
