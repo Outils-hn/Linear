@@ -1,5 +1,6 @@
 # Architecture rules
 - Keep optimization search and pattern feasibility unchanged; apply final-kerf material accounting only after placement to preserve the existing optimum engine.
+- SmartCut (modeUltra) has no cap on distinct lengths: a seeded, time-boxed Best-Fit multi-start gives the upper bound, the subset-LP solver runs only up to 8 distinct lengths, and branch-and-bound is bounded by time and patterns per node. Results must stay deterministic for the same input.
 - Carry actual start/end margins on each calculated bar, so screen and PDF cumulative dimensions share the same raw-end origin, including stock bars without margins.- Multi-profile optimization runs the unchanged engine once per profile (src/lib/multi-profil.ts) and merges results; screen and PDF iterate `resultat.profils` so each profile keeps its own bar length and subtotal.
 - Screen and PDF resolve the same palette from CSS theme tokens via visual-theme.ts; keep export colors centralized to prevent visual drift.
 - Result verification lives in src/lib/verification.ts and recomputes everything from the bars without calling the engine, so it can catch engine bugs independently.
