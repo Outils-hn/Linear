@@ -47,6 +47,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { lireMethodeCoupe, lignesReperes, METHODES_COUPE, RAPPEL_RUBAN, type MethodeCoupe } from "@/lib/cut-method";
 import { exporterPDF, grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
 import { verifierResultat } from "@/lib/verification";
+import { QualiteResultat } from "@/components/QualiteResultat";
 import { exporterProjetJson, exporterTousJson, lireJson } from "@/lib/backup";
 import { copierPourExcel, telechargerExcel } from "@/lib/export-excel";
 import {
@@ -1070,7 +1071,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <span className={"h-1.5 w-1.5 rounded-full " + (verification.ok ? "bg-success" : "bg-destructive")} />
                 {verification.ok ? "Vérification OK" : `Erreur de calcul (${verification.problemes.length})`}
               </div>}
-              {(resultat.optimal ? <div className="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/5 px-3 py-1 text-xs text-success"><span className="h-1.5 w-1.5 rounded-full bg-success" />Résultat optimal</div> : <div title={`Borne minimale théorique : ${fmt(resultat.borneMin)} barres`} className="inline-flex cursor-help items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />Meilleur résultat trouvé</div>)}
+              <QualiteResultat optimal={resultat.optimal} nbBarres={resultat.nbBarres} borneMin={resultat.borneMin} />
             </div>
             {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
             <div className="rounded-lg border-2 border-foreground/70 px-5 py-4">
