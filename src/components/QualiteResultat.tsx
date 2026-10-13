@@ -28,18 +28,18 @@ export function QualiteResultat({ optimal, nbBarres, borneMin }: { optimal: bool
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 space-y-2 text-sm leading-relaxed">
         <p className="text-xs text-muted-foreground">
-          <b className="text-foreground">Le minimum absolu</b> : même en mettant toutes les pièces bout à bout sans
+          <b className="text-foreground">Borne minimale</b> (le minimum absolu) : même en mettant toutes les pièces bout à bout sans
           aucune chute, il faudrait au moins <b className="text-foreground">{fmt(borneMin)} barre{s(borneMin)}</b>.
         </p>
         {optimal ? (
           <p>
-            <b>Résultat optimal</b> : le calcul utilise {fmt(nbBarres)} barre{s(nbBarres)}, soit exactement ce minimum.{" "}
+            <b>Résultat optimal</b> : le calcul utilise {fmt(nbBarres)} barre{s(nbBarres)}, soit exactement la borne minimale.{" "}
             <b>Impossible de faire mieux</b>, aucune autre découpe n'économise une barre.
           </p>
         ) : (
           <p>
             <b>Meilleur résultat trouvé</b> : le calcul a testé de nombreuses découpes et garde la meilleure,{" "}
-            {fmt(nbBarres)} barre{s(nbBarres)}. Le minimum absolu n'est pas atteint, souvent parce que les pièces ne
+            {fmt(nbBarres)} barre{s(nbBarres)}. La borne minimale n'est pas atteinte, souvent parce que les pièces ne
             tombent pas pile dans les barres. Le résultat est très probablement le meilleur possible, mais on ne
             peut pas le <b>prouver</b>.
           </p>
