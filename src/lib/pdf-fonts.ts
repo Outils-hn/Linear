@@ -1,6 +1,11 @@
 import type { jsPDF } from "jspdf";
-import sans from "@/assets/fonts/plex-sans-Regular.ttf.asset.json";
-import bold from "@/assets/fonts/plex-sans-SemiBold.ttf.asset.json";
+// Polices livrees avec l'application (IBM Plex Sans, licence OFL) : elles sont servies
+// par le meme site que l'appli, ou qu'elle soit hebergee, sans aucun service externe.
+import sansUrl from "@/assets/fonts/IBMPlexSans-Regular.ttf?url";
+import boldUrl from "@/assets/fonts/IBMPlexSans-SemiBold.ttf?url";
+
+const sans = { url: sansUrl, original_filename: "plex-sans-Regular.ttf" };
+const bold = { url: boldUrl, original_filename: "plex-sans-SemiBold.ttf" };
 
 const fontData = new Map<string, Promise<string>>();
 function loadFont(url: string) {

@@ -17,3 +17,5 @@
 - Material status is an optional existing-project field normalized and formatted by browser-safe material-status.ts for screen/PDF and JSON compatibility; it never participates in optimization or stock accounting.
 - Pieces longer than their profile's usable bar (default or assigned stock) are blocked before optimization by piecesTropLongues in multi-profil.ts, with the field highlighted and a plain-language message; the verification badge stays reserved for engine bugs.
 - The result badge ("Résultat optimal" / "Meilleur résultat trouvé") opens a plain-language popover (src/components/QualiteResultat.tsx) showing the absolute minimum (borneMin) and why the result is or is not provably optimal.
+- Pasted numbers are read by browser-safe src/lib/parse-nombre.ts: spaces and Swiss apostrophes (' ’ ‘) are thousands separators, comma or point is decimal; pasted lengths under LONGUEUR_SUSPECTE (10 mm) are rejected with a line message instead of being imported silently.
+- PDF fonts (IBM Plex Sans, OFL) are bundled in src/assets/fonts and loaded with Vite ?url imports, so PDF export works wherever the app is hosted, with no external asset service.

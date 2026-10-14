@@ -36,3 +36,4 @@
 - [x] Vérifier sauvegardes, trois statuts, écran/PDF et non-régression des calculs ; 28 tests passent, 12 pages PDF inspectées, titre isolé et doublon du mode sans chutes corrigés.
 - [x] Simplifier les cotes écran/PDF aux fins de séries avec priorité à droite ; regrouper les renvois et ajouter le rappel ruban, tableaux inchangés.
 - [x] Vérifier dessins dans les deux modes, inspecter les six pages PDF (aucun défaut visuel), 31 tests passent ; calculs et tableaux inchangés.
+- [x] Collage Excel : séparateurs de milliers suisses (' ’) et espaces, longueurs suspectes (< 10 mm) refusées ; polices du PDF livrées avec l’appli.

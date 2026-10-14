@@ -6,39 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Piece } from "@/lib/optimizer";
 import { formatNombre as fmt } from "@/lib/format-number";
+import { LONGUEUR_SUSPECTE, parseLongueur, parseNombre, parseQuantite } from "@/lib/parse-nombre";
+export { parseNombre, parseLongueur, parseQuantite } from "@/lib/parse-nombre";
 
 type ColRole = "repere" | "longueur" | "quantite" | "profil" | "barre" | "ignorer";
 const MAP_KEY = "linear:excel-colmap:v1";
 
-export function parseNombre(s: string): number {
-  const c = (s ?? "").replace(/[\s\u00A0\u202F]/g, "").replace(",", ".");
-  if (c === "" || !/^-?\d*\.?\d+$/.test(c)) return NaN;
-  return Number(c);
-}
-
-// Extrait le nombre d'une cellule en ignorant le texte autour (unités, espaces insécables)
-function extraireNombre(s: string): { valeur: number; unite: string } | null {
-  const c = (s ?? "").replace(/[\s\u00A0\u202F]/g, "").replace(",", ".");
-  const m = c.match(/(-?\d*\.?\d+)([a-zA-Z]*)/);
-  if (!m) return null;
-  return { valeur: Number(m[1]), unite: (m[2] ?? "").toLowerCase() };
-}
-
-export function parseLongueur(s: string): number {
-  const e = extraireNombre(s);
-  if (!e) return NaN;
-  if (e.unite === "cm") return e.valeur * 10;
-  if (e.unite === "m") return e.valeur * 1000;
-  if (e.unite === "" || e.unite === "mm") return e.valeur;
-  return NaN; // unité inconnue
-}
-
-export function parseQuantite(s: string): number {
-  const e = extraireNombre(s);
-  if (!e) return NaN;
-  if (e.unite === "" || /^(pces?|pcs?|u|unites?|x)$/.test(e.unite)) return e.valeur;
-  return NaN;
-}
 
 function splitRows(text: string): string[][] {
   return text
@@ -152,6 +125,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
       const Q = iQ >= 0 ? parseQuantite(r[iQ] ?? "") : 1;
       if (iB >= 0) { const b = parseLongueur(r[iB] ?? ""); if (!isNaN(b) && b > 0) barreVals.push(b); }
       if (iL < 0 || isNaN(L) || L <= 0) { erreurs.push({ ligne, msg: "longueur vide ou non numérique" }); continue; }
+      if (L < LONGUEUR_SUSPECTE) { erreurs.push({ ligne, msg: `longueur ${fmt(L)} mm suspecte (moins de ${LONGUEUR_SUSPECTE} mm), vérifiez la cellule` }); continue; }
       if (L > max) { erreurs.push({ ligne, msg: `longueur ${fmt(L)} > barre ${fmt(max)}${profil ? ` (${profil})` : ""}` }); continue; }
       if (isNaN(Q) || !Number.isInteger(Q) || Q <= 0) { erreurs.push({ ligne, msg: "quantité non entière ou nulle" }); continue; }
       valides.push({ nom, longueur: L, quantite: Q, ...(profil ? { profil } : {}) });
