@@ -2,16 +2,18 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import { getActiveProfile, listProjects, profilDemarrage, upsertProject, ensureProfile, PROFIL_PAR_DEFAUT } from "./local-store";
 
 // Faux localStorage pour tester sans navigateur
-const memoire = new Map<string, string>();
-(globalThis as unknown as { window: unknown }).window = {
-  localStorage: {
-    getItem: (k: string) => memoire.get(k) ?? null,
-    setItem: (k: string, v: string) => { memoire.set(k, v); },
-    removeItem: (k: string) => { memoire.delete(k); },
-  },
+const memoire = new Map();
+// window = l'objet global lui-meme (garde atob, etc. pour les autres tests du meme processus),
+// avec seulement localStorage remplace
+const g = globalThis;
+g.window = globalThis;
+g.localStorage = {
+  getItem: (k) => memoire.get(k) ?? null,
+  setItem: (k, v) => { memoire.set(k, v); },
+  removeItem: (k) => { memoire.delete(k); },
 };
 
-const projet = (chantier: string) => ({
+const projet = (chantier) => ({
   chantier, numero_tache: "", client: "", date_projet: "2026-10-16", longueur_barre: 6000,
   marge_securite: 0, trait_scie: 3, strategie: "min-barres", pieces: [], stock: [],
 });
