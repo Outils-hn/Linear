@@ -1,11 +1,11 @@
 import { describe, expect, test as it } from "bun:test";
 import {
   appKeys, backupFileName, buildBackup, daysSinceBackup, markBackupDone, needsReminder,
-  parseBackup, restoreBackup, type BackupConfig, type KeyValueStore,
+  parseBackup, restoreBackup,
 } from "./full-backup";
 
 /** Faux localStorage en memoire. */
-function memoryStore(init: Record<string, string> = {}): KeyValueStore {
+function memoryStore(init = {}) {
   const m = new Map(Object.entries(init));
   return {
     get length() { return m.size; },
@@ -16,8 +16,8 @@ function memoryStore(init: Record<string, string> = {}): KeyValueStore {
   };
 }
 
-const cfg: BackupConfig = { app: "test", prefixes: ["test:"], dateKey: "test:last-backup", reminderDays: 7 };
-const jour = (s: string) => new Date(`${s}T12:00:00Z`);
+const cfg = { app: "test", prefixes: ["test:"], dateKey: "test:last-backup", reminderDays: 7 };
+const jour = (s) => new Date(`${s}T12:00:00Z`);
 
 describe("sauvegarde complete", () => {
   it("ne prend que les cles de l'appli, sans la date de sauvegarde", () => {
