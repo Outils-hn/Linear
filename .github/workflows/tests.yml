@@ -17,6 +17,9 @@ jobs:
       - name: Installation
         run: bun install
       - name: Tests des calculs
-        run: bun test src
+        # En cas d'echec, les 60 dernieres lignes sont affichees en annotation
+        run: |
+          set -o pipefail
+          bun test src 2>&1 | tee test-output.txt || { echo "::error title=Tests::$(grep -v '^\s*$' test-output.txt | tail -60 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"; exit 1; }
       - name: Construction de l'appli
         run: bun run build
