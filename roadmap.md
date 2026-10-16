@@ -38,3 +38,4 @@
 - [x] Vérifier dessins dans les deux modes, inspecter les six pages PDF (aucun défaut visuel), 31 tests passent ; calculs et tableaux inchangés.
 - [x] Collage Excel : séparateurs de milliers suisses (' ’) et espaces, longueurs suspectes (< 10 mm) refusées ; polices du PDF livrées avec l’appli.
 - [x] Ménage : écran de profil et code Supabase inutilisés supprimés ; les projets des anciens profils sont regroupés automatiquement.
+- [x] Page principale découpée (logique dans un hook, une section = un composant) sans changer le fonctionnement ; stock renommé « Chutes et barres disponibles ».

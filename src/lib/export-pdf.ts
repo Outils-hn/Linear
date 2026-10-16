@@ -26,7 +26,7 @@ import { ajouterEtiquettes } from "./offcut-labels-pdf";
 
 const STRATEGIE_LABELS: Record<Strategie, string> = {
   "min-barres": "Minimum de barres",
-  "priorite-stock": "Priorité stock",
+  "priorite-stock": "Chutes disponibles d'abord",
 };
 
 export interface InfosProjet {
@@ -196,7 +196,7 @@ export async function exporterPDF(
     const stockValide = stock.filter((s) => s.longueur > 0 && s.quantite > 0);
     if (stockValide.length > 0) {
       doc.setFont("PlexSans", "bold");
-      doc.text("Stock initial disponible :", margin, y);
+      doc.text("Chutes et barres disponibles :", margin, y);
       y += 4;
       doc.setFont("PlexSans", "normal");
       for (const s of stockValide) {
@@ -206,7 +206,7 @@ export async function exporterPDF(
       }
       doc.setFont("PlexSans", "bold");
       doc.text(
-        `Utilisées : ${fmt(resultat.nbBarresStock)} barre(s) stock + ${fmt(resultat.nbBarresDefaut)} barre(s) de base`,
+        `Utilisées : ${fmt(resultat.nbBarresStock)} chute(s) ou barre(s) disponible(s) + ${fmt(resultat.nbBarresDefaut)} barre(s) de base`,
         margin,
         y,
       );
