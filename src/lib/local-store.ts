@@ -172,3 +172,39 @@ export function setActiveProfile(id: string | null) {
     // ignore
   }
 }
+
+export const PROFIL_PAR_DEFAUT = "Principal";
+
+/**
+ * Profil utilise au demarrage, sans ecran de choix :
+ * - le profil actif s'il existe encore ;
+ * - sinon celui qui a le plus de projets (les anciennes donnees restent visibles) ;
+ * - sinon un profil "Principal" cree automatiquement.
+ * Les projets des autres profils sont recopies dans le profil retenu (une seule fois,
+ * sans doublon d'identifiant) : plus aucun projet n'est cache derriere un autre profil.
+ * Les anciennes listes ne sont pas effacees, par securite.
+ */
+export function profilDemarrage(): string {
+  const profils = listProfiles();
+  const actif = getActiveProfile();
+  let id: string;
+  if (actif && profils.some((p) => p.id === actif)) id = actif;
+  else if (profils.length > 0) id = [...profils].sort((a, b) => b.projectCount - a.projectCount)[0].id;
+  else id = ensureProfile(PROFIL_PAR_DEFAUT);
+
+  const projets = listProjects(id);
+  const ids = new Set(projets.map((p) => p.id));
+  let ajoutes = 0;
+  for (const autre of profils) {
+    if (autre.id === id) continue;
+    for (const p of listProjects(autre.id)) {
+      if (ids.has(p.id)) continue;
+      projets.push(p);
+      ids.add(p.id);
+      ajoutes++;
+    }
+  }
+  if (ajoutes > 0) writeProjects(id, projets);
+  setActiveProfile(id);
+  return id;
+}

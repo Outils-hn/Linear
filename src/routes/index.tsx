@@ -10,7 +10,6 @@ import {
   Calculator,
   Loader2,
   Package,
-  LogOut,
   History,
   Save,
   FilePlus,
@@ -33,7 +32,6 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-import { AuthForm } from "@/components/AuthForm";
 import { POSITION_MARGE_LABELS, type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { BarreSchema, LegendeBarres } from "@/components/BarreSchema";
 import { optimiserParProfil, listeProfils, libelleProfil, longueurPourProfil, seuilPourProfil, piecesTropLongues, type ResultatMulti } from "@/lib/multi-profil";
@@ -51,9 +49,7 @@ import { QualiteResultat } from "@/components/QualiteResultat";
 import { exporterProjetJson, exporterTousJson, lireJson } from "@/lib/backup";
 import { copierPourExcel, telechargerExcel } from "@/lib/export-excel";
 import {
-  ensureProfile,
-  getActiveProfile,
-  setActiveProfile,
+  profilDemarrage,
   listProjects,
   upsertProject,
   deleteProject,
@@ -92,36 +88,23 @@ const DEFAULT_PIECES: Piece[] = [
 
 function Index() {
   const [profileId, setProfileId] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
 
+  // Plus d'ecran de profil : on ouvre directement le profil de travail
   useEffect(() => {
-    setProfileId(getActiveProfile());
-    setReady(true);
+    setProfileId(profilDemarrage());
   }, []);
 
-  const selectProfile = (name: string) => {
-    const id = ensureProfile(name);
-    setActiveProfile(id);
-    setProfileId(id);
-  };
-
-  const exitProfile = () => {
-    setActiveProfile(null);
-    setProfileId(null);
-  };
-
-  if (!ready) {
+  if (!profileId) {
     return (
       <div className="flex flex-1 items-center justify-center bg-background text-sm text-muted-foreground">
         Chargement…
       </div>
     );
   }
-  if (!profileId) return <AuthForm onSelect={selectProfile} />;
-  return <App profileId={profileId} onExitProfile={exitProfile} />;
+  return <App profileId={profileId} />;
 }
 
-function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: () => void }) {
+function App({ profileId }: { profileId: string }) {
   const [chantier, setChantier] = useState("");
   const [numeroTache, setNumeroTache] = useState("");
   const [client, setClient] = useState("");
@@ -502,7 +485,7 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
                 <SheetHeader>
                   <SheetTitle>Mes projets / Historique</SheetTitle>
                   <SheetDescription>
-                    Projets enregistrés localement sous le profil « {profileId} ». Cliquez pour recharger.
+                    Projets enregistrés dans ce navigateur. Cliquez pour recharger.
                   </SheetDescription>
                 </SheetHeader>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -600,16 +583,6 @@ function App({ profileId, onExitProfile }: { profileId: string; onExitProfile: (
               </Button>
             )}
             <ThemeToggle className="text-muted-foreground hover:text-foreground" />
-            <div className="ml-1 hidden text-xs text-muted-foreground sm:block">{profileId}</div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onExitProfile}
-              title="Changer de profil"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>
