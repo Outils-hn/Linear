@@ -3,12 +3,14 @@ import { getActiveProfile, listProjects, profilDemarrage, upsertProject, ensureP
 
 // Faux localStorage pour tester sans navigateur
 const memoire = new Map<string, string>();
-(globalThis as unknown as { window: unknown }).window = {
-  localStorage: {
-    getItem: (k: string) => memoire.get(k) ?? null,
-    setItem: (k: string, v: string) => { memoire.set(k, v); },
-    removeItem: (k: string) => { memoire.delete(k); },
-  },
+// window = l'objet global lui-meme (garde atob, etc. pour les autres tests du meme processus),
+// avec seulement localStorage remplace
+const g = globalThis as unknown as { window?: unknown; localStorage?: unknown };
+g.window = globalThis;
+g.localStorage = {
+  getItem: (k: string) => memoire.get(k) ?? null,
+  setItem: (k: string, v: string) => { memoire.set(k, v); },
+  removeItem: (k: string) => { memoire.delete(k); },
 };
 
 const projet = (chantier: string) => ({
