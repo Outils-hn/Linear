@@ -18,7 +18,7 @@ import type {
 } from "./optimizer";
 import { POSITION_MARGE_LABELS } from "./optimizer";
 import { hexColorForPieceId } from "./piece-colors";
-import { libelleProfil, nomProfil, type ResultatMulti } from "./multi-profil";
+import { libelleProfil, lignesCommande, longueurDuStock, nomProfil, texteStock, type ResultatMulti } from "./multi-profil";
 import { chutesAConserver } from "./chutes";
 import { lignesReperes, seuilsDesProfils, METHODES_COUPE, RAPPEL_RUBAN, type MethodeCoupe } from "./cut-method";
 import { optionsChutesDefaut, choixBarre, choixChute, chutesSelectionnees, type OptionsChutesPDF } from "./offcut-settings";
@@ -223,19 +223,14 @@ export async function exporterPDF(
   // Bandeau des informations essentielles — mise en valeur par taille et gras (lisible en noir et blanc).
   const statutMatiere = lireStatutMatiere(options.statutMatiere);
   const itemsBandeau: { label: string; valeur: string; sousTitre?: string }[] =
-    resultat.profils.length > 1
-      ? resultat.profils.map((rp) => ({
-          label: `${libelleStatutMatiere(statutMatiere)} · ${libelleProfil(rp.profil)} : `,
-          valeur: `${fmt(rp.resultat.nbBarres)} x ${fmt(rp.longueurBarre)} mm`,
-        }))
-      : [{
-          label: `${libelleStatutMatiere(statutMatiere)} : `,
-          valeur: `${fmt(resultat.nbBarres)} x ${fmt(resultat.profils[0]?.longueurBarre ?? longueurBarreBrute)} mm`,
-        }];
-  for (const item of itemsBandeau) item.sousTitre = detailsCommande(statutMatiere);
+    lignesCommande(resultat, longueurBarreBrute).map((l) => ({
+      label: `${libelleStatutMatiere(statutMatiere)}${l.profil ? ` · ${l.profil}` : ""} : `,
+      valeur: `${fmt(l.nb)} x ${fmt(l.longueurBarre)} mm`,
+      sousTitre: [detailsCommande(statutMatiere), texteStock(l.stock)].filter(Boolean).join(" — "),
+    }));
   const dernier = itemsBandeau.at(-1);
   if (dernier) dernier.sousTitre = [dernier.sousTitre, `${fmt(resultat.longueurTotale)} mm au total`].filter(Boolean).join(" — ");
-  itemsBandeau.push({ label: "Rendement : ", valeur: `${fmt(resultat.rendement, 1)} %`, sousTitre: `${fmt(resultat.longueurUtile)} mm de pièces / ${fmt(resultat.longueurTotale)} mm achetés` });
+  itemsBandeau.push({ label: "Rendement : ", valeur: `${fmt(resultat.rendement, 1)} %`, sousTitre: `${fmt(resultat.longueurUtile)} mm de pièces / ${fmt(resultat.longueurTotale)} mm ${resultat.nbBarresStock > 0 ? `de barres (dont ${fmt(longueurDuStock(resultat))} mm du stock)` : "achetés"}` });
   const largeurBandeau = pageWidth - 2 * margin - 10;
   const lignesBandeau = itemsBandeau.map(item => {
     doc.setFont("PlexSans", "bold"); doc.setFontSize(18);

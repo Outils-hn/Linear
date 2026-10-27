@@ -154,3 +154,35 @@ export function optimiserParProfil(
     optimal: res.every((p) => p.resultat.nbBarres <= p.borneMin),
   };
 }
+
+/** Une ligne du bandeau « Barres a commander » (ecran et PDF). */
+export interface LigneCommande {
+  /** Libelle du profile, ou null s'il n'y a qu'un profile. */
+  profil: string | null;
+  /** Barres neuves a commander (les barres et chutes du stock ne sont PAS comptees). */
+  nb: number;
+  longueurBarre: number;
+  /** Barres ou chutes prises dans le stock pour ce profile. */
+  stock: number;
+}
+
+/**
+ * Ce qu'il faut vraiment commander : seulement les barres de base.
+ * Les barres et chutes deja disponibles (strategie « priorite stock ») sont annoncees a part.
+ */
+export function lignesCommande(r: ResultatMulti, longueurBarreDefaut: number): LigneCommande[] {
+  if (r.profils.length > 1) {
+    return r.profils.map((rp) => ({
+      profil: libelleProfil(rp.profil), nb: rp.resultat.nbBarresDefaut, longueurBarre: rp.longueurBarre, stock: rp.resultat.nbBarresStock,
+    }));
+  }
+  return [{ profil: null, nb: r.nbBarresDefaut, longueurBarre: r.profils[0]?.longueurBarre ?? longueurBarreDefaut, stock: r.nbBarresStock }];
+}
+
+/** Longueur totale des barres et chutes prises dans le stock (mm). */
+export const longueurDuStock = (r: ResultatMulti) =>
+  r.barres.filter((b) => b.origine === "stock").reduce((s, b) => s + b.longueurBrute, 0);
+
+/** Texte « + 5 barres ou chutes prises dans le stock » (vide s'il n'y en a pas). */
+export const texteStock = (n: number) =>
+  n <= 0 ? "" : `+ ${n} ${n > 1 ? "barres ou chutes prises" : "barre ou chute prise"} dans le stock`;
