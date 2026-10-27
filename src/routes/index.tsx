@@ -55,7 +55,7 @@ function App({ profileId }: { profileId: string }) {
     <div className="rail-page flex-1">
       <EnTete app={app} />
 
-      <main className="mx-auto max-w-[1600px] space-y-6 px-6 py-8 lg:px-8">
+      <main className="mx-auto max-w-[1600px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <InfosProjet app={app} />
 
         <div className="grid gap-6 lg:grid-cols-3">

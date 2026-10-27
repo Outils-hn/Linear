@@ -12,7 +12,7 @@ export function EnTete({ app }: { app: LinearApp }) {
   const { chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet } = app;
   return (
     <header className="border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-4 lg:px-8">
+      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <LinearMark size={34} />
           <div className="leading-tight">
@@ -22,7 +22,7 @@ export function EnTete({ app }: { app: LinearApp }) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
