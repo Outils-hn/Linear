@@ -3,7 +3,7 @@ import { libelleStatutMatiere, detailsCommande } from "@/lib/material-status";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarreSchema, LegendeBarres } from "@/components/BarreSchema";
-import { libelleProfil } from "@/lib/multi-profil";
+import { libelleProfil, lignesCommande, longueurDuStock, texteStock } from "@/lib/multi-profil";
 import { lignesReperes, RAPPEL_RUBAN } from "@/lib/cut-method";
 import { grouperBarresIdentiques, grouperCoupesConsecutives, libelleGroupe } from "@/lib/export-pdf";
 import { QualiteResultat } from "@/components/QualiteResultat";
@@ -30,19 +30,17 @@ export function Resultats({ app }: { app: LinearApp }) {
       <div className="rounded-lg border-2 border-foreground/70 px-5 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-3">
           <div className="space-y-1.5">
-            {(resultat.profils.length > 1
-              ? resultat.profils.map((rp) => ({ profil: libelleProfil(rp.profil), nb: rp.resultat.nbBarres, lb: rp.longueurBarre }))
-              : [{ profil: null, nb: resultat.nbBarres, lb: resultat.profils[0]?.longueurBarre ?? longueurBarre }]
-            ).map((ligne, i) => (
+            {lignesCommande(resultat, longueurBarre).map((ligne, i) => (
               <div key={i}>
               <p className="flex flex-wrap items-baseline gap-x-2">
                 <span className="text-sm text-foreground">
                   {libelleStatutMatiere(statutMatiere)}{ligne.profil ? ` · ${ligne.profil}` : ""} :
                 </span>
                 <span className="font-display text-2xl font-bold tabular-nums text-primary">
-                  {fmt(ligne.nb)} x {fmt(ligne.lb)} mm
+                  {fmt(ligne.nb)} x {fmt(ligne.longueurBarre)} mm
                 </span>
               </p>
+              {ligne.stock > 0 && <p className="text-sm tabular-nums text-warning">{texteStock(ligne.stock)}</p>}
               {detailsCommande(statutMatiere) && <p className="mt-1 text-sm tabular-nums text-muted-foreground">— {detailsCommande(statutMatiere)}</p>}
               </div>
             ))}
@@ -53,7 +51,7 @@ export function Resultats({ app }: { app: LinearApp }) {
             <span className="text-sm text-foreground">Rendement :</span>
             <span className="font-display text-2xl font-bold tabular-nums text-primary">{fmt(resultat.rendement, 1)} %</span>
           </p>
-          <p className="text-xs tabular-nums text-muted-foreground">{fmt(resultat.longueurUtile)} mm de pièces / {fmt(resultat.longueurTotale)} mm achetés</p>
+          <p className="text-xs tabular-nums text-muted-foreground">{fmt(resultat.longueurUtile)} mm de pièces / {fmt(resultat.longueurTotale)} mm {resultat.nbBarresStock > 0 ? `de barres (dont ${fmt(longueurDuStock(resultat))} mm du stock)` : "achetés"}</p>
           </div>
         </div>
       </div>
