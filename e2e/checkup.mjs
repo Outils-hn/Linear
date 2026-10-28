@@ -68,11 +68,29 @@ try {
   await page.waitForTimeout(1500);
   verif("Relancer efface le bandeau", !(await page.getByText("Saisie modifiée depuis le calcul").isVisible()));
 
+  // Suppression d'une piece puis Annuler
+  const nAvant = await page.locator("tbody input[data-col='nom']").count();
+  await page.getByLabel("Supprimer Traverse").click(); await page.waitForTimeout(300);
+  await page.locator("[data-sonner-toast]", { hasText: "Traverse" }).getByRole("button", { name: "Annuler" }).click(); await page.waitForTimeout(300);
+  const noms = await page.locator("tbody input[data-col='nom']").evaluateAll((els) => els.map((e) => e.value));
+  verif("Suppression d'une piece : Annuler la remet a sa place", noms.length === nAvant && noms[1] === "Traverse", noms.join(", "));
+  // Import d'un fichier Excel (genere a la volee)
+  const XLSX = await import("xlsx");
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Repère", "Longueur", "Qté"], ["X1", 1200, 3], ["X2", 437.5, 2]]), "Pièces");
+  XLSX.writeFile(wb, `${OUT}/import-test.xlsx`);
+  await page.locator('input[type="file"][aria-label="Fichier Excel à importer"]').setInputFiles(`${OUT}/import-test.xlsx`); await page.waitForTimeout(800);
+  verif("Import .xlsx : fenetre de collage ouverte", await page.getByRole("dialog").getByText("Coller depuis Excel").isVisible());
+  await page.screenshot({ path: `${OUT}/check-import-xlsx.png` });
+  await page.getByRole("button", { name: "Ajouter à la liste" }).click(); await page.waitForTimeout(400);
+  verif("Import .xlsx : pieces ajoutees (437,5 mm)", (await page.getByLabel("Longueur de X2").inputValue()) === "437,5", await page.getByLabel("Longueur de X2").inputValue().catch(() => "absent"));
+  for (const n of ["X1", "X2"]) { await page.getByLabel(`Supprimer ${n}`).click(); await page.waitForTimeout(150); }
+
   // 4. Nouveau + Annuler
   await page.getByRole("button", { name: /^Nouveau$/ }).click();
   await page.waitForTimeout(300);
   verif("Nouveau : liste vide", (await page.locator("tbody input[data-col='nom']").count()) === 0);
-  await page.getByRole("button", { name: "Annuler" }).click();
+  await page.locator("[data-sonner-toast]", { hasText: "Nouveau projet" }).getByRole("button", { name: "Annuler" }).click();
   await page.waitForTimeout(400);
   verif("Annuler apres Nouveau : saisie retablie", (await page.locator("#chantier").inputValue()) === "Chantier démo");
 } catch (e) {
