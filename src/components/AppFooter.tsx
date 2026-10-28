@@ -36,29 +36,22 @@ export function AppFooter() {
       <BackupReminder cfg={BACKUP_CONFIG} />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader className="items-center text-center">
-            <div className="mb-1 flex items-center justify-center gap-2">
-              <LinearMark size={32} />
-              <DialogTitle className="text-xl tracking-tight">
-                {APP_NAME}
-              </DialogTitle>
-            </div>
-            <DialogDescription className="sr-only">
-              À propos de {APP_NAME}
-            </DialogDescription>
+        <DialogContent className="max-w-sm text-left">
+          {/* Meme presentation que Format : titre, logo + nom + version, auteur, description, date */}
+          <DialogHeader className="text-left">
+            <DialogTitle className="mb-1 text-sm font-semibold text-foreground">À propos</DialogTitle>
+            <DialogDescription className="sr-only">À propos de {APP_NAME}</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-2 text-center text-sm text-muted-foreground">
-            <p className="font-display text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground/80">
-              Version {APP_VERSION}
-            </p>
-            <p className="text-foreground">Conçu et développé par {APP_AUTHOR}</p>
-            <p className="leading-relaxed">{APP_TAGLINE}</p>
-            <p className="pt-1 text-xs text-muted-foreground/70">
-              Dernière mise à jour : {APP_UPDATED}
-            </p>
+          <div className="flex items-center gap-3">
+            <LinearMark size={40} className="shrink-0" />
+            <div>
+              <p className="text-lg font-bold leading-tight text-foreground">{APP_NAME}</p>
+              <p className="text-xs text-muted-foreground">Version {APP_VERSION}</p>
+            </div>
           </div>
+          <p className="text-sm text-foreground">Conçu et développé par {APP_AUTHOR}</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">{APP_TAGLINE}</p>
+          <p className="border-t border-border pt-3 text-xs text-muted-foreground">Dernière mise à jour : {APP_UPDATED}</p>
         </DialogContent>
       </Dialog>
     </footer>
