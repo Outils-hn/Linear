@@ -185,7 +185,21 @@ export function useLinearApp(profileId: string) {
   }, []);
   const addPiece = () =>
     setPieces((p) => [...p, { id: nextId(), nom: `Pièce ${p.length + 1}`, longueur: 1000, quantite: 1 }]);
-  const removePiece = useCallback((id: string) => setPieces((p) => p.filter((x) => x.id !== id)), []);
+  // Suppression d'une piece : « Annuler » pendant 10 s la remet a sa place
+  // (sur la liste du moment : ce qui a ete saisi entre-temps est garde)
+  const piecesRef = useRef(pieces);
+  piecesRef.current = pieces;
+  const removePiece = useCallback((id: string) => {
+    const avant = piecesRef.current;
+    const i = avant.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    const piece = avant[i]!;
+    setPieces((p) => p.filter((x) => x.id !== id));
+    toast.success(`Pièce « ${piece.nom || "sans repère"} » supprimée`, {
+      duration: 10000,
+      action: { label: "Annuler", onClick: () => setPieces((p) => (p.some((x) => x.id === id) ? p : [...p.slice(0, i), piece, ...p.slice(i)])) },
+    });
+  }, []);
   const updatePiece = useCallback((id: string, patch: Partial<Piece>) =>
     setPieces((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x))), []);
 

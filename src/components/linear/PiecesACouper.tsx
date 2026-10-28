@@ -1,8 +1,9 @@
-import { memo } from "react";
 import { formatNombre as fmt } from "@/lib/format-number";
 import type { Piece } from "@/lib/optimizer";
 import { naviguerClavier } from "@/lib/navigation-clavier";
-import { Plus, Trash2, Calculator, Loader2, ClipboardCopy, FileSpreadsheet } from "lucide-react";
+import { memo, useRef, useState } from "react";
+import { Plus, Trash2, Calculator, Loader2, ClipboardCopy, FileSpreadsheet, FileUp } from "lucide-react";
+import { EXTENSIONS_TABLEUR, estTableur, lireFichierTableur } from "@/lib/lire-fichier-tableur";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,8 +21,24 @@ const COLONNES = ["nom", "profil", "longueur", "quantite"] as const;
 /** Carte « Pieces a couper » (tableau des pieces, collage Excel). */
 export function PiecesACouper({ app }: { app: LinearApp }) {
   const { addPiece, chantier, dateProjet, enCours, erreursChamps, lancer, longueurBarre, longueursProfils, margeSecurite, marquerVide, numeroTache, pasteOpen, pasteText, perime, pieces, removePiece, resultat, setLongueurBarre, setPasteOpen, setPasteText, setPieces, updatePiece } = app;
+  // Fichier Excel importe (bouton ou glisser-deposer sur le cadre) : ouvre la fenetre de collage
+  const fichierRef = useRef<HTMLInputElement>(null);
+  const [survol, setSurvol] = useState(false);
+  const importerFichier = async (f: File | undefined) => {
+    if (!f) return;
+    if (!estTableur(f)) { toast.error("Fichier non reconnu : déposez un fichier Excel (.xlsx) ou .csv"); return; }
+    try {
+      const t = await lireFichierTableur(f);
+      if (!t.trim()) { toast.error("La première feuille du fichier est vide"); return; }
+      setPasteText(t); setPasteOpen(true);
+    } catch { toast.error("Lecture du fichier impossible"); }
+  };
   return (
-    <Card className="min-w-0">
+    <Card className={`relative min-w-0 ${survol ? "ring-2 ring-signal" : ""}`}
+      onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setSurvol(true); } }}
+      onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setSurvol(false); }}
+      onDrop={(e) => { e.preventDefault(); setSurvol(false); void importerFichier(e.dataTransfer.files[0]); }}>
+      {survol && <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/85 text-sm font-semibold">Déposez le fichier Excel pour importer ses pièces</div>}
       <CardHeader className="space-y-4">
         <div>
           <CardTitle>Pièces à couper</CardTitle>
@@ -31,6 +48,11 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
           <Button variant="outline" size="sm" onClick={() => { setPasteText(""); setPasteOpen(true); }}>
             Coller depuis Excel
           </Button>
+          <Button variant="outline" size="sm" className="gap-2" title="Ou glissez le fichier sur ce cadre" onClick={() => fichierRef.current?.click()}>
+            <FileUp className="h-4 w-4" /> Importer un fichier Excel
+          </Button>
+          <input ref={fichierRef} type="file" accept={EXTENSIONS_TABLEUR} hidden aria-label="Fichier Excel à importer"
+            onChange={(e) => { void importerFichier(e.target.files?.[0]); e.target.value = ""; }} />
           <Button
             variant="outline"
             size="sm"
