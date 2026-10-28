@@ -14,7 +14,7 @@ export function ChutesAConserver({ resultat, options, onChange }: { resultat: Re
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{options.mode === "instruction" ? "Chutes à conserver" : options.mode === "indicative" ? "Chutes conservables" : "Chutes réutilisables"}</CardTitle>
+        <CardTitle>{options.mode === "instruction" ? "Chutes à conserver" : options.mode === "indicative" ? "Chutes conservables" : "Chutes réutilisables"}</CardTitle>
         <CardDescription>Par profilé, de la plus longue à la plus courte</CardDescription>
       </CardHeader>
       <CardContent>

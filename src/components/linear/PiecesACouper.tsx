@@ -19,7 +19,7 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
     <Card className="min-w-0 lg:col-span-2">
       <CardHeader className="space-y-4">
         <div>
-          <CardTitle className="text-base">Pièces à couper</CardTitle>
+          <CardTitle>Pièces à couper</CardTitle>
           <CardDescription>Liste des pièces et quantités requises</CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -93,14 +93,25 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
               <TableHead className="w-[10%]"></TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          {/* Comme dans Excel : Tab passe a la cellule suivante (corbeille ignoree),
+              Entree descend a la meme colonne de la ligne suivante, Maj+Entree remonte. */}
+          <TableBody onKeyDown={(e) => {
+            const el = e.target as HTMLElement;
+            const col = el.dataset["col"];
+            if (e.key !== "Enter" || e.ctrlKey || e.metaKey || !col) return;
+            e.preventDefault();
+            const cells = [...e.currentTarget.querySelectorAll<HTMLInputElement>(`[data-col="${col}"]`)];
+            cells[cells.indexOf(el as HTMLInputElement) + (e.shiftKey ? -1 : 1)]?.focus();
+          }}>
             {pieces.map((p) => (
               <TableRow key={p.id}>
                 <TableCell>
-                  <Input value={p.nom} onChange={(e) => updatePiece(p.id, { nom: e.target.value })} />
+                  <Input data-col="nom" aria-label={`Repère de ${p.nom || "la pièce"}`} value={p.nom} onChange={(e) => updatePiece(p.id, { nom: e.target.value })} />
                 </TableCell>
                 <TableCell>
                   <Input
+                    data-col="profil"
+                    aria-label={`Profilé de ${p.nom || "la pièce"}`}
                     value={p.profil ?? ""}
                     className="normal-case"
                     placeholder="—"
@@ -109,6 +120,8 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
                 </TableCell>
                 <TableCell>
                   <ChampNombre
+                    data-col="longueur"
+                    aria-label={`Longueur de ${p.nom || "la pièce"}`}
                     value={p.longueur}
                     onChange={(n) => updatePiece(p.id, { longueur: n })}
                     onVide={(v) => marquerVide(`piece-${p.id}-longueur`, v)}
@@ -117,6 +130,8 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
                 </TableCell>
                 <TableCell>
                   <ChampNombre
+                    data-col="quantite"
+                    aria-label={`Quantité de ${p.nom || "la pièce"}`}
                     value={p.quantite}
                     onChange={(n) => updatePiece(p.id, { quantite: n })}
                     onVide={(v) => marquerVide(`piece-${p.id}-quantite`, v)}
@@ -128,6 +143,8 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
                     variant="ghost"
                     size="icon"
                     onClick={() => removePiece(p.id)}
+                    tabIndex={-1}
+                    aria-label={`Supprimer ${p.nom || "la pièce"}`}
                     className="text-muted-foreground hover:text-destructive lg:h-8 lg:w-8"
                   >
                     <Trash2 className="h-4 w-4" />

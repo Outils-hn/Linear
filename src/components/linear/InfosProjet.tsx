@@ -11,7 +11,7 @@ export function InfosProjet({ app }: { app: LinearApp }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Informations du projet</CardTitle>
+        <CardTitle>Informations du projet</CardTitle>
         <CardDescription>
           Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé.
         </CardDescription>

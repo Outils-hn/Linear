@@ -17,7 +17,7 @@ export function StockBarres({ app }: { app: LinearApp }) {
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-primary" />
           <div>
-            <CardTitle className="text-base">Chutes et barres disponibles</CardTitle>
+            <CardTitle>Chutes et barres disponibles</CardTitle>
             <CardDescription>
               Chutes gardées à l'atelier ou barres déjà là pour ce projet : elles sont utilisées en premier. La
               barre de base ({longueurBarre} mm) complète si elles ne suffisent pas.
