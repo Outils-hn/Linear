@@ -106,14 +106,15 @@
   --warning-foreground: #FFFFFF;
   --waste: #F1F1EF;
 
-  --piece-1: #DCE4F5;
-  --piece-2: #DDEBDD;
-  --piece-3: #E4DFF2;
-  --piece-4: #F2ECD8;
-  --piece-5: #F2DEE0;
-  --piece-6: #D8ECE8;
-  --piece-7: #E2E5EA;
-  --piece-8: #E6E9D6;
+  /* Couleurs des pieces dans les barres : celles d'origine, conservees volontairement */
+  --piece-1: #A8C5E8;
+  --piece-2: #B5D8B0;
+  --piece-3: #C9C0E8;
+  --piece-4: #E8D9B0;
+  --piece-5: #E8B8C0;
+  --piece-6: #A8DCD0;
+  --piece-7: #BAC9D8;
+  --piece-8: #D7DDBB;
 }
 
 /* ============ DARK ============ */
