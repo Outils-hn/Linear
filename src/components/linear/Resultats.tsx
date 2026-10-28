@@ -24,7 +24,7 @@ export function Resultats({ app }: { app: LinearApp }) {
       {perime && (
         <div role="status" className="sticky top-2 z-30 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-signal/40 bg-background px-4 py-3 text-sm shadow-sm">
           <span><b className="font-semibold">Saisie modifiée depuis le calcul.</b> Ces résultats ne correspondent plus à la liste : relancez avant d'exporter.</span>
-          <button type="button" onClick={lancer} className="rounded-full bg-primary px-4 py-1.5 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90">Relancer <span className="font-normal opacity-70">Ctrl + Entrée</span></button>
+          <button type="button" onClick={lancer} className="rounded-full bg-signal px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-signal/90">Relancer <span className="font-normal opacity-70">Ctrl + Entrée</span></button>
         </div>
       )}
       <div className={perime ? "space-y-6 opacity-40 transition-opacity" : "space-y-6"} aria-hidden={perime || undefined}>
