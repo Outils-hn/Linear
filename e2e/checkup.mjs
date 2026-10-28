@@ -100,9 +100,26 @@ try {
   await p3.waitForTimeout(800);
   // Pendant le calcul, la page doit continuer a repondre : on mesure le plus long blocage
   await p3.evaluate(() => { window.__bloc = 0; let t = performance.now(); window.__tic = setInterval(() => { const n = performance.now(); window.__bloc = Math.max(window.__bloc, n - t - 50); t = n; }, 50); });
+  const cdpCalc = await c3.newCDPSession(p3);
+  await cdpCalc.send("Profiler.enable"); await cdpCalc.send("Profiler.setSamplingInterval", { interval: 1000 }); await cdpCalc.send("Profiler.start");
   const t0 = Date.now();
   await p3.getByRole("button", { name: /Lancer l'optimisation/ }).click();
   await p3.waitForFunction(() => document.getElementById("resultats") && !document.body.innerText.includes("Optimisation en cours"), null, { timeout: 120000 });
+  await p3.waitForTimeout(500);
+  {
+    const { profile } = await cdpCalc.send("Profiler.stop");
+    const dt = new Map(); profile.samples.forEach((id, i) => dt.set(id, (dt.get(id) ?? 0) + (profile.timeDeltas[i] ?? 0)));
+    // Temps cumule par fonction de l'appli (fichiers src), enfants compris
+    const parent = new Map(); for (const n of profile.nodes) for (const c of n.children ?? []) parent.set(c, n.id);
+    const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+    const total = new Map();
+    for (const [id, t] of dt) {
+      const vus = new Set(); let cur = id;
+      while (cur != null) { const n = byId.get(cur); const u = n.callFrame.url; if (/\/src\//.test(u)) { const k = `${n.callFrame.functionName || "(anonyme)"} ${u.split("/src/").pop().split("?")[0]}:${n.callFrame.lineNumber}`; if (!vus.has(k)) { vus.add(k); total.set(k, (total.get(k) ?? 0) + t / 1000); } } cur = parent.get(cur); }
+    }
+    const top = [...total.entries()].sort((x, y) => y[1] - x[1]).slice(0, 10).map(([k, v]) => `${k} ${Math.round(v)}ms`);
+    verif("Diagnostic : profil du calcul et de l'affichage", true, top.join(" | "));
+  }
   const dureeCalcul = Date.now() - t0;
   const bloc = await p3.evaluate(() => { clearInterval(window.__tic); return Math.round(window.__bloc); });
   verif("6 000 pieces : calcul termine", dureeCalcul < 60000, `${dureeCalcul} ms`);
