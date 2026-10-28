@@ -13,7 +13,7 @@ for (const [name, engine] of [["chromium", chromium], ["webkit", webkit]]) {
   await page.getByLabel(/^Repère de /).first().click();
   const seq = [];
   for (let i = 0; i < 6; i++) { seq.push(await label()); await page.keyboard.press("Tab"); await page.waitForTimeout(150); }
-  await page.getByLabel(/^Longueur de /).first().click();
+  await page.getByLabel("Longueur de Montant A").click();
   await page.keyboard.press("Enter");
   seq.push("[Entree] " + await label());
   lines.push(`${name}: ${seq.join(" -> ")}`);
