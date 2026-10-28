@@ -1,48 +1,118 @@
-// Check-up automatique de Linear dans un vrai navigateur : memoire des reglages, theme,
-// curseur sur le champ en erreur, sauvegarde complete. Resultat : checkup.txt (OK / ECHEC).
+// Check-up automatique de Linear dans un vrai navigateur : enregistrement du projet en cours,
+// saisies refusees, resultat perime, annulation de « Nouveau », memoire des reglages, theme,
+// curseur sur le champ en erreur, sauvegarde complete.
+// Resultat : checkup.txt (OK / ECHEC) + quelques captures. Donnees fictives uniquement.
 import { chromium } from "playwright";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const BASE = process.env.APP_URL ?? "http://127.0.0.1:8080/";
 const OUT = process.argv[2] ?? "captures";
+mkdirSync(OUT, { recursive: true });
 const lignes = [];
 const verif = (nom, ok, detail = "") => lignes.push(`${ok ? "OK    " : "ECHEC "} ${nom}${detail ? ` (${detail})` : ""}`);
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
-page.on("dialog", (d) => d.accept());
+page.on("pageerror", (e) => verif("Aucune erreur JavaScript", false, e.message));
+const toasts = async () => (await page.locator("[data-sonner-toast]").allInnerTexts()).join(" | ").replace(/\s+/g, " ");
+const coller = async (tsv) => {
+  await page.getByRole("button", { name: "Coller depuis Excel" }).click();
+  await page.locator("textarea").fill(tsv);
+  await page.waitForTimeout(300);
+  await page.getByRole("button", { name: "Remplacer la liste" }).click();
+  await page.waitForTimeout(400);
+};
+const lancer = async () => { await page.keyboard.press("Control+Enter"); await page.waitForTimeout(1500); };
+
 try {
   await page.goto(BASE, { waitUntil: "networkidle" });
-  // 1. Reglages retenus apres rechargement
-  await page.getByRole("button", { name: /Modifier/ }).first().click();
-  await page.locator("#ts").fill("4"); await page.waitForTimeout(300);
+  verif("Premier lancement : aucune piece d'exemple", (await page.locator("tbody input[data-col='nom']").count()) === 0);
+  await page.screenshot({ path: `${OUT}/check-01-premier-lancement.png` });
+
+  // 1. Projet en cours garde apres rechargement
+  await page.locator("#chantier").fill("Chantier démo");
+  await coller("Montant\t2450\t12\nTraverse\t1180\t18");
+  await page.waitForTimeout(400);
   await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(600);
+  verif("Rechargement : chantier garde", (await page.locator("#chantier").inputValue()) === "Chantier démo");
+  verif("Rechargement : pieces gardees", (await page.locator("tbody input[data-col='nom']").count()) === 2);
+  await page.getByRole("button", { name: /Ajouter/ }).click();
+  const ids = await page.locator("tbody input[data-col='nom']").evaluateAll((els) => els.map((e) => e.value));
+  verif("Piece ajoutee apres rechargement : ligne distincte", ids.length === 3, ids.join(", "));
+  await page.getByLabel(/^Supprimer Pièce/).click();
+
+  // 2. Saisies refusees
   await page.getByRole("button", { name: /Modifier/ }).first().click();
-  const ts = await page.locator("#ts").inputValue();
+  await page.locator("#ms").fill("-500");
+  await lancer();
+  verif("Marge negative refusee", /négative/.test(await toasts()) && (await page.locator("#resultats").count()) === 0, await toasts());
+  await page.locator("#ms").fill("100");
+  await page.getByLabel("Quantité de Montant").fill("2.5");
+  await lancer();
+  verif("Quantite decimale refusee", /entier/.test(await toasts()), await toasts());
+  await page.screenshot({ path: `${OUT}/check-02-saisie-refusee.png` });
+  await page.getByLabel("Quantité de Montant").fill("12");
+
+  // 3. Resultat perime
+  await lancer();
+  verif("Calcul affiche", await page.locator("#resultats").isVisible());
+  verif("Bouton PDF actif apres calcul", await page.getByRole("button", { name: /PDF atelier/ }).isEnabled());
+  await page.getByLabel("Quantité de Montant").fill("40");
+  await page.waitForTimeout(400);
+  verif("Bandeau resultat perime", await page.getByText("Saisie modifiée depuis le calcul").isVisible());
+  verif("PDF bloque si perime", await page.getByRole("button", { name: /PDF atelier/ }).isDisabled());
+  await page.getByText("Saisie modifiée depuis le calcul").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${OUT}/check-03-resultat-perime.png` });
+  await page.getByRole("button", { name: /^Relancer/ }).click();
+  await page.waitForTimeout(1500);
+  verif("Relancer efface le bandeau", !(await page.getByText("Saisie modifiée depuis le calcul").isVisible()));
+
+  // 4. Nouveau + Annuler
+  await page.getByRole("button", { name: /^Nouveau$/ }).click();
+  await page.waitForTimeout(300);
+  verif("Nouveau : liste vide", (await page.locator("tbody input[data-col='nom']").count()) === 0);
+  await page.getByRole("button", { name: "Annuler" }).click();
+  await page.waitForTimeout(400);
+  verif("Annuler apres Nouveau : saisie retablie", (await page.locator("#chantier").inputValue()) === "Chantier démo");
+} catch (e) {
+  verif("Parcours complet", false, e.message.split("\n")[0]);
+}
+
+// Reglages, theme, champ vide et sauvegarde complete (navigateur neuf)
+try {
+  const c2 = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+  const p2 = await c2.newPage();
+  p2.on("dialog", (d) => d.accept());
+  await p2.goto(BASE, { waitUntil: "networkidle" });
+  await p2.getByRole("button", { name: /Modifier/ }).first().click();
+  await p2.locator("#ts").fill("4"); await p2.waitForTimeout(300);
+  await p2.reload({ waitUntil: "networkidle" });
+  await p2.getByRole("button", { name: /Modifier/ }).first().click();
+  const ts = await p2.locator("#ts").inputValue();
   verif("Trait de scie retenu apres rechargement", ts === "4", `lu : ${ts}`);
-  await page.getByRole("button", { name: /Replier/ }).first().click();
-  // 2. Nouveau projet garde les reglages
-  await page.getByRole("button", { name: /^Nouveau$/ }).first().click(); await page.waitForTimeout(400);
-  const resume = await page.getByText(/trait de scie/).first().textContent();
+  await p2.getByRole("button", { name: /Replier/ }).first().click();
+  await p2.getByRole("button", { name: /^Nouveau$/ }).first().click(); await p2.waitForTimeout(400);
+  const resume = await p2.getByText(/trait de scie/).first().textContent();
   verif("Nouveau projet garde les reglages", /trait de scie 4 mm/.test(resume ?? ""), resume ?? "");
-  // 3. Champ vide : curseur dessus au lancement
-  const longueur = page.getByLabel(/^Longueur de /).first();
-  await longueur.fill(""); await page.waitForTimeout(200);
-  await page.getByRole("button", { name: /Lancer l'optimisation/ }).click(); await page.waitForTimeout(600);
-  const actif = await page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? "");
+  // Champ vide : curseur dessus au lancement (le nouveau projet est vide : on ajoute une piece)
+  await p2.getByRole("button", { name: /Ajouter/ }).click(); await p2.waitForTimeout(200);
+  const longueur = p2.getByLabel(/^Longueur de /).first();
+  await longueur.fill(""); await p2.waitForTimeout(200);
+  await p2.getByRole("button", { name: /Lancer l'optimisation/ }).click(); await p2.waitForTimeout(600);
+  const actif = await p2.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? "");
   verif("Champ vide : le curseur va dessus", /^Longueur de /.test(actif), actif);
   await longueur.fill("1000");
-  // 4. Theme sombre retenu
-  await page.getByRole("button", { name: "Basculer le thème" }).click(); await page.waitForTimeout(200);
-  await page.reload({ waitUntil: "networkidle" });
-  verif("Mode sombre retenu apres rechargement", await page.evaluate(() => document.documentElement.classList.contains("dark")));
-  // 5. Sauvegarde complete : fichier telecharge et lisible
-  await page.getByRole("button", { name: /^Sauvegarde$/ }).click();
-  const [dl] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: /Télécharger la sauvegarde/ }).click()]);
+  await p2.getByRole("button", { name: "Basculer le thème" }).click(); await p2.waitForTimeout(200);
+  await p2.reload({ waitUntil: "networkidle" });
+  verif("Mode sombre retenu apres rechargement", await p2.evaluate(() => document.documentElement.classList.contains("dark")));
+  await p2.getByRole("button", { name: /^Sauvegarde$/ }).click();
+  const [dl] = await Promise.all([p2.waitForEvent("download"), p2.getByRole("button", { name: /Télécharger la sauvegarde/ }).click()]);
   const chemin = `${OUT}/sauvegarde-test.json`; await dl.saveAs(chemin);
   const json = JSON.parse(readFileSync(chemin, "utf8"));
-  verif("Sauvegarde complete : reglages et theme inclus", json.app === "linear" && "linear:reglages:v1" in json.data && "linear-theme" in json.data, Object.keys(json.data).join(", "));
-} catch (e) { verif("Deroulement du check-up", false, e.message.split("\n")[0]); }
+  verif("Sauvegarde complete : reglages, theme et projet en cours inclus", json.app === "linear" && "linear:reglages:v1" in json.data && "linear-theme" in json.data && Object.keys(json.data).some((k) => k.startsWith("linear:courant:v1:")), Object.keys(json.data).join(", "));
+  await c2.close();
+} catch (e) { verif("Deroulement du check-up reglages", false, e.message.split("\n")[0]); }
 await browser.close();
 writeFileSync(`${OUT}/checkup.txt`, lignes.join("\n"));
 console.log(lignes.join("\n"));

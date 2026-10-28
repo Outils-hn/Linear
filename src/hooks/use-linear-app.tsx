@@ -13,18 +13,25 @@ import { exporterPDF } from "@/lib/export-pdf";
 import { verifierResultat } from "@/lib/verification";
 import { lireJson } from "@/lib/backup";
 import { listProjects, upsertProject, deleteProject, type LocalProject } from "@/lib/local-store";
+import { raisonRefus, type TypeChamp } from "@/lib/controle-saisie";
+import { CLE_PROJET_COURANT, empreinteCalcul, lireProjetCourant, type ProjetCourant } from "@/lib/projet-courant";
 
 
 export let idCounter = 0;
 export const nextId = () => `p${++idCounter}`;
 export let stockCounter = 0;
 export const nextStockId = () => `s${++stockCounter}`;
+/** Apres un rechargement ou l'ouverture d'un projet : les compteurs repartent apres les
+ *  identifiants deja presents (sinon une piece ajoutee reprend l'id « p1 » d'une piece existante). */
+export function avancerCompteurs(pieces: { id: string }[], stock: { id: string }[]) {
+  const max = (ids: string[], prefixe: string) =>
+    ids.reduce((m, id) => (id.startsWith(prefixe) && /^\d+$/.test(id.slice(1)) ? Math.max(m, Number(id.slice(1))) : m), 0);
+  idCounter = Math.max(idCounter, max(pieces.map((p) => p.id), "p"));
+  stockCounter = Math.max(stockCounter, max(stock.map((x) => x.id), "s"));
+}
 
-export const DEFAULT_PIECES: Piece[] = [
-  { id: "p-default-1", nom: "Montant A", longueur: 1200, quantite: 4 },
-  { id: "p-default-2", nom: "Traverse B", longueur: 800, quantite: 6 },
-  { id: "p-default-3", nom: "Renfort C", longueur: 450, quantite: 8 },
-];
+// Plus de pieces d'exemple au demarrage : on les confondait avec une vraie liste.
+export const DEFAULT_PIECES: Piece[] = [];
 
 
 /**
@@ -48,6 +55,8 @@ export function useLinearApp(profileId: string) {
   const [stock, setStock] = useState<StockBarre[]>([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
   const [resultat, setResultat] = useState<ResultatMulti | null>(null);
+  // Empreinte des donnees au moment du calcul : si la saisie change ensuite, le resultat est perime.
+  const [empreinteResultat, setEmpreinteResultat] = useState<string | null>(null);
   const matiere = resultat ? bilanMatiere(resultat) : null;
   const [longueursProfils, setLongueursProfils] = useState<Record<string, number>>({});
   const [seuilsProfils, setSeuilsProfils] = useState<Record<string, number>>({});
@@ -86,9 +95,48 @@ export function useLinearApp(profileId: string) {
   };
 
   const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
+  const empreinteActuelle = empreinteCalcul({ pieces, stock, longueurBarre, margeSecurite, traitScie, strategie, longueursProfils, seuilsProfils, seuilChute });
+  const perime = !!resultat && empreinteResultat !== null && empreinteResultat !== empreinteActuelle;
   const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
 
   const refreshProjects = () => setProjects(listProjects(profileId));
+
+  // Projet en cours : photo de la saisie, enregistree a chaque modification et relue au lancement.
+  const photo = (): ProjetCourant => ({
+    projetId: currentProjectId, chantier, numeroTache, client, dateProjet,
+    pieces, stock, longueursProfils, seuilsProfils, chutesPDF, statutMatiere,
+  });
+  const appliquerPhoto = (pc: ProjetCourant) => {
+    setCurrentProjectId(pc.projetId);
+    setChantier(pc.chantier);
+    setNumeroTache(pc.numeroTache);
+    setClient(pc.client);
+    if (pc.dateProjet) setDateProjet(pc.dateProjet);
+    avancerCompteurs(pc.pieces, pc.stock);
+    setPieces(pc.pieces);
+    setStock(pc.stock);
+    setLongueursProfils(pc.longueursProfils);
+    setSeuilsProfils(pc.seuilsProfils);
+    if (pc.chutesPDF !== undefined) setChutesPDF(lireOptionsChutes(pc.chutesPDF));
+    if (pc.statutMatiere !== undefined) setStatutMatiere(lireStatutMatiere(pc.statutMatiere));
+    setResultat(null);
+    setChampsVides(new Set());
+    setErreursChamps(new Set());
+  };
+  const [courantRelu, setCourantRelu] = useState(false);
+  useEffect(() => {
+    try {
+      const pc = lireProjetCourant(window.localStorage.getItem(CLE_PROJET_COURANT(profileId)));
+      if (pc) appliquerPhoto(pc);
+    } catch { /* stockage bloque */ }
+    setCourantRelu(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId]);
+  useEffect(() => {
+    if (!courantRelu) return;
+    try { window.localStorage.setItem(CLE_PROJET_COURANT(profileId), JSON.stringify(photo())); } catch { /* stockage plein ou bloque */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courantRelu, profileId, currentProjectId, chantier, numeroTache, client, dateProjet, pieces, stock, longueursProfils, seuilsProfils, chutesPDF, statutMatiere]);
 
   useEffect(() => {
     refreshProjects();
@@ -140,8 +188,12 @@ export function useLinearApp(profileId: string) {
     const ts = overrides?.traitScie ?? traitScie;
     const st = overrides?.strategie ?? strategie;
     setVerifCtx({ pieces: p, traitScie: ts });
-    const lu = Math.max(0, lb - ms);
-    void lu;
+    setEmpreinteResultat(empreinteCalcul({
+      pieces: p, stock: s, longueurBarre: lb, margeSecurite: ms, traitScie: ts, strategie: st,
+      longueursProfils: overrides?.longueursProfils ?? longueursProfils,
+      seuilsProfils: overrides?.seuilsProfils ?? seuilsProfils,
+      seuilChute: overrides?.seuilChute ?? seuilChute,
+    }));
     return optimiserParProfil(p, overrides?.longueursProfils ?? longueursProfils, {
       longueurBarreDefaut: lb,
       margeSecurite: ms,
@@ -163,38 +215,40 @@ export function useLinearApp(profileId: string) {
 
   const lancer = () => {
     if (enCours) return;
-    // Bloque le lancement si un champ numérique requis est vide ou à 0.
+    // Bloque le lancement si un champ est vide ou hors des valeurs possibles (voir lib/controle-saisie) :
+    // marge ou trait de scie negatifs, quantite non entiere, longueur sous 1 mm...
     const erreurs = new Set<string>();
     const problemes: string[] = [];
-    const requis = (cle: string, valeur: number, zeroInterdit: boolean, libelle: string) => {
-      if (champsVides.has(cle) || (zeroInterdit ? valeur <= 0 : false)) {
+    const requis = (cle: string, valeur: number, type: TypeChamp, libelle: string) => {
+      const raison = raisonRefus(type, valeur, champsVides.has(cle));
+      if (raison) {
         erreurs.add(cle);
-        if (problemes.length < 6) problemes.push(libelle);
+        if (problemes.length < 4) problemes.push(`${libelle} ${raison}`);
       }
     };
-    requis("lb", longueurBarre, true, "Longueur de la barre de base");
-    requis("ms", margeSecurite, false, "Marge de sécurité");
-    requis("ts", traitScie, false, "Épaisseur du trait de scie");
-    requis("seuil-chute", seuilChute, false, "Chute mini à conserver");
+    requis("lb", longueurBarre, "longueur", "La longueur de la barre de base");
+    requis("ms", margeSecurite, "marge", "La marge de sécurité");
+    requis("ts", traitScie, "trait", "L'épaisseur du trait de scie");
+    requis("seuil-chute", seuilChute, "seuil", "La chute mini à conserver");
     for (const pr of profilsNommes) {
-      requis(`longueur-profile-${pr}`, longueursProfils[pr] ?? longueurBarre, true, `Longueur de barre du profilé « ${pr} »`);
-      requis(`seuil-profile-${pr}`, seuilPourProfil(pr, seuilsProfils, seuilChute), false, `Chute mini du profilé « ${pr} »`);
+      requis(`longueur-profile-${pr}`, longueursProfils[pr] ?? longueurBarre, "longueur", `La longueur de barre du profilé « ${pr} »`);
+      requis(`seuil-profile-${pr}`, seuilPourProfil(pr, seuilsProfils, seuilChute), "seuil", `La chute mini du profilé « ${pr} »`);
     }
     for (const p of pieces) {
-      requis(`piece-${p.id}-longueur`, p.longueur, true, `Longueur de la pièce « ${p.nom || "sans repère"} »`);
-      requis(`piece-${p.id}-quantite`, p.quantite, true, `Quantité de la pièce « ${p.nom || "sans repère"} »`);
+      requis(`piece-${p.id}-longueur`, p.longueur, "longueur", `La longueur de « ${p.nom || "sans repère"} »`);
+      requis(`piece-${p.id}-quantite`, p.quantite, "quantite", `La quantité de « ${p.nom || "sans repère"} »`);
     }
     if (strategie === "priorite-stock") {
       for (const s of stock) {
-        requis(`stock-${s.id}-longueur`, s.longueur, true, "Longueur d'une barre du stock");
-        requis(`stock-${s.id}-quantite`, s.quantite, true, "Quantité d'une barre du stock");
+        requis(`stock-${s.id}-longueur`, s.longueur, "longueur", "La longueur d'une chute disponible");
+        requis(`stock-${s.id}-quantite`, s.quantite, "quantite", "La quantité d'une chute disponible");
       }
     }
     if (erreurs.size > 0) {
       setErreursChamps(erreurs);
       focusPremiereErreur();
       toast.error(
-        `Optimisation impossible : ${problemes.join(", ")}${erreurs.size > problemes.length ? "…" : ""} ${erreurs.size > 1 ? "sont vides ou à 0" : "est vide ou à 0"}.`,
+        `Optimisation impossible : ${problemes.join(" ; ")}${erreurs.size > problemes.length ? ` ; et ${erreurs.size - problemes.length} autre(s) champ(s) en rouge` : ""}.`,
       );
       return;
     }
@@ -233,6 +287,14 @@ export function useLinearApp(profileId: string) {
 
   const exporter = (force = false) => {
     if (!resultat) return;
+    if (perime) {
+      toast.error("La saisie a changé depuis le calcul : relancez l'optimisation avant d'exporter.");
+      return;
+    }
+    if (verification && !verification.ok) {
+      toast.error("PDF bloqué : la vérification a trouvé des erreurs dans le calcul.");
+      return;
+    }
     if (!force && (!chantier.trim() || !numeroTache.trim())) {
       setPdfWarnOpen(true);
       return;
@@ -256,6 +318,8 @@ export function useLinearApp(profileId: string) {
   };
 
   const nouveauProjet = () => {
+    // Saisie precedente gardee 10 s : « Annuler » la remet telle quelle
+    const avant = photo();
     setCurrentProjectId(null);
     setChantier("");
     setNumeroTache("");
@@ -265,9 +329,14 @@ export function useLinearApp(profileId: string) {
     // sont gardes d'un projet a l'autre : seules les donnees du chantier repartent de zero.
     setStatutMatiere(lireStatutMatiere());
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
-    setPieces([{ id: nextId(), nom: "Pièce 1", longueur: 1000, quantite: 1 }]);
+    setPieces([]);
     setResultat(null);
-    toast.success("Nouveau projet prêt");
+    setChampsVides(new Set());
+    setErreursChamps(new Set());
+    toast.success("Nouveau projet prêt", {
+      duration: 10000,
+      action: { label: "Annuler", onClick: () => { appliquerPhoto(avant); toast.success("Saisie précédente rétablie"); } },
+    });
   };
 
   const ouvrirSauvegarde = () => {
@@ -333,6 +402,7 @@ export function useLinearApp(profileId: string) {
     setStrategie(st);
     const loadedPieces = Array.isArray(proj.pieces) ? (proj.pieces as Piece[]) : [];
     const loadedStock = Array.isArray(proj.stock) ? (proj.stock as StockBarre[]) : [];
+    avancerCompteurs(loadedPieces, loadedStock);
     setPieces(loadedPieces);
     setStock(loadedStock);
     const lp = proj.longueurs_profils ?? {};
@@ -389,10 +459,22 @@ export function useLinearApp(profileId: string) {
   };
 
   const supprimerProjet = (id: string) => {
+    const supprime = listProjects(profileId).find((p) => p.id === id);
     deleteProject(profileId, id);
     if (currentProjectId === id) setCurrentProjectId(null);
     refreshProjects();
-    toast.success("Projet supprimé");
+    toast.success(`Projet « ${supprime?.chantier || "sans nom"} » supprimé`, {
+      duration: 10000,
+      action: supprime ? {
+        label: "Annuler",
+        onClick: () => {
+          // Remis tel quel, avec son identifiant (upsert recree un projet absent sous cet id)
+          upsertProject(profileId, supprime);
+          refreshProjects();
+          toast.success("Projet restauré");
+        },
+      } : undefined,
+    });
   };
 
 
@@ -424,6 +506,7 @@ export function useLinearApp(profileId: string) {
     setPieces,
     resultat,
     setResultat,
+    perime,
     matiere,
     longueursProfils,
     setLongueursProfils,

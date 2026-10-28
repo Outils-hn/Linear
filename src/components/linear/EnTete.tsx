@@ -10,7 +10,8 @@ import type { LinearApp } from "@/hooks/use-linear-app";
 
 /** En-tete : titre, projets enregistres, import/export, sauvegarde, PDF. */
 export function EnTete({ app }: { app: LinearApp }) {
-  const { chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet } = app;
+  const { chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, perime, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet, verification } = app;
+  const pdfBloque = perime ? "Relancez d'abord l'optimisation : la saisie a changé" : verification && !verification.ok ? "PDF bloqué : la vérification a trouvé des erreurs" : "";
   return (
     <header className="border-b border-border bg-background">
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
@@ -92,6 +93,8 @@ export function EnTete({ app }: { app: LinearApp }) {
                     <Button
                       variant="ghost"
                       size="icon"
+                      title="Supprimer ce projet"
+                      aria-label={`Supprimer le projet ${p.chantier || "sans nom"}`}
                       onClick={() => supprimerProjet(p.id)}
                       className="text-muted-foreground hover:text-destructive"
                     >
@@ -123,7 +126,7 @@ export function EnTete({ app }: { app: LinearApp }) {
             <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Sauvegarder"}
           </Button>
           {resultat && (
-            <Button onClick={() => exporter()} size="sm" className="gap-2">
+            <Button onClick={() => exporter()} size="sm" className="gap-2" disabled={!!pdfBloque} title={pdfBloque || undefined}>
               <FileDown className="h-4 w-4" /> PDF atelier
             </Button>
           )}

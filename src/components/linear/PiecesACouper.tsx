@@ -17,7 +17,7 @@ const COLONNES = ["nom", "profil", "longueur", "quantite"] as const;
 
 /** Carte « Pieces a couper » (tableau des pieces, collage Excel). */
 export function PiecesACouper({ app }: { app: LinearApp }) {
-  const { addPiece, chantier, dateProjet, enCours, erreursChamps, lancer, longueurBarre, longueursProfils, margeSecurite, marquerVide, numeroTache, pasteOpen, pasteText, pieces, removePiece, resultat, setLongueurBarre, setPasteOpen, setPasteText, setPieces, updatePiece } = app;
+  const { addPiece, chantier, dateProjet, enCours, erreursChamps, lancer, longueurBarre, longueursProfils, margeSecurite, marquerVide, numeroTache, pasteOpen, pasteText, perime, pieces, removePiece, resultat, setLongueurBarre, setPasteOpen, setPasteText, setPieces, updatePiece } = app;
   return (
     <Card className="min-w-0">
       <CardHeader className="space-y-4">
@@ -54,7 +54,8 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
             aria-busy={enCours}
             onClick={async () => {
               try {
-                await telechargerExcel(pieces, resultat, { chantier, numeroTache, date: dateProjet });
+                // Resultat perime : on n'exporte que la liste, pas un calcul qui ne lui correspond plus
+                await telechargerExcel(pieces, perime ? null : resultat, { chantier, numeroTache, date: dateProjet });
                 toast.success("Fichier Excel téléchargé");
               } catch {
                 toast.error("Échec de la génération du fichier Excel");
@@ -151,7 +152,7 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
             {pieces.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
-                  Aucune pièce. Cliquez sur « Ajouter » pour commencer.
+                  Aucune pièce. Copiez vos lignes dans Excel puis faites Ctrl + V ici, ou cliquez sur « Ajouter ».
                 </TableCell>
               </TableRow>
             )}
