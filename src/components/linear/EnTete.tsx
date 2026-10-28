@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LinearMark } from "@/components/LinearMark";
+import { SelecteurApplis } from "@/components/SelecteurApplis";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { exporterProjetJson, exporterTousJson } from "@/lib/backup";
 import type { LinearApp } from "@/hooks/use-linear-app";
@@ -15,7 +16,7 @@ export function EnTete({ app }: { app: LinearApp }) {
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2.5">
           <LinearMark />
-          <h1 className="text-[17px] font-semibold leading-none tracking-tight text-foreground">Linear</h1>
+          <SelecteurApplis />
           <span className="sr-only">Optimisation de découpe 1D</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
