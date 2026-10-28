@@ -14,12 +14,20 @@ import type { LinearApp } from "@/hooks/use-linear-app";
 
 /** Resultats : synthese, bilan matiere, chutes, plans de decoupe par barre. */
 export function Resultats({ app }: { app: LinearApp }) {
-  const { chutesPDF, longueurBarre, matiere, methodeCoupe, pieceIds, pieces, resultat, setChutesPDF, statutMatiere, traitScie, verification } = app;
+  const { chutesPDF, lancer, longueurBarre, matiere, methodeCoupe, perime, pieceIds, pieces, resultat, setChutesPDF, statutMatiere, traitScie, verification } = app;
   const [toutDeplie, setToutDeplie] = useState(false);
   // Affiche seulement quand il y a un resultat (la page ne monte ce composant qu'apres un calcul)
   if (!resultat) return null;
   return (
     <section id="resultats" className="space-y-6 pt-4">
+      {/* Resultat perime : la saisie a change depuis le calcul, on le dit et on grise */}
+      {perime && (
+        <div role="status" className="sticky top-2 z-30 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-signal/40 bg-background px-4 py-3 text-sm shadow-sm">
+          <span><b className="font-semibold">Saisie modifiée depuis le calcul.</b> Ces résultats ne correspondent plus à la liste : relancez avant d'exporter.</span>
+          <button type="button" onClick={lancer} className="rounded-full bg-signal px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-signal/90">Relancer <span className="font-normal opacity-70">Ctrl + Entrée</span></button>
+        </div>
+      )}
+      <div className={perime ? "space-y-6 opacity-40 transition-opacity" : "space-y-6"} aria-hidden={perime || undefined}>
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="font-display text-sm font-medium uppercase tracking-[0.12em]">Résultats</h2>
         {verification && <div role="status" className={"inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs " + (verification.ok ? "border-success/20 bg-success/5 text-success" : "border-destructive/30 bg-destructive/5 text-destructive")}>
@@ -154,6 +162,7 @@ export function Resultats({ app }: { app: LinearApp }) {
           ))}
         </CardContent>
       </Card>
+      </div>
     </section>
   );
 }
