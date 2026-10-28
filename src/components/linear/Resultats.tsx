@@ -14,7 +14,7 @@ import type { LinearApp } from "@/hooks/use-linear-app";
 
 /** Resultats : synthese, bilan matiere, chutes, plans de decoupe par barre. */
 export function Resultats({ app }: { app: LinearApp }) {
-  const { chutesPDF, lancer, longueurBarre, matiere, methodeCoupe, perime, pieceIds, pieces, resultat, setChutesPDF, statutMatiere, traitScie, verification } = app;
+  const { chutesPDF, relancer: lancer, longueurBarre, matiere, methodeCoupe, perime, idsCalcul: pieceIds, piecesCalcul: pieces, resultat, setChutesPDF, statutMatiere, traitScie, verification } = app;
   const [toutDeplie, setToutDeplie] = useState(false);
   // Affiche seulement quand il y a un resultat (la page ne monte ce composant qu'apres un calcul)
   if (!resultat) return null;
@@ -107,6 +107,8 @@ export function Resultats({ app }: { app: LinearApp }) {
               <div
                 key={groupe.signature}
                 className="space-y-3 border-b border-border pb-6 last:border-0 last:pb-0"
+                // Le navigateur ne dessine que les barres proches de l'ecran (longues listes fluides)
+                style={{ contentVisibility: "auto", containIntrinsicSize: "auto 240px" }}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold">

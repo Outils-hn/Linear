@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { profilDemarrage } from "@/lib/local-store";
 import { useLinearApp } from "@/hooks/use-linear-app";
@@ -61,6 +61,12 @@ function App({ profileId }: { profileId: string }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  // Resultats memorises : une frappe dans la liste ne les redessine pas (seul le bandeau « perime » change)
+  const resultatsVue = useMemo(
+    () => (resultat && resultat.nbBarres > 0 ? <Resultats app={app} /> : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resultat, app.perime, app.chutesPDF, app.verification, app.statutMatiere, app.methodeCoupe, app.traitScie, app.longueurBarre, app.matiere, app.piecesCalcul],
+  );
   return (
     <div className="rail-page flex-1">
       <EnTete app={app} />
@@ -77,9 +83,7 @@ function App({ profileId }: { profileId: string }) {
           <StockBarres app={app} />
         )}
 
-        {resultat && resultat.nbBarres > 0 && (
-          <Resultats app={app} />
-        )}
+        {resultatsVue}
 
         {resultat && resultat.nbBarres === 0 && (
           <Card>

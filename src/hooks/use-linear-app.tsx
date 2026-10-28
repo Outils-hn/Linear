@@ -2,14 +2,15 @@
 import { formatNombre as fmt } from "@/lib/format-number";
 import { bilanMatiere } from "@/lib/material-summary";
 import { lireStatutMatiere, type StatutMatiere } from "@/lib/material-status";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ecrireReglages, lireReglages } from "@/lib/reglages";
 import { toast } from "sonner";
 import { type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
-import { optimiserParProfil, listeProfils, seuilPourProfil, piecesTropLongues, type ResultatMulti } from "@/lib/multi-profil";
+import { listeProfils, seuilPourProfil, piecesTropLongues, type ResultatMulti } from "@/lib/multi-profil";
 import { optionsChutesDefaut, lireOptionsChutes, type OptionsChutesPDF } from "@/lib/offcut-settings";
 import { lireMethodeCoupe, type MethodeCoupe } from "@/lib/cut-method";
 import { exporterPDF } from "@/lib/export-pdf";
+import { optimiserEnArrierePlan } from "@/lib/optimiser-async";
 import { verifierResultat } from "@/lib/verification";
 import { lireJson } from "@/lib/backup";
 import { listProjects, upsertProject, deleteProject, type LocalProject } from "@/lib/local-store";
@@ -57,7 +58,7 @@ export function useLinearApp(profileId: string) {
   const [resultat, setResultat] = useState<ResultatMulti | null>(null);
   // Empreinte des donnees au moment du calcul : si la saisie change ensuite, le resultat est perime.
   const [empreinteResultat, setEmpreinteResultat] = useState<string | null>(null);
-  const matiere = resultat ? bilanMatiere(resultat) : null;
+  const matiere = useMemo(() => (resultat ? bilanMatiere(resultat) : null), [resultat]);
   const [longueursProfils, setLongueursProfils] = useState<Record<string, number>>({});
   const [seuilsProfils, setSeuilsProfils] = useState<Record<string, number>>({});
   const [seuilChute, setSeuilChute] = useState(reglagesInitiaux.seuilChute);
@@ -85,16 +86,23 @@ export function useLinearApp(profileId: string) {
   // Champs numériques vides pendant la saisie, et champs signalés en erreur au lancement.
   const [champsVides, setChampsVides] = useState<Set<string>>(new Set());
   const [erreursChamps, setErreursChamps] = useState<Set<string>>(new Set());
-  const marquerVide = (cle: string, vide: boolean) => {
+  // Fonction stable (useCallback) et sans nouvel etat si rien ne change : une frappe dans une
+  // ligne ne fait plus redessiner tout le tableau.
+  const marquerVide = useCallback((cle: string, vide: boolean) => {
     setChampsVides((s) => {
+      if (s.has(cle) === vide) return s;
       const n = new Set(s);
       if (vide) n.add(cle); else n.delete(cle);
       return n;
     });
     if (!vide) setErreursChamps((s) => (s.has(cle) ? new Set([...s].filter((k) => k !== cle)) : s));
-  };
+  }, []);
 
   const pieceIds = useMemo(() => pieces.map((p) => p.id), [pieces]);
+  // Pieces telles qu'au moment du calcul : les couleurs et la legende des resultats ne bougent
+  // pas pendant qu'on modifie la liste (et les resultats n'ont pas a se redessiner a chaque frappe)
+  const piecesCalcul = verifCtx?.pieces ?? pieces;
+  const idsCalcul = useMemo(() => piecesCalcul.map((p) => p.id), [piecesCalcul]);
   const empreinteActuelle = empreinteCalcul({ pieces, stock, longueurBarre, margeSecurite, traitScie, strategie, longueursProfils, seuilsProfils, seuilChute });
   const perime = !!resultat && empreinteResultat !== null && empreinteResultat !== empreinteActuelle;
   const longueurUtile = Math.max(0, longueurBarre - margeSecurite);
@@ -124,6 +132,16 @@ export function useLinearApp(profileId: string) {
     setErreursChamps(new Set());
   };
   const [courantRelu, setCourantRelu] = useState(false);
+  // Fermeture ou rechargement de l'onglet avant les 0,4 s : on ecrit tout de suite la derniere saisie
+  const dernierePhoto = useRef<ProjetCourant | null>(null);
+  useEffect(() => {
+    const ecrire = () => {
+      if (!dernierePhoto.current) return;
+      try { window.localStorage.setItem(CLE_PROJET_COURANT(profileId), JSON.stringify(dernierePhoto.current)); } catch { /* stockage bloque */ }
+    };
+    window.addEventListener("pagehide", ecrire);
+    return () => window.removeEventListener("pagehide", ecrire);
+  }, [profileId]);
   useEffect(() => {
     try {
       const pc = lireProjetCourant(window.localStorage.getItem(CLE_PROJET_COURANT(profileId)));
@@ -134,7 +152,13 @@ export function useLinearApp(profileId: string) {
   }, [profileId]);
   useEffect(() => {
     if (!courantRelu) return;
-    try { window.localStorage.setItem(CLE_PROJET_COURANT(profileId), JSON.stringify(photo())); } catch { /* stockage plein ou bloque */ }
+    // Enregistrement regroupe (0,4 s apres la derniere frappe) : pas d'ecriture a chaque touche
+    const donnees = photo();
+    dernierePhoto.current = donnees;
+    const t = setTimeout(() => {
+      try { window.localStorage.setItem(CLE_PROJET_COURANT(profileId), JSON.stringify(donnees)); } catch { /* stockage plein ou bloque */ }
+    }, 400);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courantRelu, profileId, currentProjectId, chantier, numeroTache, client, dateProjet, pieces, stock, longueursProfils, seuilsProfils, chutesPDF, statutMatiere]);
 
@@ -161,15 +185,22 @@ export function useLinearApp(profileId: string) {
   }, []);
   const addPiece = () =>
     setPieces((p) => [...p, { id: nextId(), nom: `Pièce ${p.length + 1}`, longueur: 1000, quantite: 1 }]);
-  const removePiece = (id: string) => setPieces((p) => p.filter((x) => x.id !== id));
-  const updatePiece = (id: string, patch: Partial<Piece>) =>
-    setPieces((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const removePiece = useCallback((id: string) => setPieces((p) => p.filter((x) => x.id !== id)), []);
+  const updatePiece = useCallback((id: string, patch: Partial<Piece>) =>
+    setPieces((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x))), []);
 
   const addStock = () => setStock((s) => [...s, { id: nextStockId(), longueur: 4000, quantite: 1 }]);
   const removeStock = (id: string) => setStock((s) => s.filter((x) => x.id !== id));
   const updateStock = (id: string, patch: Partial<StockBarre>) =>
     setStock((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
 
+  // Numero du dernier calcul lance : un resultat arrive en retard (projet change entre-temps) est ignore
+  const calculNo = useRef(0);
+  const appliquer = (x: { r: ResultatMulti; ctx: { pieces: Piece[]; traitScie: number }; empreinte: string }) => {
+    setVerifCtx(x.ctx);
+    setEmpreinteResultat(x.empreinte);
+    setResultat(x.r);
+  };
   const calculer = (overrides?: {
     pieces?: Piece[];
     stock?: StockBarre[];
@@ -187,14 +218,16 @@ export function useLinearApp(profileId: string) {
     const ms = overrides?.margeSecurite ?? margeSecurite;
     const ts = overrides?.traitScie ?? traitScie;
     const st = overrides?.strategie ?? strategie;
-    setVerifCtx({ pieces: p, traitScie: ts });
-    setEmpreinteResultat(empreinteCalcul({
+    const ctx = { pieces: p, traitScie: ts };
+    const empreinte = (empreinteCalcul({
       pieces: p, stock: s, longueurBarre: lb, margeSecurite: ms, traitScie: ts, strategie: st,
       longueursProfils: overrides?.longueursProfils ?? longueursProfils,
       seuilsProfils: overrides?.seuilsProfils ?? seuilsProfils,
       seuilChute: overrides?.seuilChute ?? seuilChute,
     }));
-    return optimiserParProfil(p, overrides?.longueursProfils ?? longueursProfils, {
+    // Le contexte du calcul (pieces, empreinte) n'est applique qu'avec son resultat (voir appliquer)
+    // Calcul dans un fil separe : l'ecran reste fluide meme avec des milliers de pieces
+    return optimiserEnArrierePlan(p, overrides?.longueursProfils ?? longueursProfils, {
       longueurBarreDefaut: lb,
       margeSecurite: ms,
       positionMarge,
@@ -203,7 +236,7 @@ export function useLinearApp(profileId: string) {
       stock: st === "priorite-stock" ? s : [],
       seuilsProfils: overrides?.seuilsProfils ?? seuilsProfils,
       seuilChuteDefaut: overrides?.seuilChute ?? seuilChute,
-    });
+    }).then((r) => ({ r, ctx, empreinte }));
   };
 
   // Amene le curseur sur le premier champ en erreur (apres l'affichage du cadre rouge)
@@ -272,18 +305,21 @@ export function useLinearApp(profileId: string) {
     }
     setErreursChamps(new Set());
     setEnCours(true);
-    // Laisse le navigateur afficher l'état « en cours » avant un éventuel SmartCut.
-    setTimeout(() => {
-      try {
-        setResultat(calculer());
-      } finally {
+    const n = ++calculNo.current;
+    calculer()
+      .then((x) => { if (n === calculNo.current) appliquer(x); })
+      .catch(() => toast.error("Le calcul a échoué. Réessayez ou vérifiez la liste."))
+      .finally(() => {
+        if (n !== calculNo.current) return;
         setEnCours(false);
-      }
-      setTimeout(() => {
-        document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" });
-      }, 50);
-    }, 30);
+        setTimeout(() => document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" }), 50);
+      });
   };
+
+  // Version stable de « lancer » pour les composants memorises (bouton Relancer du bandeau)
+  const lancerRef = useRef(lancer);
+  lancerRef.current = lancer;
+  const relancer = useCallback(() => lancerRef.current(), []);
 
   const exporter = (force = false) => {
     if (!resultat) return;
@@ -330,6 +366,8 @@ export function useLinearApp(profileId: string) {
     setStatutMatiere(lireStatutMatiere());
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
     setPieces([]);
+    calculNo.current++;
+    setEnCours(false);
     setResultat(null);
     setChampsVides(new Set());
     setErreursChamps(new Set());
@@ -415,7 +453,10 @@ export function useLinearApp(profileId: string) {
     setMethodeCoupe(lireMethodeCoupe(proj.methode_coupe));
     setStatutMatiere(lireStatutMatiere(proj.statut_matiere));
     setSidebarOpen(false);
-    const r = calculer({
+    const n = ++calculNo.current;
+    setResultat(null);
+    setEnCours(true);
+    void calculer({
       pieces: loadedPieces,
       stock: loadedStock,
       longueurBarre: proj.longueur_barre,
@@ -425,12 +466,15 @@ export function useLinearApp(profileId: string) {
       longueursProfils: lp,
       seuilsProfils: sp,
       seuilChute: sg,
-    });
-    setResultat(r);
+    })
+      .then((x) => { if (n === calculNo.current) appliquer(x); })
+      .catch(() => toast.error("Le calcul du projet a échoué."))
+      .finally(() => {
+        if (n !== calculNo.current) return;
+        setEnCours(false);
+        setTimeout(() => document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" }), 80);
+      });
     toast.success(`Projet « ${proj.chantier || "sans nom"} » chargé`);
-    setTimeout(() => {
-      document.getElementById("resultats")?.scrollIntoView({ behavior: "smooth" });
-    }, 80);
   };
 
   const enregistrerImport = (liste: LocalProject[], mode: "remplacer" | "garder") => {
@@ -507,6 +551,9 @@ export function useLinearApp(profileId: string) {
     resultat,
     setResultat,
     perime,
+    piecesCalcul,
+    idsCalcul,
+    relancer,
     matiere,
     longueursProfils,
     setLongueursProfils,

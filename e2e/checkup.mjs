@@ -79,6 +79,41 @@ try {
   verif("Parcours complet", false, e.message.split("\n")[0]);
 }
 
+// Performance : 300 lignes (6 000 pieces), calcul en arriere-plan et saisie fluide
+try {
+  const c3 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p3 = await c3.newPage();
+  await p3.goto(BASE, { waitUntil: "networkidle" });
+  const lignes300 = Array.from({ length: 300 }, (_, i) => `R${i + 1}\tProfil ${(i % 6) + 1}\t${200 + ((i * 137) % 2800)}\t20`).join("\n");
+  await p3.getByRole("button", { name: "Coller depuis Excel" }).click();
+  await p3.locator("textarea").fill("Repère\tProfilé\tLongueur\tQté\n" + lignes300);
+  await p3.waitForTimeout(500);
+  await p3.getByRole("button", { name: "Remplacer la liste" }).click();
+  await p3.waitForTimeout(800);
+  // Pendant le calcul, la page doit continuer a repondre : on mesure le plus long blocage
+  await p3.evaluate(() => { window.__bloc = 0; let t = performance.now(); window.__tic = setInterval(() => { const n = performance.now(); window.__bloc = Math.max(window.__bloc, n - t - 50); t = n; }, 50); });
+  const t0 = Date.now();
+  await p3.getByRole("button", { name: /Lancer l'optimisation/ }).click();
+  await p3.waitForFunction(() => document.getElementById("resultats") && !document.body.innerText.includes("Optimisation en cours"), null, { timeout: 120000 });
+  const dureeCalcul = Date.now() - t0;
+  const bloc = await p3.evaluate(() => { clearInterval(window.__tic); return Math.round(window.__bloc); });
+  verif("6 000 pieces : calcul termine", dureeCalcul < 60000, `${dureeCalcul} ms`);
+  verif("6 000 pieces : ecran jamais fige plus de 3 s pendant le calcul et l'affichage", bloc < 3000, `blocage max ${bloc} ms`);
+  // Saisie : temps entre la frappe et l'affichage suivant
+  const champ = p3.getByLabel(/^Quantité de R1$/);
+  await champ.click();
+  const lat = [];
+  for (const ch of ["2", "1"]) {
+    const t = await p3.evaluate(() => performance.now());
+    await p3.keyboard.type(ch);
+    lat.push(await p3.evaluate((t) => new Promise((r) => requestAnimationFrame(() => r(performance.now() - t))), t));
+  }
+  const pire = Math.round(Math.max(...lat));
+  verif("300 lignes : saisie fluide (< 300 ms par frappe)", pire < 300, `${pire} ms`);
+  verif("Champ nombre : format « 1 200 » a la sortie", await (async () => { await p3.getByLabel(/^Longueur de R2$/).fill("1200"); await p3.keyboard.press("Tab"); return (await p3.getByLabel(/^Longueur de R2$/).inputValue()).replace(/[\u00a0\u202f]/g, " ") === "1 200"; })());
+  await c3.close();
+} catch (e) { verif("Deroulement du check-up performance", false, e.message.split("\n")[0]); }
+
 // Reglages, theme, champ vide et sauvegarde complete (navigateur neuf)
 try {
   const c2 = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
