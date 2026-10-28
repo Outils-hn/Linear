@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatNombre as fmt } from "@/lib/format-number";
 import { libelleStatutMatiere, detailsCommande } from "@/lib/material-status";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,22 +12,23 @@ import { ChutesAConserver } from "./ChutesAConserver";
 import { StatCard } from "./StatCard";
 import type { LinearApp } from "@/hooks/use-linear-app";
 
+/** Plans de barre dessines d'emblee par profile ; au-dela, bouton « Afficher de plus ». */
+const PAQUET = 20;
+
 /** Resultats : synthese, bilan matiere, chutes, plans de decoupe par barre. */
 export function Resultats({ app }: { app: LinearApp }) {
-  const { chutesPDF, lancer, longueurBarre, matiere, methodeCoupe, perime, pieceIds, pieces, resultat, setChutesPDF, statutMatiere, traitScie, verification } = app;
+  const { chutesPDF, longueurBarre, matiere, methodeCoupe, idsCalcul: pieceIds, piecesCalcul: pieces, resultat, setChutesPDF, statutMatiere, traitScie, verification } = app;
   const [toutDeplie, setToutDeplie] = useState(false);
+  // Nombre de plans de barre affiches par profile (le reste a la demande)
+  const [limite, setLimite] = useState(PAQUET);
+  useEffect(() => setLimite(PAQUET), [resultat]);
   // Affiche seulement quand il y a un resultat (la page ne monte ce composant qu'apres un calcul)
   if (!resultat) return null;
   return (
     <section id="resultats" className="space-y-6 pt-4">
-      {/* Resultat perime : la saisie a change depuis le calcul, on le dit et on grise */}
-      {perime && (
-        <div role="status" className="sticky top-2 z-30 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-signal/40 bg-background px-4 py-3 text-sm shadow-sm">
-          <span><b className="font-semibold">Saisie modifiée depuis le calcul.</b> Ces résultats ne correspondent plus à la liste : relancez avant d'exporter.</span>
-          <button type="button" onClick={lancer} className="rounded-full bg-signal px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-signal/90">Relancer <span className="font-normal opacity-70">Ctrl + Entrée</span></button>
-        </div>
-      )}
-      <div className={perime ? "space-y-6 opacity-40 transition-opacity" : "space-y-6"} aria-hidden={perime || undefined}>
+      {/* Bandeau « perime » et grisage : poses par la page autour de ce composant (routes/index),
+          pour qu'une frappe dans la liste ne redessine pas tous les plans */}
+      <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="font-display text-sm font-medium uppercase tracking-[0.12em]">Résultats</h2>
         {verification && <div role="status" className={"inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs " + (verification.ok ? "border-success/20 bg-success/5 text-success" : "border-destructive/30 bg-destructive/5 text-destructive")}>
@@ -99,7 +100,8 @@ export function Resultats({ app }: { app: LinearApp }) {
               Barre {fmt(rp.longueurBarre)} mm · Sous-total : <span className="font-semibold text-foreground">{fmt(rp.resultat.nbBarres)} barre{rp.resultat.nbBarres > 1 ? "s" : ""}</span> · Rendement {fmt(rp.resultat.rendement, 1)} %
             </span>
           </div>
-          {grouperBarresIdentiques(rp.resultat.barres).map((groupe) => {
+          {(() => { const groupes = grouperBarresIdentiques(rp.resultat.barres); return <>
+          {groupes.slice(0, limite).map((groupe) => {
             const barre = groupe.reference;
             const coupesGroupes = grouperCoupesConsecutives(barre.coupes, traitScie, barre.margeDebut ?? 0);
             const qte = groupe.barres.length;
@@ -107,6 +109,8 @@ export function Resultats({ app }: { app: LinearApp }) {
               <div
                 key={groupe.signature}
                 className="space-y-3 border-b border-border pb-6 last:border-0 last:pb-0"
+                // Le navigateur ne dessine que les barres proches de l'ecran (longues listes fluides)
+                style={{ contentVisibility: "auto", containIntrinsicSize: "auto 240px" }}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-sm font-semibold">
@@ -158,6 +162,15 @@ export function Resultats({ app }: { app: LinearApp }) {
               </div>
             );
           })}
+          {/* Longues listes : les plans s'affichent par paquets (le PDF atelier contient toujours tout) */}
+          {groupes.length > limite && (
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="text-muted-foreground">{fmt(groupes.length - limite)} plan{groupes.length - limite > 1 ? "s" : ""} de barre de plus</span>
+              <button type="button" className="rounded-md border border-border px-3 py-1.5 text-[13px] font-medium hover:bg-muted" onClick={() => setLimite((l) => l + PAQUET)}>Afficher {fmt(Math.min(PAQUET, groupes.length - limite))} de plus</button>
+              <button type="button" className="text-[13px] text-muted-foreground underline-offset-2 hover:underline" onClick={() => setLimite(Infinity)}>Tout afficher</button>
+            </div>
+          )}
+          </>; })()}
           </div>
           ))}
         </CardContent>

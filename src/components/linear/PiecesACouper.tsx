@@ -1,4 +1,6 @@
+import { memo } from "react";
 import { formatNombre as fmt } from "@/lib/format-number";
+import type { Piece } from "@/lib/optimizer";
 import { naviguerClavier } from "@/lib/navigation-clavier";
 import { Plus, Trash2, Calculator, Loader2, ClipboardCopy, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -101,53 +103,15 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
               Entree et les fleches deplacent d'une case (voir lib/navigation-clavier). */}
           <TableBody onKeyDown={(e) => naviguerClavier(e, COLONNES)}>
             {pieces.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>
-                  <Input data-col="nom" aria-label={`Repère de ${p.nom || "la pièce"}`} value={p.nom} onChange={(e) => updatePiece(p.id, { nom: e.target.value })} />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    data-col="profil"
-                    aria-label={`Profilé de ${p.nom || "la pièce"}`}
-                    value={p.profil ?? ""}
-                    className="normal-case"
-                    placeholder="—"
-                    onChange={(e) => updatePiece(p.id, { profil: e.target.value })}
-                  />
-                </TableCell>
-                <TableCell>
-                  <ChampNombre
-                    data-col="longueur"
-                    aria-label={`Longueur de ${p.nom || "la pièce"}`}
-                    value={p.longueur}
-                    onChange={(n) => updatePiece(p.id, { longueur: n })}
-                    onVide={(v) => marquerVide(`piece-${p.id}-longueur`, v)}
-                    erreur={erreursChamps.has(`piece-${p.id}-longueur`)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <ChampNombre
-                    data-col="quantite"
-                    aria-label={`Quantité de ${p.nom || "la pièce"}`}
-                    value={p.quantite}
-                    onChange={(n) => updatePiece(p.id, { quantite: n })}
-                    onVide={(v) => marquerVide(`piece-${p.id}-quantite`, v)}
-                    erreur={erreursChamps.has(`piece-${p.id}-quantite`)}
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removePiece(p.id)}
-                    tabIndex={-1}
-                    aria-label={`Supprimer ${p.nom || "la pièce"}`}
-                    className="text-muted-foreground hover:text-destructive lg:h-8 lg:w-8"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
+              <LignePiece
+                key={p.id}
+                p={p}
+                erreurLongueur={erreursChamps.has(`piece-${p.id}-longueur`)}
+                erreurQuantite={erreursChamps.has(`piece-${p.id}-quantite`)}
+                updatePiece={updatePiece}
+                removePiece={removePiece}
+                marquerVide={marquerVide}
+              />
             ))}
             {pieces.length === 0 && (
               <TableRow>
@@ -173,3 +137,63 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
     </Card>
   );
 }
+
+/** Une ligne du tableau, memorisee : modifier une piece ne redessine que sa ligne. */
+const LignePiece = memo(function LignePiece({ p, erreurLongueur, erreurQuantite, updatePiece, removePiece, marquerVide }: {
+  p: Piece;
+  erreurLongueur: boolean;
+  erreurQuantite: boolean;
+  updatePiece: (id: string, patch: Partial<Piece>) => void;
+  removePiece: (id: string) => void;
+  marquerVide: (cle: string, vide: boolean) => void;
+}) {
+  return (
+    <TableRow key={p.id}>
+      <TableCell>
+        <Input data-col="nom" aria-label={`Repère de ${p.nom || "la pièce"}`} value={p.nom} onChange={(e) => updatePiece(p.id, { nom: e.target.value })} />
+      </TableCell>
+      <TableCell>
+        <Input
+          data-col="profil"
+          aria-label={`Profilé de ${p.nom || "la pièce"}`}
+          value={p.profil ?? ""}
+          className="normal-case"
+          placeholder="—"
+          onChange={(e) => updatePiece(p.id, { profil: e.target.value })}
+        />
+      </TableCell>
+      <TableCell>
+        <ChampNombre
+          data-col="longueur"
+          aria-label={`Longueur de ${p.nom || "la pièce"}`}
+          value={p.longueur}
+          onChange={(n) => updatePiece(p.id, { longueur: n })}
+          onVide={(v) => marquerVide(`piece-${p.id}-longueur`, v)}
+          erreur={erreurLongueur}
+        />
+      </TableCell>
+      <TableCell>
+        <ChampNombre
+          data-col="quantite"
+          aria-label={`Quantité de ${p.nom || "la pièce"}`}
+          value={p.quantite}
+          onChange={(n) => updatePiece(p.id, { quantite: n })}
+          onVide={(v) => marquerVide(`piece-${p.id}-quantite`, v)}
+          erreur={erreurQuantite}
+        />
+      </TableCell>
+      <TableCell className="text-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => removePiece(p.id)}
+          tabIndex={-1}
+          aria-label={`Supprimer ${p.nom || "la pièce"}`}
+          className="text-muted-foreground hover:text-destructive lg:h-8 lg:w-8"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+});

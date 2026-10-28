@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { formatNombre } from "@/lib/format-number";
+import { parseNombre } from "@/lib/parse-nombre";
 
 interface Props extends Omit<React.ComponentProps<typeof Input>, "value" | "onChange" | "type"> {
   value: number;
@@ -10,27 +12,33 @@ interface Props extends Omit<React.ComponentProps<typeof Input>, "value" | "onCh
   erreur?: boolean;
 }
 
+/** Affichage au format suisse/francais du reste de l'appli : « 1 200 », « 437,5 ». */
+const afficher = (n: number) => (Number.isFinite(n) ? formatNombre(n) : "");
+
 /**
  * Champ numérique de saisie atelier :
+ * - affiche les nombres comme partout ailleurs (« 1 200 », « 437,5 ») ;
+ * - accepte la virgule ou le point, et les séparateurs de milliers (espace, apostrophe) ;
  * - un champ vidé reste vide pendant la saisie (jamais de 0 forcé) ;
- * - le contenu est sélectionné au clic pour taper directement par-dessus ;
- * - la valeur du modèle n'est mise à jour que quand le texte est un nombre valide.
+ * - le contenu est sélectionné au clic pour taper directement par-dessus.
  */
 export function ChampNombre({ value, onChange, onVide, erreur, onFocus, onBlur, ...rest }: Props) {
-  const [texte, setTexte] = useState(String(value));
+  const [texte, setTexte] = useState(afficher(value));
   const focusRef = useRef(false);
 
   useEffect(() => {
-    if (!focusRef.current) setTexte(String(value));
+    if (!focusRef.current) setTexte(afficher(value));
   }, [value]);
 
   return (
     <Input
       {...rest}
-      type="number"
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
       value={texte}
       aria-invalid={erreur || undefined}
-      className={`${rest.className ?? ""} ${erreur ? "border-destructive focus-visible:ring-destructive" : ""}`.trim()}
+      className={`champ-nombre ${rest.className ?? ""} ${erreur ? "border-destructive focus-visible:ring-destructive" : ""}`.trim()}
       onFocus={(e) => {
         focusRef.current = true;
         e.target.select();
@@ -38,6 +46,9 @@ export function ChampNombre({ value, onChange, onVide, erreur, onFocus, onBlur, 
       }}
       onBlur={(e) => {
         focusRef.current = false;
+        // Remise en forme a la sortie du champ (« 1200 » devient « 1 200 »), sauf s'il est vide ou illisible
+        const n = parseNombre(texte);
+        if (Number.isFinite(n)) setTexte(afficher(n));
         onBlur?.(e);
       }}
       onChange={(e) => {
@@ -47,7 +58,7 @@ export function ChampNombre({ value, onChange, onVide, erreur, onFocus, onBlur, 
           onVide?.(true);
           return;
         }
-        const n = Number(v);
+        const n = parseNombre(v);
         if (Number.isFinite(n)) {
           onVide?.(false);
           onChange(n);

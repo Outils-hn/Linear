@@ -1,7 +1,14 @@
+// Formateurs gardes en memoire : en creer un a chaque nombre affiche coutait cher
+// (plusieurs centaines de ms sur un gros resultat).
+const cache = new Map<string, Intl.NumberFormat>();
+
 /** Presentation only: retain precision while removing binary floating-point noise. */
 export function formatNombre(value: number, decimales?: number): string {
-  return new Intl.NumberFormat("fr-FR", {
-    minimumFractionDigits: decimales ?? 0,
-    maximumFractionDigits: decimales ?? 6,
-  }).format(value);
+  const cle = String(decimales ?? "");
+  let f = cache.get(cle);
+  if (!f) {
+    f = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: decimales ?? 0, maximumFractionDigits: decimales ?? 6 });
+    cache.set(cle, f);
+  }
+  return f.format(value);
 }

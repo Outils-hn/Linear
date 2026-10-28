@@ -183,15 +183,15 @@
 
 .rail-page { background: transparent; }
 .font-display, h1, h2, h3 { color: var(--heading); }
-.tabular-nums, .font-mono, input[type="number"], svg text { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+.tabular-nums, .font-mono, input[type="number"], input.champ-nombre, svg text { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
 .bar-piece-label { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; }
-input[type="number"] { text-align: right; }
+input[type="number"], input.champ-nombre { text-align: right; }
 table thead { background: var(--table-header-surface); }
 table thead tr { border-bottom: 1px solid var(--foreground); }
 table tr { height: 36px; }
 table td, table th { padding-top: 2px; padding-bottom: 2px; }
 table input { height: 30px; }
-table td:has(input[type="number"]) { text-align: right; }
+table td:has(input[type="number"]), table td:has(input.champ-nombre) { text-align: right; }
 table th.numeric { text-align: right; }
 table thead th { font-family: var(--font-sans); font-size: 12px; font-weight: 500; color: var(--table-heading); }
 .dark table thead tr { background: var(--table-header-surface); }

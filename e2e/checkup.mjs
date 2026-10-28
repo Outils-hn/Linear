@@ -79,6 +79,81 @@ try {
   verif("Parcours complet", false, e.message.split("\n")[0]);
 }
 
+// Performance : 300 lignes (6 000 pieces), calcul en arriere-plan et saisie fluide
+try {
+  const c3 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p3 = await c3.newPage();
+  // Diagnostic : le calcul passe-t-il bien par un Web Worker ? quelles taches longues bloquent la page ?
+  await p3.addInitScript(() => {
+    window.__workers = 0; window.__workerErr = "";
+    const W = window.Worker;
+    window.Worker = function (...a) { window.__workers++; const w = new W(...a); w.addEventListener("error", (e) => { window.__workerErr = String(e.message || "erreur"); }); return w; };
+    window.__longues = [];
+    try { new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__longues.push(Math.round(e.duration)); }).observe({ type: "longtask", buffered: true }); } catch {}
+  });
+  await p3.goto(BASE, { waitUntil: "networkidle" });
+  const lignes300 = Array.from({ length: 300 }, (_, i) => `R${i + 1}\tProfil ${(i % 6) + 1}\t${200 + ((i * 137) % 2800)}\t20`).join("\n");
+  await p3.getByRole("button", { name: "Coller depuis Excel" }).click();
+  await p3.locator("textarea").fill("Repère\tProfilé\tLongueur\tQté\n" + lignes300);
+  await p3.waitForTimeout(500);
+  await p3.getByRole("button", { name: "Remplacer la liste" }).click();
+  await p3.waitForTimeout(800);
+  // Pendant le calcul, la page doit continuer a repondre : on mesure le plus long blocage
+  await p3.evaluate(() => { window.__bloc = 0; let t = performance.now(); window.__tic = setInterval(() => { const n = performance.now(); window.__bloc = Math.max(window.__bloc, n - t - 50); t = n; }, 50); });
+  const cdpCalc = await c3.newCDPSession(p3);
+  await cdpCalc.send("Profiler.enable"); await cdpCalc.send("Profiler.setSamplingInterval", { interval: 1000 }); await cdpCalc.send("Profiler.start");
+  const t0 = Date.now();
+  await p3.getByRole("button", { name: /Lancer l'optimisation/ }).click();
+  await p3.waitForFunction(() => document.getElementById("resultats") && !document.body.innerText.includes("Optimisation en cours"), null, { timeout: 120000 });
+  await p3.waitForTimeout(500);
+  {
+    const { profile } = await cdpCalc.send("Profiler.stop");
+    const dt = new Map(); profile.samples.forEach((id, i) => dt.set(id, (dt.get(id) ?? 0) + (profile.timeDeltas[i] ?? 0)));
+    // Temps cumule par fonction de l'appli (fichiers src), enfants compris
+    const parent = new Map(); for (const n of profile.nodes) for (const c of n.children ?? []) parent.set(c, n.id);
+    const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+    const total = new Map();
+    for (const [id, t] of dt) {
+      const vus = new Set(); let cur = id;
+      while (cur != null) { const n = byId.get(cur); const u = n.callFrame.url; if (/\/src\//.test(u)) { const k = `${n.callFrame.functionName || "(anonyme)"} ${u.split("/src/").pop().split("?")[0]}:${n.callFrame.lineNumber}`; if (!vus.has(k)) { vus.add(k); total.set(k, (total.get(k) ?? 0) + t / 1000); } } cur = parent.get(cur); }
+    }
+    const top = [...total.entries()].sort((x, y) => y[1] - x[1]).slice(0, 10).map(([k, v]) => `${k} ${Math.round(v)}ms`);
+    verif("Diagnostic : profil du calcul et de l'affichage", true, top.join(" | "));
+  }
+  const dureeCalcul = Date.now() - t0;
+  const bloc = await p3.evaluate(() => { clearInterval(window.__tic); return Math.round(window.__bloc); });
+  verif("6 000 pieces : calcul termine", dureeCalcul < 60000, `${dureeCalcul} ms`);
+  const diag = await p3.evaluate(() => ({ w: window.__workers, err: window.__workerErr, longues: window.__longues.slice().sort((x, y) => y - x).slice(0, 5) }));
+  verif("Diagnostic : calcul dans un Web Worker", diag.w > 0 && !diag.err, `workers ${diag.w}, erreur « ${diag.err} », taches longues ${diag.longues.join(" / ")} ms`);
+  verif("6 000 pieces : ecran jamais fige plus de 3 s pendant le calcul et l'affichage", bloc < 3000, `blocage max ${bloc} ms`);
+  // Saisie : temps entre la frappe et l'affichage suivant
+  const champ = p3.getByLabel(/^Quantité de R1$/);
+  await champ.click();
+  // Profil CPU d'une frappe : fonctions qui prennent le plus de temps (diagnostic)
+  try {
+    const cdp = await c3.newCDPSession(p3);
+    await cdp.send("Profiler.enable"); await cdp.send("Profiler.setSamplingInterval", { interval: 500 }); await cdp.send("Profiler.start");
+    await p3.keyboard.type("9"); await p3.waitForTimeout(200);
+    const { profile } = await cdp.send("Profiler.stop");
+    const self = new Map(); const dt = new Map();
+    profile.samples.forEach((id, i) => dt.set(id, (dt.get(id) ?? 0) + (profile.timeDeltas[i] ?? 0)));
+    for (const n of profile.nodes) { const k = `${n.callFrame.functionName || "(anonyme)"} ${n.callFrame.url.split("/").pop()}:${n.callFrame.lineNumber}`; self.set(k, (self.get(k) ?? 0) + (dt.get(n.id) ?? 0) / 1000); }
+    const top = [...self.entries()].filter(([k]) => !/^\(idle|program|garbage/.test(k)).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([k, v]) => `${k} ${Math.round(v)}ms`);
+    verif("Diagnostic : profil d'une frappe", true, top.join(" | "));
+    await p3.keyboard.press("Backspace"); await p3.waitForTimeout(300);
+  } catch (e) { verif("Diagnostic : profil d'une frappe", true, "indisponible " + e.message); }
+  const lat = [];
+  for (const ch of ["2", "1"]) {
+    const t = await p3.evaluate(() => performance.now());
+    await p3.keyboard.type(ch);
+    lat.push(await p3.evaluate((t) => new Promise((r) => requestAnimationFrame(() => r(performance.now() - t))), t));
+  }
+  const pire = Math.round(Math.max(...lat));
+  verif("300 lignes : saisie fluide (< 300 ms par frappe)", pire < 300, `${pire} ms`);
+  verif("Champ nombre : format « 1 200 » a la sortie", await (async () => { await p3.getByLabel(/^Longueur de R2$/).fill("1200"); await p3.keyboard.press("Tab"); return (await p3.getByLabel(/^Longueur de R2$/).inputValue()).replace(/[\u00a0\u202f]/g, " ") === "1 200"; })());
+  await c3.close();
+} catch (e) { verif("Deroulement du check-up performance", false, e.message.split("\n")[0]); }
+
 // Reglages, theme, champ vide et sauvegarde complete (navigateur neuf)
 try {
   const c2 = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
