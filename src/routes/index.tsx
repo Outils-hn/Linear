@@ -65,7 +65,7 @@ function App({ profileId }: { profileId: string }) {
   const resultatsVue = useMemo(
     () => (resultat && resultat.nbBarres > 0 ? <Resultats app={app} /> : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [resultat, app.perime, app.chutesPDF, app.verification, app.statutMatiere, app.methodeCoupe, app.traitScie, app.longueurBarre, app.matiere, app.piecesCalcul],
+    [resultat, app.chutesPDF, app.verification, app.statutMatiere, app.methodeCoupe, app.traitScie, app.longueurBarre, app.matiere, app.piecesCalcul],
   );
   return (
     <div className="rail-page flex-1">
@@ -83,7 +83,14 @@ function App({ profileId }: { profileId: string }) {
           <StockBarres app={app} />
         )}
 
-        {resultatsVue}
+        {/* Resultat perime : la saisie a change depuis le calcul, on le dit et on grise (hors memo) */}
+        {resultatsVue && app.perime && (
+          <div role="status" className="sticky top-2 z-30 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-signal/40 bg-background px-4 py-3 text-sm shadow-sm">
+            <span><b className="font-semibold">Saisie modifiée depuis le calcul.</b> Ces résultats ne correspondent plus à la liste : relancez avant d'exporter.</span>
+            <button type="button" onClick={app.relancer} className="rounded-full bg-signal px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-signal/90">Relancer <span className="font-normal opacity-70">Ctrl + Entrée</span></button>
+          </div>
+        )}
+        <div className={app.perime ? "opacity-40 transition-opacity" : undefined} aria-hidden={app.perime || undefined}>{resultatsVue}</div>
 
         {resultat && resultat.nbBarres === 0 && (
           <Card>
