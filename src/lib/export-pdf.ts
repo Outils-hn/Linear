@@ -267,22 +267,26 @@ export async function exporterPDF(
   doc.setTextColor(...themeRgb("piece-ink"));
   y += hauteurBandeau + 7;
   if (!sansTypes) {
-  autoTable(doc, {
-    startY: y,
-    head: [["Chutes réutilisables", "Perte définitive"]],
-    body: [
-      [
-        `${fmt(resultat.longueurChutesReutilisables)} mm (${fmt(matiere.parts[1].affiche, 1)} %)`,
-        `${fmt(matiere.perte)} mm (${fmt(matiere.parts[2].affiche, 1)} %)`,
-      ],
-    ],
-    theme: "grid",
-    styles: { fontSize: 9, halign: "right" },
-    headStyles: { fillColor: themeRgb("pdf-table-head"), textColor: themeRgb("pdf-heading"), fontStyle: "bold" },
-    margin: { left: margin, right: margin },
+  // Deux chiffres cles cote a cote, sans cadre (style Epure, comme Format) :
+  // filet fin en haut, pastille de couleur + etiquette grise, valeur en grand, explication.
+  const cartes: [string, string, string, string][] = [
+    ["CHUTES RÉUTILISABLES", `${fmt(resultat.longueurChutesReutilisables)} mm · ${fmt(matiere.parts[1].affiche, 1)} %`, "Réutilisables si besoin", "warning"],
+    ["PERTE DÉFINITIVE", `${fmt(matiere.perte)} mm · ${fmt(matiere.parts[2].affiche, 1)} %`, "Matière réellement jetée", "hatch"],
+  ];
+  const ecart = 8, largeurCarte = (pageWidth - 2 * margin - ecart) / 2;
+  cartes.forEach(([libelle, valeur, aide, couleur], k) => {
+    const xc = margin + k * (largeurCarte + ecart);
+    doc.setDrawColor(...themeRgb("hatch")); doc.setLineWidth(0.3); doc.line(xc, y, xc + largeurCarte, y);
+    doc.setFillColor(...themeRgb(couleur)); doc.rect(xc, y + 3, 2, 2, "F");
+    doc.setFont("PlexSans", "normal"); doc.setFontSize(6.5); doc.setTextColor(...themeRgb("pdf-muted"));
+    doc.text(libelle, xc + 3.5, y + 4.8, { charSpace: 0.25 });
+    doc.setFont("PlexSans", "bold"); doc.setFontSize(13); doc.setTextColor(...themeRgb("pdf-heading"));
+    doc.text(valeur, xc, y + 11.5);
+    doc.setFont("PlexSans", "normal"); doc.setFontSize(7); doc.setTextColor(...themeRgb("pdf-muted"));
+    doc.text(aide, xc, y + 15.5);
   });
-  // @ts-expect-error lastAutoTable
-  y = doc.lastAutoTable.finalY + 8;
+  doc.setTextColor(...themeRgb("piece-ink"));
+  y += 23;
   }
   doc.setFont("PlexSans", "normal");
   doc.setFontSize(9);
