@@ -24,6 +24,8 @@ async function session(name, { strategie = "min-barres", dark = false, mobile = 
   const ctx = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 }, acceptDownloads: true });
   const page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(`[${name}] ${e.message}`));
+  // Erreurs affichees dans la console du navigateur (souvent invisibles a l'ecran)
+  page.on("console", (m) => { if (m.type() === "error" && !/favicon|Failed to load resource/i.test(m.text())) errors.push(`[${name}] console : ${m.text().slice(0, 300)}`); });
   page.on("dialog", (d) => d.accept());
   await page.addInitScript(([p, dark]) => {
     if (sessionStorage.getItem("seeded")) return;
