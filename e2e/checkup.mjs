@@ -112,6 +112,19 @@ try {
   // Saisie : temps entre la frappe et l'affichage suivant
   const champ = p3.getByLabel(/^Quantité de R1$/);
   await champ.click();
+  // Profil CPU d'une frappe : fonctions qui prennent le plus de temps (diagnostic)
+  try {
+    const cdp = await c3.newCDPSession(p3);
+    await cdp.send("Profiler.enable"); await cdp.send("Profiler.setSamplingInterval", { interval: 500 }); await cdp.send("Profiler.start");
+    await p3.keyboard.type("9"); await p3.waitForTimeout(200);
+    const { profile } = await cdp.send("Profiler.stop");
+    const self = new Map(); const dt = new Map();
+    profile.samples.forEach((id, i) => dt.set(id, (dt.get(id) ?? 0) + (profile.timeDeltas[i] ?? 0)));
+    for (const n of profile.nodes) { const k = `${n.callFrame.functionName || "(anonyme)"} ${n.callFrame.url.split("/").pop()}:${n.callFrame.lineNumber}`; self.set(k, (self.get(k) ?? 0) + (dt.get(n.id) ?? 0) / 1000); }
+    const top = [...self.entries()].filter(([k]) => !/^\(idle|program|garbage/.test(k)).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([k, v]) => `${k} ${Math.round(v)}ms`);
+    verif("Diagnostic : profil d'une frappe", true, top.join(" | "));
+    await p3.keyboard.press("Backspace"); await p3.waitForTimeout(300);
+  } catch (e) { verif("Diagnostic : profil d'une frappe", true, "indisponible " + e.message); }
   const lat = [];
   for (const ch of ["2", "1"]) {
     const t = await p3.evaluate(() => performance.now());
