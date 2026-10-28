@@ -16,7 +16,7 @@ import type { LinearApp } from "@/hooks/use-linear-app";
 export function PiecesACouper({ app }: { app: LinearApp }) {
   const { addPiece, chantier, dateProjet, enCours, erreursChamps, lancer, longueurBarre, longueursProfils, margeSecurite, marquerVide, numeroTache, pasteOpen, pasteText, pieces, removePiece, resultat, setLongueurBarre, setPasteOpen, setPasteText, setPieces, updatePiece } = app;
   return (
-    <Card className="min-w-0 lg:col-span-2">
+    <Card className="min-w-0">
       <CardHeader className="space-y-4">
         <div>
           <CardTitle>Pièces à couper</CardTitle>
