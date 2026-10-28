@@ -1,0 +1,18 @@
+OK     Premier lancement : aucune piece d'exemple
+OK     Rechargement : chantier garde
+OK     Rechargement : pieces gardees
+OK     Piece ajoutee apres rechargement : ligne distincte (Montant, Traverse, Pièce 3)
+OK     Marge negative refusee (Optimisation impossible : La marge de sécurité ne peut pas être négative.)
+OK     Quantite decimale refusee (Optimisation impossible : La quantité de « Montant » doit être un nombre entier. | Optimisation impossible : La marge de sécurité ne peut pas être négative.)
+OK     Calcul affiche
+OK     Bouton PDF actif apres calcul
+OK     Bandeau resultat perime
+OK     PDF bloque si perime
+OK     Relancer efface le bandeau
+OK     Nouveau : liste vide
+OK     Annuler apres Nouveau : saisie retablie
+OK     Trait de scie retenu apres rechargement (lu : 4)
+OK     Nouveau projet garde les reglages (Barre 6 000 mm · marge 100 mm (marge en début de barre) · trait de scie 4 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres)
+OK     Champ vide : le curseur va dessus (Longueur de Pièce 1)
+OK     Mode sombre retenu apres rechargement
+OK     Sauvegarde complete : reglages, theme et projet en cours inclus (linear-theme, linear:active-profile:v1, linear:courant:v1:Principal, linear:profiles:v1, linear:reglages:v1)
