@@ -3,6 +3,7 @@ import { formatNombre as fmt } from "@/lib/format-number";
 import { bilanMatiere } from "@/lib/material-summary";
 import { lireStatutMatiere, type StatutMatiere } from "@/lib/material-status";
 import { useEffect, useMemo, useState } from "react";
+import { ecrireReglages, lireReglages } from "@/lib/reglages";
 import { toast } from "sonner";
 import { type PositionMarge, type Piece, type Strategie, type StockBarre } from "@/lib/optimizer";
 import { optimiserParProfil, listeProfils, seuilPourProfil, piecesTropLongues, type ResultatMulti } from "@/lib/multi-profil";
@@ -36,11 +37,13 @@ export function useLinearApp(profileId: string) {
   const [numeroTache, setNumeroTache] = useState("");
   const [client, setClient] = useState("");
   const [dateProjet, setDateProjet] = useState(() => new Date().toISOString().slice(0, 10));
-  const [longueurBarre, setLongueurBarre] = useState(6000);
-  const [margeSecurite, setMargeSecurite] = useState(100);
-  const [positionMarge, setPositionMarge] = useState<PositionMarge>("debut");
-  const [traitScie, setTraitScie] = useState(3);
-  const [strategie, setStrategie] = useState<Strategie>("min-barres");
+  // Reglages : on repart des derniers utilises (retenus dans le navigateur)
+  const [reglagesInitiaux] = useState(lireReglages);
+  const [longueurBarre, setLongueurBarre] = useState(reglagesInitiaux.longueurBarre);
+  const [margeSecurite, setMargeSecurite] = useState(reglagesInitiaux.margeSecurite);
+  const [positionMarge, setPositionMarge] = useState<PositionMarge>(reglagesInitiaux.positionMarge);
+  const [traitScie, setTraitScie] = useState(reglagesInitiaux.traitScie);
+  const [strategie, setStrategie] = useState<Strategie>(reglagesInitiaux.strategie);
   const [enCours, setEnCours] = useState(false);
   const [stock, setStock] = useState<StockBarre[]>([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
   const [pieces, setPieces] = useState<Piece[]>(DEFAULT_PIECES);
@@ -48,9 +51,12 @@ export function useLinearApp(profileId: string) {
   const matiere = resultat ? bilanMatiere(resultat) : null;
   const [longueursProfils, setLongueursProfils] = useState<Record<string, number>>({});
   const [seuilsProfils, setSeuilsProfils] = useState<Record<string, number>>({});
-  const [seuilChute, setSeuilChute] = useState(500);
+  const [seuilChute, setSeuilChute] = useState(reglagesInitiaux.seuilChute);
   const [chutesPDF, setChutesPDF] = useState<OptionsChutesPDF>(optionsChutesDefaut);
-  const [methodeCoupe, setMethodeCoupe] = useState<MethodeCoupe>("butee");
+  const [methodeCoupe, setMethodeCoupe] = useState<MethodeCoupe>(reglagesInitiaux.methodeCoupe);
+  useEffect(() => {
+    ecrireReglages({ longueurBarre, margeSecurite, positionMarge, traitScie, seuilChute, methodeCoupe, strategie });
+  }, [longueurBarre, margeSecurite, positionMarge, traitScie, seuilChute, methodeCoupe, strategie]);
   const [statutMatiere, setStatutMatiere] = useState<StatutMatiere>(() => lireStatutMatiere());
   const [pdfWarnOpen, setPdfWarnOpen] = useState(false);
   const [verifCtx, setVerifCtx] = useState<{ pieces: Piece[]; traitScie: number } | null>(null);
@@ -148,6 +154,13 @@ export function useLinearApp(profileId: string) {
     });
   };
 
+  // Amene le curseur sur le premier champ en erreur (apres l'affichage du cadre rouge)
+  const focusPremiereErreur = () => setTimeout(() => {
+    const champ = document.querySelector<HTMLElement>('main [aria-invalid="true"]');
+    champ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    champ?.focus({ preventScroll: true });
+  }, 80);
+
   const lancer = () => {
     if (enCours) return;
     // Bloque le lancement si un champ numérique requis est vide ou à 0.
@@ -179,6 +192,7 @@ export function useLinearApp(profileId: string) {
     }
     if (erreurs.size > 0) {
       setErreursChamps(erreurs);
+      focusPremiereErreur();
       toast.error(
         `Optimisation impossible : ${problemes.join(", ")}${erreurs.size > problemes.length ? "…" : ""} ${erreurs.size > 1 ? "sont vides ou à 0" : "est vide ou à 0"}.`,
       );
@@ -193,6 +207,7 @@ export function useLinearApp(profileId: string) {
     });
     if (tropLongues.length > 0) {
       setErreursChamps(new Set(tropLongues.map((p) => `piece-${p.id}-longueur`)));
+      focusPremiereErreur();
       const details = tropLongues
         .slice(0, 3)
         .map((p) => `« ${p.nom || "sans repère"} » (${fmt(p.longueur)} mm) est plus longue que la barre utile (${fmt(p.longueurUtile)} mm)`);
@@ -246,17 +261,9 @@ export function useLinearApp(profileId: string) {
     setNumeroTache("");
     setClient("");
     setDateProjet(new Date().toISOString().slice(0, 10));
-    setLongueurBarre(6000);
-    setMargeSecurite(100);
-    setPositionMarge("debut");
-    setLongueursProfils({});
-    setSeuilsProfils({});
-    setSeuilChute(500);
-    setChutesPDF(optionsChutesDefaut());
-    setMethodeCoupe("butee");
+    // Les reglages (barre, marge, trait de scie, chute mini, methode, strategie, options PDF)
+    // sont gardes d'un projet a l'autre : seules les donnees du chantier repartent de zero.
     setStatutMatiere(lireStatutMatiere());
-    setTraitScie(3);
-    setStrategie("min-barres");
     setStock([{ id: nextStockId(), longueur: 4200, quantite: 4 }]);
     setPieces([{ id: nextId(), nom: "Pièce 1", longueur: 1000, quantite: 1 }]);
     setResultat(null);

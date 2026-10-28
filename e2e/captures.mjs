@@ -56,6 +56,9 @@ await session("principal", {}, async (page) => {
   await shot(page, "02-mes-projets", false);
   await page.getByText("Chantier démo").first().click(); await page.keyboard.press("Escape"); await page.waitForTimeout(500);
   await shot(page, "03-projet-avant-calcul");
+  await page.getByRole("button", { name: /Modifier/ }).first().click(); await page.waitForTimeout(400);
+  await shot(page, "03b-parametres-ouverts", false);
+  await page.getByRole("button", { name: /Replier/ }).first().click(); await page.waitForTimeout(300);
   await run(page);
   await shot(page, "04-resultats");
   const [dl] = await Promise.all([

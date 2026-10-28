@@ -68,11 +68,9 @@ function App({ profileId }: { profileId: string }) {
       <main className="mx-auto max-w-[1440px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <InfosProjet app={app} />
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <ParametresProfile app={app} />
-
-          <PiecesACouper app={app} />
-        </div>
+        {/* Parametres replies en une ligne au-dessus, les pieces prennent toute la largeur */}
+        <ParametresProfile app={app} />
+        <PiecesACouper app={app} />
 
 
         {strategie === "priorite-stock" && (

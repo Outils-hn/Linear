@@ -1,6 +1,9 @@
 import { formatNombre as fmt } from "@/lib/format-number";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { ChevronUp, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { POSITION_MARGE_LABELS, type PositionMarge, type Strategie } from "@/lib/optimizer";
 import { seuilPourProfil } from "@/lib/multi-profil";
@@ -11,13 +14,31 @@ import type { LinearApp } from "@/hooks/use-linear-app";
 /** Carte « Parametres du profile » (barre, marge, trait de scie, strategie). */
 export function ParametresProfile({ app }: { app: LinearApp }) {
   const { erreursChamps, longueurBarre, longueurUtile, longueursProfils, margeSecurite, marquerVide, methodeCoupe, positionMarge, profilsNommes, resultat, setLongueurBarre, setLongueursProfils, setMargeSecurite, setMethodeCoupe, setPositionMarge, setResultat, setSeuilChute, setSeuilsProfils, setStrategie, setTraitScie, seuilChute, seuilsProfils, stock, strategie, traitScie } = app;
+  // Replie par defaut : ces reglages changent rarement. Ils s'ouvrent seuls si un champ est en erreur.
+  const [ouvert, setOuvert] = useState(false);
+  const enErreur = [...erreursChamps].some((k) => !k.startsWith("piece-") && !k.startsWith("stock-"));
+  useEffect(() => { if (enErreur) setOuvert(true); }, [enErreur]);
+  const resume = [
+    `Barre ${fmt(longueurBarre)} mm`,
+    `marge ${fmt(margeSecurite)} mm (${POSITION_MARGE_LABELS[positionMarge].toLowerCase()})`,
+    `trait de scie ${fmt(traitScie)} mm`,
+    `chute mini ${fmt(seuilChute)} mm`,
+    METHODES_COUPE[methodeCoupe],
+    strategie === "priorite-stock" ? "chutes disponibles d'abord" : "minimum de barres",
+    ...profilsNommes.filter((pr) => longueursProfils[pr] != null && longueursProfils[pr] !== longueurBarre).map((pr) => `${pr} : ${fmt(longueursProfils[pr]!)} mm`),
+  ];
   return (
-    <Card className="min-w-0 lg:col-span-1">
-      <CardHeader>
-        <CardTitle>Paramètres du profilé</CardTitle>
-        <CardDescription>Configuration de la barre de base</CardDescription>
+    <Card className="min-w-0">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0 py-4">
+        <div className="min-w-0 space-y-1.5">
+          <CardTitle>Paramètres du profilé</CardTitle>
+          {!ouvert && <p className="text-sm tabular-nums text-foreground">{resume.join(" · ")}</p>}
+        </div>
+        <Button variant="ghost" size="sm" className="gap-1.5" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
+          {ouvert ? <>Replier <ChevronUp className="h-4 w-4" /></> : <><Pencil className="h-3.5 w-3.5" /> Modifier</>}
+        </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
+      {ouvert && <CardContent className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2">
           <Label htmlFor="lb">Longueur de la barre de base</Label>
           <div className="parameter-measure">
@@ -104,7 +125,7 @@ export function ParametresProfile({ app }: { app: LinearApp }) {
           </div>
         </div>
         {profilsNommes.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-2 sm:col-span-2">
             <Label>Longueur de barre par profilé</Label>
             {profilsNommes.map((pr) => (
               <div key={pr} className="grid grid-cols-2 items-center gap-2">
@@ -154,7 +175,7 @@ export function ParametresProfile({ app }: { app: LinearApp }) {
               "Place d'abord les coupes dans les chutes et barres disponibles, complète avec la barre de base."}
           </p>
         </div>
-      </CardContent>
+      </CardContent>}
     </Card>
   );
 }

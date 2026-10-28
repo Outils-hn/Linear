@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { formatNombre as fmt } from "@/lib/format-number";
 import { libelleStatutMatiere, detailsCommande } from "@/lib/material-status";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import type { LinearApp } from "@/hooks/use-linear-app";
 /** Resultats : synthese, bilan matiere, chutes, plans de decoupe par barre. */
 export function Resultats({ app }: { app: LinearApp }) {
   const { chutesPDF, longueurBarre, matiere, methodeCoupe, pieceIds, pieces, resultat, setChutesPDF, statutMatiere, traitScie, verification } = app;
+  const [toutDeplie, setToutDeplie] = useState(false);
   // Affiche seulement quand il y a un resultat (la page ne monte ce composant qu'apres un calcul)
   if (!resultat) return null;
   return (
@@ -68,11 +70,16 @@ export function Resultats({ app }: { app: LinearApp }) {
         </div>
       </div>
       <Card>
-        <CardHeader>
-          <CardTitle>Plan de découpe par barre</CardTitle>
-          <CardDescription>
-            Schéma visuel et instructions de coupe — chutes à conserver signalées en bleu
-          </CardDescription>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+          <div className="space-y-1.5">
+            <CardTitle>Plan de découpe par barre</CardTitle>
+            <CardDescription>
+              Schéma visuel et instructions de coupe — chutes à conserver signalées en bleu
+            </CardDescription>
+          </div>
+          <button type="button" onClick={() => setToutDeplie((v) => !v)} className="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+            {toutDeplie ? "Replier les détails" : "Déplier tous les détails"}
+          </button>
         </CardHeader>
         <CardContent className="space-y-10">
           <LegendeBarres pieces={pieces} pieceIds={pieceIds} />
@@ -106,6 +113,12 @@ export function Resultats({ app }: { app: LinearApp }) {
                   </h3>
                 </div>
                 <BarreSchema barre={barre} traitScie={traitScie} pieceIds={pieceIds} libelle={libelleGroupe(groupe)} methodeCoupe={methodeCoupe} />
+                {/* Tableau de coupe replie par defaut a l'ecran (le PDF atelier le garde toujours) */}
+                <details key={`${groupe.signature}-${toutDeplie}`} open={toutDeplie || undefined} className="group">
+                <summary className="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">
+                  Détail des coupes ({coupesGroupes.length} ligne{coupesGroupes.length > 1 ? "s" : ""})
+                </summary>
+                <div className="mt-2 space-y-2">
                 <p className="text-xs text-muted-foreground">Cotes mesurées depuis l’extrémité brute de la barre</p>
                 {methodeCoupe === "ruban" && <p className="text-xs font-semibold text-foreground">{RAPPEL_RUBAN}</p>}
                 <div className="overflow-hidden rounded-md border border-border">
@@ -132,6 +145,8 @@ export function Resultats({ app }: { app: LinearApp }) {
                     </TableBody>
                   </Table>
                 </div>
+                </div>
+                </details>
                 <p className="text-xs text-muted-foreground tabular-nums">
                   Chute finale : <span className="font-medium text-foreground">{fmt(barre.chute)} mm</span>
                   {" — "}
