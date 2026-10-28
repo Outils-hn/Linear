@@ -83,6 +83,14 @@ try {
 try {
   const c3 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const p3 = await c3.newPage();
+  // Diagnostic : le calcul passe-t-il bien par un Web Worker ? quelles taches longues bloquent la page ?
+  await p3.addInitScript(() => {
+    window.__workers = 0; window.__workerErr = "";
+    const W = window.Worker;
+    window.Worker = function (...a) { window.__workers++; const w = new W(...a); w.addEventListener("error", (e) => { window.__workerErr = String(e.message || "erreur"); }); return w; };
+    window.__longues = [];
+    try { new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__longues.push(Math.round(e.duration)); }).observe({ type: "longtask", buffered: true }); } catch {}
+  });
   await p3.goto(BASE, { waitUntil: "networkidle" });
   const lignes300 = Array.from({ length: 300 }, (_, i) => `R${i + 1}\tProfil ${(i % 6) + 1}\t${200 + ((i * 137) % 2800)}\t20`).join("\n");
   await p3.getByRole("button", { name: "Coller depuis Excel" }).click();
@@ -98,6 +106,8 @@ try {
   const dureeCalcul = Date.now() - t0;
   const bloc = await p3.evaluate(() => { clearInterval(window.__tic); return Math.round(window.__bloc); });
   verif("6 000 pieces : calcul termine", dureeCalcul < 60000, `${dureeCalcul} ms`);
+  const diag = await p3.evaluate(() => ({ w: window.__workers, err: window.__workerErr, longues: window.__longues.slice().sort((x, y) => y - x).slice(0, 5) }));
+  verif("Diagnostic : calcul dans un Web Worker", diag.w > 0 && !diag.err, `workers ${diag.w}, erreur « ${diag.err} », taches longues ${diag.longues.join(" / ")} ms`);
   verif("6 000 pieces : ecran jamais fige plus de 3 s pendant le calcul et l'affichage", bloc < 3000, `blocage max ${bloc} ms`);
   // Saisie : temps entre la frappe et l'affichage suivant
   const champ = p3.getByLabel(/^Quantité de R1$/);
