@@ -89,7 +89,7 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
               <TableHead className="w-[24%] sm:w-[20%]">Repère</TableHead>
               <TableHead className="w-[24%] sm:w-[35%]">Profilé</TableHead>
               <TableHead className="numeric w-[26%] sm:w-[20%]">Longueur (mm)</TableHead>
-              <TableHead className="numeric w-[16%] sm:w-[15%]">Qté<span className="hidden sm:inline">ntité</span></TableHead>
+              <TableHead className="numeric w-[16%] sm:w-[15%]"><span className="sm:hidden">Qté</span><span className="hidden sm:inline">Quantité</span></TableHead>
               <TableHead className="w-[10%]"></TableHead>
             </TableRow>
           </TableHeader>
