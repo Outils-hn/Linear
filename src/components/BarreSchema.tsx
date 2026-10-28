@@ -13,7 +13,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 
 interface Props { barre: BarreOptimisee; traitScie: number; pieceIds: string[]; libelle?: string; methodeCoupe?: MethodeCoupe }
 
-function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: Props & { zone: [number, number]; regle?: boolean; onZone?: (zone: [number, number]) => void }) {
+function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone, methodeCoupe = "butee" }: Props & { zone: [number, number]; regle?: boolean; onZone?: (zone: [number, number]) => void }) {
   const id = useId().replace(/:/g, "");
   const [hover, setHover] = useState<SegmentBarre | null>(null);
   const [selection, setSelection] = useState<[number, number] | null>(null);
@@ -45,14 +45,15 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone }: P
     return context.measureText(text).width;
   }) : [];
   const references = labels.filter(l => !l.lignes.length);
-  const cotes = fontReady ? cotesFinSeries(seriesPieces(segments.filter(s => s.type === "piece")), x, largeur, text => {
+  // Reperes cumules sous la barre : utiles seulement au ruban (en butee, ils sont dans le tableau)
+  const cotes = fontReady && methodeCoupe === "ruban" ? cotesFinSeries(seriesPieces(segments.filter(s => s.type === "piece")), x, largeur, text => {
     const context = mesure.current;
     if (!context) return Infinity;
     context.font = '400 10px "IBM Plex Sans"';
     return context.measureText(text).width;
   }) : [];
   const top = regle ? 45 : references.length ? (Math.max(...references.map(l => l.niveau)) + 1) * 16 + 4 : 0;
-  const height = regle ? 256 : top + barHeight + 23;
+  const height = regle ? 256 : top + barHeight + (cotes.length ? 23 : 4);
   const pos = (e: PointerEvent<SVGSVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     return Math.max(zone[0], Math.min(zone[1], zone[0] + (e.clientX - r.left) / r.width * span));
@@ -128,7 +129,7 @@ export function BarreSchema({ barre, traitScie, pieceIds, libelle, methodeCoupe 
   };
   return <div className="w-full font-mono font-normal">
     <Button variant="ghost" aria-label={`Agrandir ${libelle ?? `barre ${barre.index}`}`} className="block h-auto w-full rounded-md border border-border p-0 hover:bg-transparent" onClick={() => { setZone([0, barre.longueurBrute]); setOpen(true); }}>
-      <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={[0, barre.longueurBrute]}/>
+      <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={[0, barre.longueurBrute]} methodeCoupe={methodeCoupe}/>
     </Button>
     {methodeCoupe === "ruban" && <p className="mt-1 text-left text-xs text-muted-foreground">{DETAIL_COTES_RUBAN}</p>}
     <div className="mt-1 text-xs text-muted-foreground">Marge début : {fmt(barre.margeDebut ?? 0)} mm · Marge fin : {fmt(barre.margeFin ?? 0)} mm · Chute : <span className={barre.chuteReutilisable ? "font-semibold text-warning" : "font-semibold text-muted-foreground"}>{fmt(barre.chute)} mm — {barre.chuteReutilisable ? `Réutilisable (≥ ${fmt(barre.seuilChute ?? SEUIL_CHUTE_REUTILISABLE)} mm)` : "Déchet"}</span></div>
@@ -139,7 +140,7 @@ export function BarreSchema({ barre, traitScie, pieceIds, libelle, methodeCoupe 
           <span className="text-sm tabular-nums">{fmt(zone[0])} à {fmt(zone[1])} mm · x {fmt(barre.longueurBrute / (zone[1] - zone[0]))}</span>
           <div className="flex gap-1">{[{ label: "Zoomer", Icon: ZoomIn, action: () => zoom(0.5) }, { label: "Dézoomer", Icon: ZoomOut, action: () => zoom(2) }, { label: "Vue complète", Icon: RotateCcw, action: () => setZone([0, barre.longueurBrute]) }].map(({label, Icon, action}) => <Tooltip key={label}><TooltipTrigger asChild><Button size="icon" variant="outline" aria-label={label} onClick={action}><Icon className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent>{label}</TooltipContent></Tooltip>)}</div>
         </div></TooltipProvider>
-        <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={zone} regle onZone={setZone}/>
+        <BarreSVG barre={barre} traitScie={traitScie} pieceIds={pieceIds} zone={zone} regle onZone={setZone} methodeCoupe={methodeCoupe}/>
         <div className="flex items-center gap-3"><span className="text-xs text-muted-foreground">Zone</span><input aria-label="Déplacer la zone de zoom" type="range" min="0" max={Math.max(0, barre.longueurBrute - (zone[1] - zone[0]))} step="1" value={zone[0]} disabled={zone[1] - zone[0] >= barre.longueurBrute} className="w-full accent-primary" onChange={e => { const start = Number(e.target.value); setZone([start, start + zone[1] - zone[0]]); }}/></div>
       </DialogContent>
     </Dialog>
