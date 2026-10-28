@@ -1,8 +1,9 @@
 // Check-up automatique de Linear dans un vrai navigateur : enregistrement du projet en cours,
-// saisies refusees, resultat perime, annulation de « Nouveau ».
+// saisies refusees, resultat perime, annulation de « Nouveau », memoire des reglages, theme,
+// curseur sur le champ en erreur, sauvegarde complete.
 // Resultat : checkup.txt (OK / ECHEC) + quelques captures. Donnees fictives uniquement.
 import { chromium } from "playwright";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const BASE = process.env.APP_URL ?? "http://127.0.0.1:8080/";
 const OUT = process.argv[2] ?? "captures";
@@ -77,6 +78,41 @@ try {
 } catch (e) {
   verif("Parcours complet", false, e.message.split("\n")[0]);
 }
+
+// Reglages, theme, champ vide et sauvegarde complete (navigateur neuf)
+try {
+  const c2 = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
+  const p2 = await c2.newPage();
+  p2.on("dialog", (d) => d.accept());
+  await p2.goto(BASE, { waitUntil: "networkidle" });
+  await p2.getByRole("button", { name: /Modifier/ }).first().click();
+  await p2.locator("#ts").fill("4"); await p2.waitForTimeout(300);
+  await p2.reload({ waitUntil: "networkidle" });
+  await p2.getByRole("button", { name: /Modifier/ }).first().click();
+  const ts = await p2.locator("#ts").inputValue();
+  verif("Trait de scie retenu apres rechargement", ts === "4", `lu : ${ts}`);
+  await p2.getByRole("button", { name: /Replier/ }).first().click();
+  await p2.getByRole("button", { name: /^Nouveau$/ }).first().click(); await p2.waitForTimeout(400);
+  const resume = await p2.getByText(/trait de scie/).first().textContent();
+  verif("Nouveau projet garde les reglages", /trait de scie 4 mm/.test(resume ?? ""), resume ?? "");
+  // Champ vide : curseur dessus au lancement (le nouveau projet est vide : on ajoute une piece)
+  await p2.getByRole("button", { name: /Ajouter/ }).click(); await p2.waitForTimeout(200);
+  const longueur = p2.getByLabel(/^Longueur de /).first();
+  await longueur.fill(""); await p2.waitForTimeout(200);
+  await p2.getByRole("button", { name: /Lancer l'optimisation/ }).click(); await p2.waitForTimeout(600);
+  const actif = await p2.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? "");
+  verif("Champ vide : le curseur va dessus", /^Longueur de /.test(actif), actif);
+  await longueur.fill("1000");
+  await p2.getByRole("button", { name: "Basculer le thème" }).click(); await p2.waitForTimeout(200);
+  await p2.reload({ waitUntil: "networkidle" });
+  verif("Mode sombre retenu apres rechargement", await p2.evaluate(() => document.documentElement.classList.contains("dark")));
+  await p2.getByRole("button", { name: /^Sauvegarde$/ }).click();
+  const [dl] = await Promise.all([p2.waitForEvent("download"), p2.getByRole("button", { name: /Télécharger la sauvegarde/ }).click()]);
+  const chemin = `${OUT}/sauvegarde-test.json`; await dl.saveAs(chemin);
+  const json = JSON.parse(readFileSync(chemin, "utf8"));
+  verif("Sauvegarde complete : reglages, theme et projet en cours inclus", json.app === "linear" && "linear:reglages:v1" in json.data && "linear-theme" in json.data && Object.keys(json.data).some((k) => k.startsWith("linear:courant:v1:")), Object.keys(json.data).join(", "));
+  await c2.close();
+} catch (e) { verif("Deroulement du check-up reglages", false, e.message.split("\n")[0]); }
 await browser.close();
 writeFileSync(`${OUT}/checkup.txt`, lignes.join("\n"));
 console.log(lignes.join("\n"));
