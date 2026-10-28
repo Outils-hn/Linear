@@ -1,0 +1,28 @@
+OK     Premier lancement : aucune piece d'exemple
+OK     Rechargement : chantier garde
+OK     Rechargement : pieces gardees
+OK     Piece ajoutee apres rechargement : ligne distincte (Montant, Traverse, Pièce 3)
+OK     Marge negative refusee (Optimisation impossible : La marge de sécurité ne peut pas être négative. | Pièce « Pièce 3 » supprimée Annuler)
+OK     Quantite decimale refusee (Optimisation impossible : La quantité de « Montant » doit être un nombre entier. | Optimisation impossible : La marge de sécurité ne peut pas être négative. | Pièce « Pièce 3 » supprimée Annuler)
+OK     Calcul affiche
+OK     Bouton PDF actif apres calcul
+OK     Bandeau resultat perime
+OK     PDF bloque si perime
+OK     Relancer efface le bandeau
+OK     Suppression d'une piece : Annuler la remet a sa place (Montant, Traverse)
+OK     Import .xlsx : fenetre de collage ouverte
+OK     Import .xlsx : pieces ajoutees (437,5 mm) (437,5)
+OK     Nouveau : liste vide
+OK     Annuler apres Nouveau : saisie retablie
+OK     Diagnostic : profil du calcul et de l'affichage (Resultats components/linear/Resultats.tsx:15 142ms | (anonyme) components/linear/Resultats.tsx:278 140ms | (anonyme) components/linear/Resultats.tsx:314 136ms | (anonyme) components/linear/Resultats.tsx:317 132ms | (anonyme) components/linear/Resultats.tsx:426 54ms | BarreSVG components/BarreSchema.tsx:18 29ms | BarreSchema components/BarreSchema.tsx:321 19ms | App routes/index.tsx:34 19ms | PiecesACouper components/linear/PiecesACouper.tsx:18 16ms | useLinearApp hooks/use-linear-app.tsx:27 15ms)
+OK     6 000 pieces : calcul termine (5360 ms)
+OK     Diagnostic : calcul dans un Web Worker (workers 1, erreur «  », taches longues 894 / 718 / 431 / 113 / 102 ms)
+OK     6 000 pieces : ecran jamais fige plus de 3 s pendant le calcul et l'affichage (blocage max 768 ms)
+OK     Diagnostic : profil d'une frappe (exports.jsxDEV react_jsx-dev-runtime.js?v=11770848:238 19ms | exports.jsx chunk-SZINW6JV.js?v=c5cd49f3:238 4ms | ReactElement react_jsx-dev-runtime.js?v=11770848:126 2ms | dispatchDiscreteEvent react-dom_client.js?v=11770848:16759 2ms | exports.createElement chunk-BPGYRLWZ.js?v=c5cd49f3:760 2ms | getInstIfValueChanged react-dom_client.js?v=11770848:2799 1ms | (anonyme) use-linear-app.tsx:184 1ms | (anonyme) react-dom_client.js?v=11770848:5231 1ms)
+OK     300 lignes : saisie fluide (< 300 ms par frappe) (61 ms)
+OK     Champ nombre : format « 1 200 » a la sortie
+OK     Trait de scie retenu apres rechargement (lu : 4)
+OK     Nouveau projet garde les reglages (Barre 6 000 mm · marge 100 mm (marge en début de barre) · trait de scie 4 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres)
+OK     Champ vide : le curseur va dessus (Longueur de Pièce 1)
+OK     Mode sombre retenu apres rechargement
+OK     Sauvegarde complete : reglages, theme et projet en cours inclus (linear-theme, linear:active-profile:v1, linear:courant:v1:Principal, linear:profiles:v1, linear:reglages:v1)
