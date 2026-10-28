@@ -1,0 +1,25 @@
+OK     Premier lancement : aucune piece d'exemple
+OK     Rechargement : chantier garde
+OK     Rechargement : pieces gardees
+OK     Piece ajoutee apres rechargement : ligne distincte (Montant, Traverse, Pièce 3)
+OK     Marge negative refusee (Optimisation impossible : La marge de sécurité ne peut pas être négative.)
+OK     Quantite decimale refusee (Optimisation impossible : La quantité de « Montant » doit être un nombre entier. | Optimisation impossible : La marge de sécurité ne peut pas être négative.)
+OK     Calcul affiche
+OK     Bouton PDF actif apres calcul
+OK     Bandeau resultat perime
+OK     PDF bloque si perime
+OK     Relancer efface le bandeau
+OK     Nouveau : liste vide
+OK     Annuler apres Nouveau : saisie retablie
+OK     Diagnostic : profil du calcul et de l'affichage (Resultats components/linear/Resultats.tsx:15 292ms | (anonyme) components/linear/Resultats.tsx:278 289ms | (anonyme) components/linear/Resultats.tsx:314 288ms | (anonyme) components/linear/Resultats.tsx:317 274ms | (anonyme) components/linear/Resultats.tsx:426 140ms | BarreSVG components/BarreSchema.tsx:18 73ms | BarreSchema components/BarreSchema.tsx:321 45ms | (anonyme) components/BarreSchema.tsx:148 36ms | PiecesACouper components/linear/PiecesACouper.tsx:16 34ms | (anonyme) components/linear/PiecesACouper.tsx:218 33ms)
+OK     6 000 pieces : calcul termine (6407 ms)
+OK     Diagnostic : calcul dans un Web Worker (workers 1, erreur «  », taches longues 1445 / 1229 / 713 / 187 / 183 ms)
+OK     6 000 pieces : ecran jamais fige plus de 3 s pendant le calcul et l'affichage (blocage max 1618 ms)
+OK     Diagnostic : profil d'une frappe (exports.jsxDEV react_jsx-dev-runtime.js?v=c363251c:238 49ms | exports.jsx chunk-SZINW6JV.js?v=985166b2:238 10ms | exports.createElement chunk-BPGYRLWZ.js?v=985166b2:760 8ms | ReactElement react_jsx-dev-runtime.js?v=c363251c:126 6ms | now :-1 2ms | dispatchDiscreteEvent react-dom_client.js?v=c363251c:16759 2ms | measure :-1 1ms | run :-1 1ms)
+OK     300 lignes : saisie fluide (< 300 ms par frappe) (128 ms)
+OK     Champ nombre : format « 1 200 » a la sortie
+OK     Trait de scie retenu apres rechargement (lu : 4)
+OK     Nouveau projet garde les reglages (Barre 6 000 mm · marge 100 mm (marge en début de barre) · trait de scie 4 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres)
+OK     Champ vide : le curseur va dessus (Longueur de Pièce 1)
+OK     Mode sombre retenu apres rechargement
+OK     Sauvegarde complete : reglages, theme et projet en cours inclus (linear-theme, linear:active-profile:v1, linear:courant:v1:Principal, linear:profiles:v1, linear:reglages:v1)
