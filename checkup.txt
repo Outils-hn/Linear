@@ -1,0 +1,13 @@
+OK     Premier lancement : aucune piece d'exemple
+OK     Rechargement : chantier garde
+OK     Rechargement : pieces gardees
+OK     Piece ajoutee apres rechargement : ligne distincte (Montant, Traverse, Pièce 3)
+OK     Marge negative refusee (Optimisation impossible : La marge de sécurité ne peut pas être négative.)
+OK     Quantite decimale refusee (Optimisation impossible : La quantité de « Montant » doit être un nombre entier. | Optimisation impossible : La marge de sécurité ne peut pas être négative.)
+OK     Calcul affiche
+OK     Bouton PDF actif apres calcul
+OK     Bandeau resultat perime
+OK     PDF bloque si perime
+OK     Relancer efface le bandeau
+OK     Nouveau : liste vide
+OK     Annuler apres Nouveau : saisie retablie
