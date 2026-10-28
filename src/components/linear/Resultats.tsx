@@ -27,33 +27,29 @@ export function Resultats({ app }: { app: LinearApp }) {
         <QualiteResultat optimal={resultat.optimal} nbBarres={resultat.nbBarres} borneMin={resultat.borneMin} />
       </div>
       {verification && !verification.ok && <ul className="list-disc space-y-1 pl-6 text-sm text-destructive">{verification.problemes.map((pb, i) => <li key={i}>{pb}</li>)}</ul>}
-      <div className="rounded-lg border-2 border-foreground/70 px-5 py-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-3">
-          <div className="space-y-1.5">
+      {/* Bandeau principal (style Epure) : ce qu'il faut commander en grand, le rendement a droite */}
+      <div className="border-t border-foreground pt-5">
+        <div className="flex flex-wrap items-start justify-between gap-x-10 gap-y-5">
+          <div className="flex flex-wrap gap-x-14 gap-y-5">
             {lignesCommande(resultat, longueurBarre).map((ligne, i) => (
               <div key={i}>
-              <p className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-sm text-foreground">
-                  {libelleStatutMatiere(statutMatiere)}{ligne.profil ? ` · ${ligne.profil}` : ""} :
-                </span>
-                <span className="font-display text-2xl font-bold tabular-nums text-primary">
-                  {fmt(ligne.nb)} x {fmt(ligne.longueurBarre)} mm
-                </span>
-              </p>
-              {ligne.stock > 0 && <p className="text-sm tabular-nums text-warning">{texteStock(ligne.stock)}</p>}
-              {detailsCommande(statutMatiere) && <p className="mt-1 text-sm tabular-nums text-muted-foreground">— {detailsCommande(statutMatiere)}</p>}
+                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                  {libelleStatutMatiere(statutMatiere)}{ligne.profil ? ` · ${ligne.profil}` : ""}
+                </p>
+                <p className="mt-2 text-[34px] font-semibold leading-none tracking-[-0.03em] tabular-nums text-foreground">
+                  {fmt(ligne.nb)} <span className="text-lg font-medium text-muted-foreground">× {fmt(ligne.longueurBarre)} mm</span>
+                </p>
+                {ligne.stock > 0 && <p className="mt-1.5 text-sm tabular-nums text-warning">{texteStock(ligne.stock)}</p>}
+                {detailsCommande(statutMatiere) && <p className="mt-1 text-sm tabular-nums text-muted-foreground">— {detailsCommande(statutMatiere)}</p>}
               </div>
             ))}
-            <p className="text-xs tabular-nums text-muted-foreground">{fmt(resultat.longueurTotale)} mm au total</p>
           </div>
-          <div className="space-y-1.5 min-w-0">
-          <p className="flex items-baseline gap-x-2">
-            <span className="text-sm text-foreground">Rendement :</span>
-            <span className="font-display text-2xl font-bold tabular-nums text-primary">{fmt(resultat.rendement, 1)} %</span>
-          </p>
-          <p className="text-xs tabular-nums text-muted-foreground">{fmt(resultat.longueurUtile)} mm de pièces / {fmt(resultat.longueurTotale)} mm {resultat.nbBarresStock > 0 ? `de barres (dont ${fmt(longueurDuStock(resultat))} mm du stock)` : "achetés"}</p>
+          <div className="min-w-0 sm:text-right">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Rendement</p>
+            <p className="mt-1 text-[56px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-foreground">{fmt(resultat.rendement, 1)}<span className="text-2xl text-muted-foreground"> %</span></p>
           </div>
         </div>
+        <p className="mt-4 text-xs tabular-nums text-muted-foreground">{fmt(resultat.longueurUtile)} mm de pièces / {fmt(resultat.longueurTotale)} mm {resultat.nbBarresStock > 0 ? `de barres (dont ${fmt(longueurDuStock(resultat))} mm du stock)` : "achetés"}</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <StatCard label="Chutes réutilisables" value={`${fmt(resultat.longueurChutesReutilisables)} mm (${fmt(matiere?.parts[1].affiche ?? 0, 1)} %)`} hint="De la matière achetée" accent="warning" />
@@ -64,16 +60,16 @@ export function Resultats({ app }: { app: LinearApp }) {
         <h2 className="mb-1 font-semibold">Bilan matière</h2>
         <p>{fmt(resultat.longueurTotale)} mm = {fmt(resultat.longueurUtile)} pièces + {fmt(resultat.longueurTraitsScie)} traits de scie + {fmt(resultat.longueurMarges)} marges + {fmt(resultat.longueurChutes)} chutes</p>
         <p className="mt-2">{matiere?.repartition}</p>
-        <div aria-label="Répartition du bilan matière" className="mt-4 flex h-3 w-full overflow-hidden rounded-sm">
-          {matiere?.parts.map((part, i) => <div key={i} title={`${["Pièces", "Chutes réutilisables", "Perte définitive"][i]} : ${fmt(part.value)} mm (${fmt(part.affiche, 1)} %)`} className={["bg-piece-1", "reusable-hatch", "offcut-hatch"][i]} style={{ width: `${part.pourcentage}%` }} />)}
+        <div aria-label="Répartition du bilan matière" className="mt-4 flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full">
+          {matiere?.parts.map((part, i) => <div key={i} title={`${["Pièces", "Chutes réutilisables", "Perte définitive"][i]} : ${fmt(part.value)} mm (${fmt(part.affiche, 1)} %)`} className={["bg-foreground", "bg-signal", "bg-[color:var(--hatch)]"][i]} style={{ width: `${part.pourcentage}%` }} />)}
         </div>
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
-          {matiere?.parts.map((part, i) => <span key={i} className="flex items-center gap-2"><i className={"h-2.5 w-2.5 rounded-sm " + ["bg-piece-1", "reusable-hatch", "offcut-hatch"][i]} />{["Pièces", "Chutes réutilisables", "Perte définitive"][i]} <span className="font-mono text-foreground">{fmt(part.value)} mm</span></span>)}
+          {matiere?.parts.map((part, i) => <span key={i} className="flex items-center gap-2"><i className={"h-2.5 w-2.5 rounded-sm " + ["bg-foreground", "bg-signal", "bg-[color:var(--hatch)]"][i]} />{["Pièces", "Chutes réutilisables", "Perte définitive"][i]} <span className="font-mono text-foreground">{fmt(part.value)} mm</span></span>)}
         </div>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Plan de découpe par barre</CardTitle>
+          <CardTitle>Plan de découpe par barre</CardTitle>
           <CardDescription>
             Schéma visuel et instructions de coupe — chutes à conserver signalées en orange
           </CardDescription>

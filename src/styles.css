@@ -41,9 +41,10 @@
   --color-piece-6: var(--piece-6);
   --color-piece-7: var(--piece-7);
   --color-piece-8: var(--piece-8);
-  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-display: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-sans: 'Geist', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display: 'Geist', 'IBM Plex Sans', system-ui, sans-serif;
+  --color-signal: var(--signal);
   --color-heading: var(--heading);
   --color-piece-ink: var(--piece-ink);
   --color-cut-separator: var(--cut-separator);
@@ -51,114 +52,110 @@
   --color-hatch: var(--hatch);
 }
 
-/* ============ LIGHT (default) — Technical paper / engineering sheet ============ */
+/* ============ LIGHT — style « Epure » : blanc casse, encre noire, accent bleu cobalt ============ */
+/* Les valeurs lues par le PDF (piece-*, warning, hatch, pdf-*...) restent en hexadecimal. */
 :root {
   --radius: 0.625rem;
-  --heading: oklch(0.279 0.041 260.031);
-  --piece-ink: #374151;
-  --table-heading: var(--piece-ink);
-  --table-header-surface: var(--muted);
+  --heading: #111214;
+  --piece-ink: #111214;
+  --table-heading: #707379;
+  --table-header-surface: transparent;
   --cut-separator: #ffffff;
-  --offcut-paper: #FCE3C6;
-  --hatch: #a5adb6;
-  --rail: oklch(0.75 0.01 250 / 0.10);
-  --pdf-primary: #1F5FAD;
-  --pdf-heading: #1E293B;
-  --pdf-muted: #64748b;
-  --pdf-table-head: #f1f3f5;
-  --pdf-total-row: #eef1f4;
-  --pdf-table-stripe: #fafbfc;
-  --pdf-success: #298451;
-  --pdf-error: #b83e3e;
+  --offcut-paper: #E6ECFF;
+  --hatch: #B9B9B4;
+  --rail: transparent;
+  --signal: #2B50FF;
+  --pdf-primary: #2B50FF;
+  --pdf-heading: #111214;
+  --pdf-muted: #707379;
+  --pdf-table-head: #F3F3F1;
+  --pdf-total-row: #F3F3F1;
+  --pdf-table-stripe: #FFFFFF;
+  --pdf-success: #1F7A4D;
+  --pdf-error: #B83E3E;
   --pdf-print-ink: #000000;
 
-  --background: oklch(0.98 0.003 240);          /* ~#f4f6f8 */
-  --foreground: oklch(0.22 0.02 250);           /* ~#1e293b anthracite */
-  --card: oklch(1 0 0);                          /* pure white */
-  --card-foreground: oklch(0.22 0.02 250);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.02 250);
+  --background: #FBFBFA;
+  --foreground: #111214;
+  --card: #FFFFFF;
+  --card-foreground: #111214;
+  --popover: #FFFFFF;
+  --popover-foreground: #111214;
 
-  /* Workshop controls — orange belongs to reusable offcuts only. */
-  --primary: oklch(0.488604 0.140023 255.772374);
-  --primary-foreground: oklch(0.99 0 0);
+  /* Boutons en encre noire ; le bleu est reserve aux chutes a garder et au bouton de calcul. */
+  --primary: #111214;
+  --primary-foreground: #FFFFFF;
 
-  --secondary: oklch(0.95 0.005 240);
-  --secondary-foreground: oklch(0.25 0.02 250);
-  --muted: oklch(0.95 0.005 240);
-  --muted-foreground: oklch(0.48 0.012 250);
-  --accent: oklch(0.94 0.006 240);
-  --accent-foreground: oklch(0.22 0.02 250);
+  --secondary: #F0F0EE;
+  --secondary-foreground: #111214;
+  --muted: #F0F0EE;
+  --muted-foreground: #6B6E74;
+  --accent: #F0F0EE;
+  --accent-foreground: #111214;
 
-  --destructive: oklch(0.58 0.22 25);
+  --destructive: oklch(0.56 0.2 27);
   --destructive-foreground: oklch(0.99 0 0);
 
-  --border: oklch(0.88 0.006 240);               /* steel-grey fine border */
-  --input: oklch(0.88 0.006 240);
-  --ring: var(--primary);
+  --border: #E7E7E4;
+  --input: #DEDEDA;
+  --ring: #111214;
 
-  --success: oklch(0.62 0.15 155);
+  --success: oklch(0.55 0.13 155);
   --success-foreground: oklch(0.99 0 0);
-  --warning: #E8913A;
-  --warning-foreground: oklch(0.2 0.02 70);
-  --waste: #f0f2f4;
+  --warning: #2B50FF;
+  --warning-foreground: #FFFFFF;
+  --waste: #F1F1EF;
 
-  --piece-1: #A8C5E8;
-  --piece-2: #B5D8B0;
-  --piece-3: #C9C0E8;
-  --piece-4: #E8D9B0;
-  --piece-5: #E8B8C0;
-  --piece-6: #A8DCD0;
-  --piece-7: #BAC9D8;
-  --piece-8: #D7DDBB;
+  --piece-1: #DCE4F5;
+  --piece-2: #DDEBDD;
+  --piece-3: #E4DFF2;
+  --piece-4: #F2ECD8;
+  --piece-5: #F2DEE0;
+  --piece-6: #D8ECE8;
+  --piece-7: #E2E5EA;
+  --piece-8: #E6E9D6;
 }
 
-/* ============ DARK — Titanium / anthracite ============ */
+/* ============ DARK ============ */
 .dark {
-  --table-heading: #CBD5E1;
-  --table-header-surface: #34383E;
-  --optimization-action: #3B82F6;
+  --table-heading: #9A9DA3;
+  --table-header-surface: transparent;
+  --optimization-action: #4D6BFF;
   --optimization-action-foreground: #FFFFFF;
-  --heading: oklch(0.9 0.025 250);
-  --rail: oklch(0.8 0.01 250 / 0.04);
-  --background: oklch(0.22 0.004 240);
-  --foreground: oklch(0.97 0.003 240);
-  --card: oklch(0.27 0.005 240);
-  --card-foreground: oklch(0.97 0.003 240);
-  --popover: oklch(0.26 0.005 240);
-  --popover-foreground: oklch(0.97 0.003 240);
+  --heading: #EDEDEB;
+  --rail: transparent;
+  --background: #121315;
+  --foreground: #EDEDEB;
+  --card: #1A1B1E;
+  --card-foreground: #EDEDEB;
+  --popover: #1A1B1E;
+  --popover-foreground: #EDEDEB;
 
-  --primary: oklch(0.72 0.14 245);
-  --primary-foreground: oklch(0.18 0.01 245);
+  --primary: #EDEDEB;
+  --primary-foreground: #121315;
 
-  --secondary: oklch(0.32 0.006 240);
-  --secondary-foreground: oklch(0.92 0.003 240);
-  --muted: oklch(0.30 0.005 240);
-  --muted-foreground: #B8C2CE;
-  --accent: oklch(0.32 0.006 240);
-  --accent-foreground: oklch(0.95 0.003 240);
+  --secondary: #26272B;
+  --secondary-foreground: #EDEDEB;
+  --muted: #26272B;
+  --muted-foreground: #A3A6AC;
+  --accent: #26272B;
+  --accent-foreground: #EDEDEB;
 
-  --destructive: oklch(0.62 0.21 25);
+  --destructive: oklch(0.64 0.2 25);
   --destructive-foreground: oklch(0.98 0 0);
 
-  --border: oklch(0.38 0.006 240 / 0.55);
-  --input: oklch(0.38 0.006 240 / 0.6);
-  --ring: oklch(0.72 0.14 245);
+  --border: #2C2D31;
+  --input: #36373C;
+  --ring: #EDEDEB;
 
-  --success: oklch(0.72 0.15 155);
+  --success: oklch(0.7 0.14 155);
   --success-foreground: oklch(0.15 0.02 155);
-  --warning: #E8913A;
-  --warning-foreground: oklch(0.2 0.02 70);
-  --waste: #f0f2f4;
-
-  --piece-1: #A8C5E8;
-  --piece-2: #B5D8B0;
-  --piece-3: #C9C0E8;
-  --piece-4: #E8D9B0;
-  --piece-5: #E8B8C0;
-  --piece-6: #A8DCD0;
-  --piece-7: #BAC9D8;
-  --piece-8: #D7DDBB;
+  --warning: #6F87FF;
+  --warning-foreground: #FFFFFF;
+  --signal: #4D6BFF;
+  --offcut-paper: #1E2440;
+  --waste: #202124;
+  --hatch: #4A4B50;
 }
 
 .offcut-hatch {
@@ -189,15 +186,17 @@
 .bar-piece-label { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; }
 input[type="number"] { text-align: right; }
 table thead { background: var(--table-header-surface); }
-table tbody tr:nth-child(even) { background: color-mix(in oklab, var(--muted) 30%, transparent); }
+table thead tr { border-bottom: 1px solid var(--foreground); }
 table tr { height: 36px; }
 table td, table th { padding-top: 2px; padding-bottom: 2px; }
 table input { height: 30px; }
 table td:has(input[type="number"]) { text-align: right; }
 table th.numeric { text-align: right; }
-table thead th { font-family: var(--font-sans); font-size: 12px; font-weight: 600; color: var(--table-heading); }
+table thead th { font-family: var(--font-sans); font-size: 12px; font-weight: 500; color: var(--table-heading); }
 .dark table thead tr { background: var(--table-header-surface); }
 .dark table thead th button { color: var(--table-heading); }
+.optimization-launch { background: var(--signal); color: #FFFFFF; border-radius: 999px; }
+.optimization-launch:hover { background: var(--signal); filter: brightness(0.94); }
 .dark .optimization-launch { background: var(--optimization-action); color: var(--optimization-action-foreground); }
 .dark .optimization-launch:hover { background: var(--optimization-action); filter: brightness(0.94); }
 table td:has(input) { padding-left: 0; padding-right: 0; }

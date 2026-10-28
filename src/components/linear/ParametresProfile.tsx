@@ -14,7 +14,7 @@ export function ParametresProfile({ app }: { app: LinearApp }) {
   return (
     <Card className="min-w-0 lg:col-span-1">
       <CardHeader>
-        <CardTitle className="text-base">Paramètres du profilé</CardTitle>
+        <CardTitle>Paramètres du profilé</CardTitle>
         <CardDescription>Configuration de la barre de base</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

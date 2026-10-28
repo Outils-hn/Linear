@@ -128,38 +128,38 @@ export async function exporterPDF(
   const sansTypes = chutesPDF.mode === "none";
   const consigne = chutesPDF.mode === "instruction";
 
-  doc.setFillColor(...themeRgb("pdf-heading"));
-  doc.rect(0, 0, pageWidth, 28, "F");
-  doc.setTextColor(...themeRgb("cut-separator"));
-  doc.setFontSize(16);
-  doc.setFont("PlexSans", "bold");
-  doc.text("FICHE DE DÉBIT — Atelier", margin, 12);
-
-  doc.setFontSize(10);
-  doc.setFont("PlexSans", "normal");
+  // En-tete (style Epure) : logo, nom de l'appli, titre du document, cartouche du projet
+  const ink = themeRgb("pdf-heading"), gris = themeRgb("pdf-muted");
+  doc.setDrawColor(...ink); doc.setLineWidth(0.35);
+  doc.rect(margin, 10.5, 6, 2.6); doc.line(margin + 2.2, 10.5, margin + 2.2, 13.1);
+  doc.setFillColor(...themeRgb("warning")); doc.rect(margin + 3.9, 11, 1.7, 1.6, "F");
+  doc.setTextColor(...ink); doc.setFont("PlexSans", "bold"); doc.setFontSize(13);
+  doc.text("Linear", margin + 8.5, 13.4);
+  doc.setFont("PlexSans", "normal"); doc.setFontSize(7); doc.setTextColor(...gris);
+  doc.text("FICHE DE DÉBIT — ATELIER", pageWidth - margin, 13.4, { align: "right", charSpace: 0.3 });
   const dateSrc = infos.date ? new Date(infos.date) : new Date();
   const date = (isNaN(dateSrc.getTime()) ? new Date() : dateSrc).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
-  doc.text(date, pageWidth - margin, 12, { align: "right" });
-
-  doc.setFontSize(11);
-  doc.setFont("PlexSans", "bold");
   const chantier = infos.chantier?.trim() || "—";
   const numTache = infos.numeroTache?.trim() || "—";
   const clientStr = infos.client?.trim();
-  doc.text(`Chantier : ${chantier}`, margin, 22);
-  doc.text(`N° de tâche : ${numTache}`, pageWidth - margin, 22, { align: "right" });
-  if (clientStr) {
-    doc.setFont("PlexSans", "normal");
-    doc.setFontSize(9);
-    doc.text(`Client : ${clientStr}`, margin, 27);
-  }
+  doc.setTextColor(...ink); doc.setFont("PlexSans", "bold"); doc.setFontSize(22);
+  doc.text(chantier, margin, 30, { maxWidth: pageWidth - 2 * margin });
+  const champs: [string, string][] = [["TÂCHE", numTache], ["CLIENT", clientStr || "—"], ["DATE", date]];
+  const largeurChamp = (pageWidth - 2 * margin) / 4;
+  champs.forEach(([l, v], i) => {
+    doc.setFont("PlexSans", "normal"); doc.setFontSize(6.5); doc.setTextColor(...gris);
+    doc.text(l, margin + i * largeurChamp, 38, { charSpace: 0.25 });
+    doc.setFont("PlexSans", "bold"); doc.setFontSize(9.5); doc.setTextColor(...ink);
+    doc.text(v, margin + i * largeurChamp, 43, { maxWidth: largeurChamp - 3 });
+  });
+  doc.setDrawColor(...ink); doc.setLineWidth(0.4); doc.line(margin, 47, pageWidth - margin, 47);
 
   doc.setTextColor(...themeRgb("piece-ink"));
-  let y = 38;
+  let y = 56;
 
   doc.setFontSize(11);
   doc.setFont("PlexSans", "bold");
@@ -244,20 +244,21 @@ export async function exporterPDF(
   if (y + hauteurBandeau > pageHeight - margin) { doc.addPage(); y = margin; }
   doc.setFontSize(18);
   doc.setFont("PlexSans", "bold");
+  // Bandeau sans cadre : un filet noir au-dessus, les chiffres en noir
   doc.setDrawColor(...themeRgb("pdf-heading"));
-  doc.setLineWidth(0.5);
-  doc.rect(margin, y, pageWidth - 2 * margin, hauteurBandeau);
+  doc.setLineWidth(0.4);
+  doc.line(margin, y, pageWidth - margin, y);
   let yBandeau = y + 4 + 6.5;
   for (const { item, label, ensemble, sousTitre } of lignesBandeau) {
     doc.setFont("PlexSans", "bold"); doc.setFontSize(18);
-    doc.setTextColor(...themeRgb("piece-ink"));
-    if (ensemble) doc.text(item.label, margin + 5, yBandeau);
-    else { doc.text(label, margin + 5, yBandeau, { lineHeightFactor: 1.26 }); yBandeau += label.length * 8; }
-    doc.setTextColor(...themeRgb("pdf-primary"));
-    doc.text(item.valeur, margin + 5 + (ensemble ? doc.getTextWidth(item.label) : 0), yBandeau);
+    doc.setTextColor(...themeRgb("pdf-muted"));
+    if (ensemble) doc.text(item.label, margin, yBandeau);
+    else { doc.text(label, margin, yBandeau, { lineHeightFactor: 1.26 }); yBandeau += label.length * 8; }
+    doc.setTextColor(...themeRgb("pdf-heading"));
+    doc.text(item.valeur, margin + (ensemble ? doc.getTextWidth(item.label) : 0), yBandeau);
     yBandeau += 5;
     doc.setFont("PlexSans", "normal"); doc.setFontSize(8); doc.setTextColor(...themeRgb("pdf-muted"));
-    for (const ligne of sousTitre) { doc.text(ligne, margin + 5, yBandeau); yBandeau += 4; }
+    for (const ligne of sousTitre) { doc.text(ligne, margin, yBandeau); yBandeau += 4; }
     yBandeau += 7;
   }
   doc.setTextColor(...themeRgb("piece-ink"));
@@ -295,8 +296,8 @@ export async function exporterPDF(
   let xPart = margin;
   for (const [i, part] of matiere.parts.entries()) {
     const largeur = (pageWidth - 2 * margin) * part.pourcentage / 100;
-    doc.setFillColor(...themeRgb(["piece-1", "warning", "hatch"][i]));
-    doc.rect(xPart, y, largeur, 3, "F");
+    doc.setFillColor(...themeRgb(["pdf-heading", "warning", "hatch"][i]));
+    doc.rect(xPart, y, Math.max(0, largeur - 0.5), 1.6, "F");
     xPart += largeur;
   }
   y += 8;
@@ -439,11 +440,12 @@ export async function exporterPDF(
     doc.addPage();
     y = margin;
   }
-  doc.setFillColor(...themeRgb("pdf-heading"));
-  doc.rect(margin, y - 4.5, pageWidth - 2 * margin, 7, "F");
-  doc.setTextColor(...themeRgb("cut-separator"));
+  // Titre de profile : texte noir et filet dessous (plus de bandeau plein)
+  doc.setDrawColor(...themeRgb("pdf-heading")); doc.setLineWidth(0.4);
+  doc.line(margin, y + 2.5, pageWidth - margin, y + 2.5);
+  doc.setTextColor(...themeRgb("pdf-heading"));
   doc.setFont("PlexSans", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(11);
    doc.text(`PROFILÉ : ${libelleProfil(rp.profil).toUpperCase()}`, margin + 2, y);
   doc.text(`Barre ${fmt(rp.longueurBarre)} mm  ·  Sous-total : ${fmt(rp.resultat.nbBarres)} barre(s)`, pageWidth - margin - 2, y, { align: "right" });
   y += 9;

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { profilDemarrage } from "@/lib/local-store";
 import { useLinearApp } from "@/hooks/use-linear-app";
@@ -51,11 +51,21 @@ function Index() {
 function App({ profileId }: { profileId: string }) {
   const app = useLinearApp(profileId);
   const { strategie, resultat } = app;
+  // Ctrl + Entree (Cmd + Entree sur Mac) : lance l'optimisation depuis n'importe quel champ
+  const lancerRef = useRef(app.lancer);
+  lancerRef.current = app.lancer;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void lancerRef.current(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   return (
     <div className="rail-page flex-1">
       <EnTete app={app} />
 
-      <main className="mx-auto max-w-[1600px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-[1440px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <InfosProjet app={app} />
 
         <div className="grid gap-6 lg:grid-cols-3">

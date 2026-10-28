@@ -19,7 +19,7 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
     <Card className="min-w-0 lg:col-span-2">
       <CardHeader className="space-y-4">
         <div>
-          <CardTitle className="text-base">Pièces à couper</CardTitle>
+          <CardTitle>Pièces à couper</CardTitle>
           <CardDescription>Liste des pièces et quantités requises</CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">

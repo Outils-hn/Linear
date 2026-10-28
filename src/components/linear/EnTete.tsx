@@ -11,16 +11,12 @@ import type { LinearApp } from "@/hooks/use-linear-app";
 export function EnTete({ app }: { app: LinearApp }) {
   const { chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet } = app;
   return (
-    <header className="border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <LinearMark size={34} />
-          <div className="leading-tight">
-            <h1 className="font-display text-lg font-bold uppercase tracking-[0.22em] text-foreground">Linear</h1>
-            <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
-              Optimisation de découpe 1D
-            </p>
-          </div>
+    <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
+      <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2.5">
+          <LinearMark />
+          <h1 className="text-[17px] font-semibold leading-none tracking-tight text-foreground">Linear</h1>
+          <span className="sr-only">Optimisation de découpe 1D</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
