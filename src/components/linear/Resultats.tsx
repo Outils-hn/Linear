@@ -147,13 +147,6 @@ export function Resultats({ app }: { app: LinearApp }) {
                 </div>
                 </div>
                 </details>
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  Chute finale : <span className="font-medium text-foreground">{fmt(barre.chute)} mm</span>
-                  {" — "}
-                  {barre.chuteReutilisable
-                    ? <span className="font-semibold text-warning">Réutilisable · À conserver - {libelleProfil(barre.profil)}</span>
-                    : <span className="font-medium">Déchet</span>}
-                </p>
               </div>
             );
           })}
