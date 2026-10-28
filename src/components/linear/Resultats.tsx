@@ -71,7 +71,7 @@ export function Resultats({ app }: { app: LinearApp }) {
         <CardHeader>
           <CardTitle>Plan de découpe par barre</CardTitle>
           <CardDescription>
-            Schéma visuel et instructions de coupe — chutes à conserver signalées en orange
+            Schéma visuel et instructions de coupe — chutes à conserver signalées en bleu
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-10">

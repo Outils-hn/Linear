@@ -250,12 +250,15 @@ export async function exporterPDF(
   doc.line(margin, y, pageWidth - margin, y);
   let yBandeau = y + 4 + 6.5;
   for (const { item, label, ensemble, sousTitre } of lignesBandeau) {
-    doc.setFont("PlexSans", "bold"); doc.setFontSize(18);
+    // Etiquette discrete (gris, plus petite), valeur en grand et en noir
+    doc.setFont("PlexSans", "normal"); doc.setFontSize(12);
     doc.setTextColor(...themeRgb("pdf-muted"));
     if (ensemble) doc.text(item.label, margin, yBandeau);
     else { doc.text(label, margin, yBandeau, { lineHeightFactor: 1.26 }); yBandeau += label.length * 8; }
+    const decalage = ensemble ? doc.getTextWidth(item.label) : 0;
+    doc.setFont("PlexSans", "bold"); doc.setFontSize(18);
     doc.setTextColor(...themeRgb("pdf-heading"));
-    doc.text(item.valeur, margin + (ensemble ? doc.getTextWidth(item.label) : 0), yBandeau);
+    doc.text(item.valeur, margin + decalage, yBandeau);
     yBandeau += 5;
     doc.setFont("PlexSans", "normal"); doc.setFontSize(8); doc.setTextColor(...themeRgb("pdf-muted"));
     for (const ligne of sousTitre) { doc.text(ligne, margin, yBandeau); yBandeau += 4; }

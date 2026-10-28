@@ -11,7 +11,7 @@ import type { LinearApp } from "@/hooks/use-linear-app";
 export function EnTete({ app }: { app: LinearApp }) {
   const { chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet } = app;
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
+    <header className="border-b border-border bg-background">
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2.5">
           <LinearMark />
