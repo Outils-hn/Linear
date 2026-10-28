@@ -13,7 +13,7 @@ import { StatCard } from "./StatCard";
 import type { LinearApp } from "@/hooks/use-linear-app";
 
 /** Plans de barre dessines d'emblee par profile ; au-dela, bouton « Afficher de plus ». */
-const PAQUET = 40;
+const PAQUET = 20;
 
 /** Resultats : synthese, bilan matiere, chutes, plans de decoupe par barre. */
 export function Resultats({ app }: { app: LinearApp }) {

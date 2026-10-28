@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
 import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import type { BarreOptimisee, Piece } from "@/lib/optimizer";
 import { SEUIL_CHUTE_REUTILISABLE } from "@/lib/optimizer";
@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
+// Un seul canvas de mesure du texte pour toutes les barres
+let canvas: CanvasRenderingContext2D | null | undefined;
+const canvasPartage = () => {
+  if (canvas === undefined) canvas = document.createElement("canvas").getContext("2d");
+  return canvas;
+};
+
 interface Props { barre: BarreOptimisee; traitScie: number; pieceIds: string[]; libelle?: string; methodeCoupe?: MethodeCoupe }
 
 function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone, methodeCoupe = "butee" }: Props & { zone: [number, number]; regle?: boolean; onZone?: (zone: [number, number]) => void }) {
@@ -19,31 +26,32 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone, met
   const [selection, setSelection] = useState<[number, number] | null>(null);
   const container = useRef<HTMLDivElement>(null);
   const mesure = useRef<CanvasRenderingContext2D | null>(null);
-  const [largeur, setLargeur] = useState(1000);
-  const [fontReady, setFontReady] = useState(false);
+  const [largeur, setLargeur] = useState(0);
+  // Police deja chargee (cas courant apres la premiere barre) : pas de second dessin a attendre
+  const [fontReady, setFontReady] = useState(() => typeof document !== "undefined" && document.fonts?.status === "loaded");
   useEffect(() => {
     const element = container.current;
     if (!element) return;
-    const context = document.createElement("canvas").getContext("2d");
-    if (context) context.font = '400 12px "IBM Plex Sans"';
-    mesure.current = context;
-    const update = () => setLargeur(Math.max(1, element.getBoundingClientRect().width));
-    const observer = new ResizeObserver(update);
+    mesure.current = canvasPartage();
+    // La largeur vient du ResizeObserver (sans forcer un recalcul de mise en page a chaque barre)
+    const observer = new ResizeObserver(([e]) => { if (e) setLargeur(Math.max(1, e.contentRect.width)); });
     observer.observe(element);
-    void document.fonts.ready.then(() => { update(); setFontReady(true); });
-    update();
+    if (!fontReady) void document.fonts.ready.then(() => setFontReady(true));
     return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const span = zone[1] - zone[0];
   const x = (mm: number) => (mm - zone[0]) / span * largeur;
-  const segments = segmentsBarre(barre, traitScie);
+  const segments = useMemo(() => segmentsBarre(barre, traitScie), [barre, traitScie]);
   const barHeight = regle ? 90 : 36;
-  const labels = fontReady ? etiquettesPieces(segments, x, largeur, barHeight, (text, size) => {
+  // Etiquettes calculees seulement quand la largeur, la zone ou la police changent
+  const labels = useMemo(() => (fontReady && largeur > 0 ? etiquettesPieces(segments, x, largeur, barHeight, (text, size) => {
     const context = mesure.current;
     if (!context) return Infinity;
     context.font = `400 ${size}px "IBM Plex Sans"`;
     return context.measureText(text).width;
-  }) : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }) : []), [segments, largeur, barHeight, fontReady, zone[0], zone[1]]);
   const references = labels.filter(l => !l.lignes.length);
   // Reperes cumules sous la barre : utiles seulement au ruban (en butee, ils sont dans le tableau)
   const cotes = fontReady && methodeCoupe === "ruban" ? cotesFinSeries(seriesPieces(segments.filter(s => s.type === "piece")), x, largeur, text => {
