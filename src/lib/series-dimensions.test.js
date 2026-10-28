@@ -12,7 +12,7 @@ test("fins de séries uniquement, sans mutation des pièces ni du tableau", () =
   const before = JSON.stringify(pieces);
   expect(cotesFinSeries(seriesPieces(pieces), n => n / 10, 600, t => t.length * 5).map(c => c.valeur)).toEqual([2503, 3306, 4509]);
   expect(JSON.stringify(pieces)).toBe(before);
-  expect(lignesReperes([1300, 2503], "ruban")).toEqual(["1 300 / 2 503"]);
+  expect(lignesReperes([1300, 2503], "ruban")).toEqual(["1'300 / 2'503"]);
 });
 
 test("collision : priorité à la cote la plus à droite sur une seule rangée", () => {
