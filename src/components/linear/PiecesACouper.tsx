@@ -1,4 +1,5 @@
 import { formatNombre as fmt } from "@/lib/format-number";
+import { naviguerClavier } from "@/lib/navigation-clavier";
 import { Plus, Trash2, Calculator, Loader2, ClipboardCopy, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,8 @@ import { ChampNombre } from "@/components/ChampNombre";
 import { copierPourExcel, telechargerExcel } from "@/lib/export-excel";
 import { nextId } from "@/hooks/use-linear-app";
 import type { LinearApp } from "@/hooks/use-linear-app";
+
+const COLONNES = ["nom", "profil", "longueur", "quantite"] as const;
 
 /** Carte « Pieces a couper » (tableau des pieces, collage Excel). */
 export function PiecesACouper({ app }: { app: LinearApp }) {
@@ -94,15 +97,8 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
             </TableRow>
           </TableHeader>
           {/* Comme dans Excel : Tab passe a la cellule suivante (corbeille ignoree),
-              Entree descend a la meme colonne de la ligne suivante, Maj+Entree remonte. */}
-          <TableBody onKeyDown={(e) => {
-            const el = e.target as HTMLElement;
-            const col = el.dataset["col"];
-            if (e.key !== "Enter" || e.ctrlKey || e.metaKey || !col) return;
-            e.preventDefault();
-            const cells = [...e.currentTarget.querySelectorAll<HTMLInputElement>(`[data-col="${col}"]`)];
-            cells[cells.indexOf(el as HTMLInputElement) + (e.shiftKey ? -1 : 1)]?.focus();
-          }}>
+              Entree et les fleches deplacent d'une case (voir lib/navigation-clavier). */}
+          <TableBody onKeyDown={(e) => naviguerClavier(e, COLONNES)}>
             {pieces.map((p) => (
               <TableRow key={p.id}>
                 <TableCell>

@@ -16,6 +16,12 @@ for (const [name, engine] of [["chromium", chromium], ["webkit", webkit]]) {
   await page.getByLabel("Longueur de Montant A").click();
   await page.keyboard.press("Enter");
   seq.push("[Entree] " + await label());
+  // Fleches : droite, bas, gauche, haut depuis Longueur de Montant A
+  await page.getByLabel("Longueur de Montant A").click();
+  for (const k of ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"]) {
+    await page.keyboard.press(k); await page.waitForTimeout(100);
+    seq.push(`[${k}] ` + await page.evaluate(() => document.activeElement?.getAttribute("aria-label")));
+  }
   lines.push(`${name}: ${seq.join(" -> ")}`);
   await browser.close();
 }
