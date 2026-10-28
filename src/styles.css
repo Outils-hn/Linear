@@ -208,8 +208,9 @@ table input[type="number"]::-webkit-outer-spin-button { appearance: none; margin
 .pieces-table tr { height: 40px; }
 .pieces-table td { padding-top: 0; padding-bottom: 0; }
 .pieces-table td input { height: 38px; border-color: transparent; background: transparent; box-shadow: none; }
-.pieces-table td input:hover,
-.pieces-table td input:focus { border-color: var(--primary); }
+/* Comme Format : au survol, simple fond leger ; le cadre n'apparait que sur la case en cours de saisie */
+.pieces-table td input:hover:not(:focus):not([aria-invalid="true"]) { background: var(--muted); }
+.pieces-table td input:focus { border-color: var(--primary); background: var(--card); }
 .pieces-table td input:focus-visible { outline: none; box-shadow: none; }
 .parameter-measure { position: relative; width: 100%; min-width: 0; }
 .parameter-measure input { width: 100%; padding-right: 40px; text-align: right; appearance: textfield; }
