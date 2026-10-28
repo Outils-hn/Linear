@@ -1,0 +1,2 @@
+chromium: Repère de Montant A -> Profilé de Montant A -> Longueur de Montant A -> Quantité de Montant A -> Repère de Traverse B -> Profilé de Traverse B -> [Entree] Longueur de Traverse B
+webkit: Repère de Montant A -> Profilé de Montant A -> Longueur de Montant A -> Quantité de Montant A -> Repère de Traverse B -> Profilé de Traverse B -> [Entree] Longueur de Traverse B
