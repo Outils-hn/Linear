@@ -35,8 +35,8 @@ describe("Dessins atelier sans modification du calcul", () => {
   test("les cotes décimales restent compactes sans modifier les valeurs", () => {
     expect(libelleCote(200.20000000000002)).toBe("200,2");
     expect(formatNombre(94.9, 1)).toBe("94,9");
-    expect(formatNombre(18000)).toBe("18\u202f000");
-    expect(formatNombre(5445.5)).toBe("5\u202f445,5");
+    expect(formatNombre(18000)).toBe("18'000");
+    expect(formatNombre(5445.5)).toBe("5'445,5");
     const values = Array.from({ length: 80 }, (_, i) => 100 + i * 43.7);
     const cotes = placerCotes(values, 6000, 180, text => text.length * 1.5);
     expect(cotes.map(c => c.valeur)).toEqual(values);

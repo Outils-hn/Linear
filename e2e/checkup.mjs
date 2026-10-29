@@ -168,7 +168,7 @@ try {
   }
   const pire = Math.round(Math.max(...lat));
   verif("300 lignes : saisie fluide (< 300 ms par frappe)", pire < 300, `${pire} ms`);
-  verif("Champ nombre : format « 1 200 » a la sortie", await (async () => { await p3.getByLabel(/^Longueur de R2$/).fill("1200"); await p3.keyboard.press("Tab"); return (await p3.getByLabel(/^Longueur de R2$/).inputValue()).replace(/[\u00a0\u202f]/g, " ") === "1 200"; })());
+  verif("Champ nombre : format « 1'200 » a la sortie", await (async () => { await p3.getByLabel(/^Longueur de R2$/).fill("1200"); await p3.keyboard.press("Tab"); return (await p3.getByLabel(/^Longueur de R2$/).inputValue())=== "1'200"; })());
   await c3.close();
 } catch (e) { verif("Deroulement du check-up performance", false, e.message.split("\n")[0]); }
 

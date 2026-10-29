@@ -10,5 +10,6 @@ export function formatNombre(value: number, decimales?: number): string {
     f = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: decimales ?? 0, maximumFractionDigits: decimales ?? 6 });
     cache.set(cle, f);
   }
-  return f.format(value);
+  // Format suisse de la famille d'applis : apostrophe pour les milliers (« 1'200 »), virgule decimale
+  return f.format(value).replace(/[\s\u00a0\u202f]/g, "'");
 }
