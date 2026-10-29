@@ -1,0 +1,13 @@
+{
+  "app": "linear",
+  "kind": "sauvegarde-complete",
+  "version": 1,
+  "createdAt": "2026-10-29T13:33:22.428Z",
+  "data": {
+    "linear-theme": "dark",
+    "linear:active-profile:v1": "Principal",
+    "linear:courant:v1:Principal": "{\"projetId\":null,\"chantier\":\"\",\"numeroTache\":\"\",\"client\":\"\",\"dateProjet\":\"2026-10-29\",\"pieces\":[{\"id\":\"p1\",\"nom\":\"Pièce 1\",\"longueur\":1000,\"quantite\":1}],\"stock\":[{\"id\":\"s5\",\"longueur\":4200,\"quantite\":4}],\"longueursProfils\":{},\"seuilsProfils\":{},\"chutesPDF\":{\"mode\":\"indicative\",\"etiquettes\":false,\"choix\":{}},\"statutMatiere\":{\"statut\":\"a-commander\",\"dateCommande\":\"\",\"fournisseur\":\"\",\"numeroCommande\":\"\"}}",
+    "linear:profiles:v1": "{\"profiles\":[{\"id\":\"Principal\",\"name\":\"Principal\",\"createdAt\":\"2026-10-29T13:33:08.813Z\"}]}",
+    "linear:reglages:v1": "{\"longueurBarre\":6000,\"margeSecurite\":100,\"positionMarge\":\"debut\",\"traitScie\":4,\"seuilChute\":500,\"methodeCoupe\":\"butee\",\"strategie\":\"min-barres\"}"
+  }
+}
