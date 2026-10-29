@@ -10,9 +10,12 @@ import { seuilPourProfil } from "@/lib/multi-profil";
 import { ChampNombre } from "@/components/ChampNombre";
 import { lireMethodeCoupe, METHODES_COUPE } from "@/lib/cut-method";
 import type { LinearApp } from "@/hooks/use-linear-app";
+import { FicheIndexLien } from "@/components/famille/FicheIndexLien";
+import { useFichesProfils } from "@/lib/fiches-profils";
 
 /** Carte « Parametres du profile » (barre, marge, trait de scie, strategie). */
 export function ParametresProfile({ app }: { app: LinearApp }) {
+  const { carte: fiches, lier: lierFiche } = useFichesProfils();
   const { erreursChamps, longueurBarre, longueurUtile, longueursProfils, margeSecurite, marquerVide, methodeCoupe, positionMarge, profilsNommes, resultat, setLongueurBarre, setLongueursProfils, setMargeSecurite, setMethodeCoupe, setPositionMarge, setResultat, setSeuilChute, setSeuilsProfils, setStrategie, setTraitScie, seuilChute, seuilsProfils, stock, strategie, traitScie } = app;
   // Replie par defaut : ces reglages changent rarement. Ils s'ouvrent seuls si un champ est en erreur.
   const [ouvert, setOuvert] = useState(false);
@@ -126,7 +129,7 @@ export function ParametresProfile({ app }: { app: LinearApp }) {
         </div>
         {profilsNommes.length > 0 && (
           <div className="space-y-2 sm:col-span-2">
-            <Label>Longueur de barre par profilé</Label>
+            <Label>Par profilé : longueur de barre, chute et fiche technique</Label>
             {profilsNommes.map((pr) => (
               <div key={pr} className="grid grid-cols-2 items-center gap-2">
                 <Label htmlFor={`longueur-profile-${pr}`} className="whitespace-normal break-words text-xs font-medium normal-case">{pr}</Label>
@@ -153,6 +156,8 @@ export function ParametresProfile({ app }: { app: LinearApp }) {
                 />
                   <span aria-hidden="true">mm</span>
                 </div>
+                <span className="text-xs text-muted-foreground">Fiche technique</span>
+                <div className="min-w-0"><FicheIndexLien value={fiches[pr] ?? null} onChange={(f) => lierFiche(pr, f)} /></div>
               </div>
             ))}
             <p className="text-xs text-muted-foreground">Les pièces sans profilé utilisent la barre de base.</p>
