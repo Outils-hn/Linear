@@ -71,7 +71,7 @@ function App({ profileId }: { profileId: string }) {
     <div className="rail-page flex-1">
       <EnTete app={app} />
 
-      <main className="mx-auto max-w-[1440px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="page space-y-6 py-8">
         <InfosProjet app={app} />
 
         {/* Parametres replies en une ligne au-dessus, les pieces prennent toute la largeur */}

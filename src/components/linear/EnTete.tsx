@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { LinearMark } from "@/components/LinearMark";
 import { SelecteurApplis } from "@/components/SelecteurApplis";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Bandeau } from "@/components/Bandeau";
 import { exporterProjetJson, exporterTousJson } from "@/lib/backup";
 import type { LinearApp } from "@/hooks/use-linear-app";
 
@@ -13,18 +14,18 @@ export function EnTete({ app }: { app: LinearApp }) {
   const { chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, perime, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet, verification } = app;
   const pdfBloque = perime ? "Relancez d'abord l'optimisation : la saisie a changé" : verification && !verification.ok ? "PDF bloqué : la vérification a trouvé des erreurs" : "";
   return (
-    <header className="border-b border-border bg-background">
-      <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2.5">
-          <LinearMark />
-          <SelecteurApplis />
-          <span className="sr-only">Optimisation de découpe 1D</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+    <Bandeau
+      marque={<>
+        <LinearMark />
+        <SelecteurApplis />
+        <span className="sr-only">Optimisation de découpe 1D</span>
+      </>}
+      theme={<ThemeToggle className="bandeau-icone" />}
+      actions={<>
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <History className="h-4 w-4" /> Mes projets
+              <Button variant="outline" className="bandeau-btn">
+                <History /> Mes projets
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:max-w-md">
@@ -119,20 +120,18 @@ export function EnTete({ app }: { app: LinearApp }) {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" size="sm" onClick={nouveauProjet} className="gap-2">
-            <FilePlus className="h-4 w-4" /> Nouveau
+          <Button variant="outline" onClick={nouveauProjet} className="bandeau-btn">
+            <FilePlus /> Nouveau
           </Button>
-          <Button variant="outline" size="sm" onClick={ouvrirSauvegarde} disabled={saving} className="gap-2">
-            <Save className="h-4 w-4" /> {saving ? "Sauvegarde…" : "Sauvegarder"}
+          <Button variant="outline" onClick={ouvrirSauvegarde} disabled={saving} className="bandeau-btn">
+            <Save /> {saving ? "Sauvegarde…" : "Sauvegarder"}
           </Button>
           {resultat && (
-            <Button onClick={() => exporter()} size="sm" className="gap-2" disabled={!!pdfBloque} title={pdfBloque || undefined}>
-              <FileDown className="h-4 w-4" /> PDF atelier
+            <Button onClick={() => exporter()} className="bandeau-btn primaire" disabled={!!pdfBloque} title={pdfBloque || undefined}>
+              <FileDown /> PDF atelier
             </Button>
           )}
-          <ThemeToggle className="text-muted-foreground hover:text-foreground" />
-        </div>
-      </div>
-    </header>
+      </>}
+    />
   );
 }
