@@ -2,9 +2,9 @@
 // Mettre à jour la version ICI uniquement ; pied de page et fenêtre
 // « À propos » lisent ces constantes.
 export const APP_NAME = "Linear";
-export const APP_VERSION = "3.0";
+export const APP_VERSION = "3.1";
 export const APP_AUTHOR = "Hugo N.";
 export const APP_YEAR = "2026";
-export const APP_UPDATED = "28 octobre 2026";
+export const APP_UPDATED = "31 octobre 2026";
 export const APP_TAGLINE =
   "Optimisation de découpe linéaire pour l'atelier : mise en barre, bilan matière et gestion des chutes réutilisables.";
