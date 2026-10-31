@@ -1,0 +1,257 @@
+{
+  "constats": [],
+  "erreurs": [
+    "[limite-mille-pieces] script : locator.click: Timeout 30000ms exceeded."
+  ],
+  "metriques": {
+    "mesures:vide": {
+      "titre": "Linear · Optimisation de découpe en atelier",
+      "lang": "fr",
+      "viewportMeta": true,
+      "h1": 1,
+      "h2": 0,
+      "debordementHorizontal": false,
+      "largeurDoc": 1440,
+      "largeurFenetre": 1440,
+      "champs": 4,
+      "champsSansEtiquette": [],
+      "interactifs": 16,
+      "sansNom": [],
+      "cibles_sous_24px": 4,
+      "taillesTexte": {
+        "11": 3,
+        "12": 14,
+        "13": 3,
+        "14": 11,
+        "16": 1,
+        "17": 1
+      },
+      "tailleMin": 11,
+      "octetsTransferes": 1210002,
+      "octetsJS": 1116119,
+      "nbRequetes": 4,
+      "domContentLoaded": 96,
+      "load": 140,
+      "chargement_ms": 1344
+    },
+    "axe:vide": [
+      {
+        "regle": "empty-table-header",
+        "impact": "minor",
+        "aide": "Table header text should not be empty",
+        "occurrences": 1,
+        "exemple": "<th class=\"h-9 px-3 text-left align-middle font-sans text-xs font-semibold text-piece-ink [&amp;:has([role=checkbox])]:pr-0 [&amp;>[role=che",
+        "cible": ".w-\\[10\\%\\]"
+      },
+      {
+        "regle": "label-content-name-mismatch",
+        "impact": "serious",
+        "aide": "Elements must have their visible text as part of their accessible name",
+        "occurrences": 1,
+        "exemple": "<button type=\"button\" id=\"radix-_r_0_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\" class=\"flex items-center gap-1 rounded",
+        "cible": "#radix-_r_0_"
+      }
+    ],
+    "vide:texte": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm · marge 100 mm (marge en début de barre) · trait de scie 3 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres Modifier PIÈCES À COUPER Liste des pièces et quantités requises Coller depuis Excel Importer un fichier Excel Copier pour Excel Télécharger en Excel Ajouter Repère Profilé Longueur (mm) Quantité Aucune pièce. Copiez vos lignes dans Excel puis faites Ctrl + V ici, ou clique",
+    "vide:lancer": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm ·",
+    "mesures:demo": {
+      "titre": "Linear · Optimisation de découpe en atelier",
+      "lang": "fr",
+      "viewportMeta": true,
+      "h1": 1,
+      "h2": 0,
+      "debordementHorizontal": false,
+      "largeurDoc": 1440,
+      "largeurFenetre": 1440,
+      "champs": 24,
+      "champsSansEtiquette": [],
+      "interactifs": 21,
+      "sansNom": [],
+      "cibles_sous_24px": 4,
+      "taillesTexte": {
+        "11": 3,
+        "12": 14,
+        "13": 4,
+        "14": 10,
+        "16": 1,
+        "17": 1
+      },
+      "tailleMin": 11,
+      "octetsTransferes": 1220211,
+      "octetsJS": 1126328,
+      "nbRequetes": 5,
+      "domContentLoaded": 61,
+      "load": 104,
+      "chargement_ms": 1308
+    },
+    "axe:demo": [
+      {
+        "regle": "color-contrast",
+        "impact": "serious",
+        "aide": "Elements must meet minimum color contrast ratio thresholds",
+        "occurrences": 1,
+        "exemple": "<div data-title=\"\" class=\"\">Projet « Chantier démo » chargé</div>",
+        "cible": "div[data-title=\"\"]"
+      },
+      {
+        "regle": "empty-table-header",
+        "impact": "minor",
+        "aide": "Table header text should not be empty",
+        "occurrences": 1,
+        "exemple": "<th class=\"h-9 px-3 text-left align-middle font-sans text-xs font-semibold text-piece-ink [&amp;:has([role=checkbox])]:pr-0 [&amp;>[role=che",
+        "cible": ".w-\\[10\\%\\]"
+      },
+      {
+        "regle": "label-content-name-mismatch",
+        "impact": "serious",
+        "aide": "Elements must have their visible text as part of their accessible name",
+        "occurrences": 1,
+        "exemple": "<button type=\"button\" id=\"radix-_r_0_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\" class=\"flex items-center gap-1 rounded",
+        "cible": "#radix-_r_0_"
+      }
+    ],
+    "focus:demo": {
+      "total": 25,
+      "sansIndicateur": 0,
+      "exemples": []
+    },
+    "tabs-jusqu-a-lancer": -1,
+    "calcul-demo-ms": 1564,
+    "axe:resultats": [
+      {
+        "regle": "empty-table-header",
+        "impact": "minor",
+        "aide": "Table header text should not be empty",
+        "occurrences": 1,
+        "exemple": "<th class=\"h-9 px-3 text-left align-middle font-sans text-xs font-semibold text-piece-ink [&amp;:has([role=checkbox])]:pr-0 [&amp;>[role=che",
+        "cible": ".w-\\[10\\%\\]"
+      },
+      {
+        "regle": "label-content-name-mismatch",
+        "impact": "serious",
+        "aide": "Elements must have their visible text as part of their accessible name",
+        "occurrences": 8,
+        "exemple": "<button type=\"button\" id=\"radix-_r_0_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\" class=\"flex items-center gap-1 rounded",
+        "cible": "#radix-_r_0_"
+      }
+    ],
+    "resultats:texte": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder PDF atelier INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm · marge 100 mm (marge en début de barre) · trait de scie 3 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres Modifier PIÈCES À COUPER Liste des pièces et quantités requises Coller depuis Excel Importer un fichier Excel Copier pour Excel Télécharger en Excel Ajouter Repère Profilé Longueur (mm) Quantité Lancer l'optimisation RÉSULTATS Vérification OK Meilleur résultat trouvé BARRES À COMMANDER · PROFIL A 11 × 6'000 mm BARRES À COMMANDER · PROFIL B 6 × 6'000 mm RENDEMENT 77,4 % 78'965 mm de pièces / 102'000 mm achetés CHUTES RÉUTILISABLES 20'288 mm (19,9 %) De la ma",
+    "boutons-resultats": "Linear | Mes projets | Nouveau | Sauvegarder | PDF atelier | Modifier | Coller depuis Excel | Importer un fichier Excel | Copier pour Excel | Télécharger en Excel | Ajouter | Lancer l'optimisation | Meilleur résultat trouvé | Déplier tous les détails | Montant · 2'450 mm\nMontant · 2'450 mm\nRenfort · 2 x 437,5 | Montant · 2'450 mm\nMontant · 2'450 mm | Traverse · 1'180 mm\nTraverse · 1'180 mm\nTraverse · 1'180 mm\nTraverse · 1'180 mm | Traverse · 1'180 mm\nTraverse · 1'180 mm | Lisse · 3'125 mm\nCale · 10 x 260 | Lisse · 3'125 mm | Conçu par Hugo N. | Sauvegarde",
+    "limite:piece-trop-longue": {
+      "ms": 41560,
+      "apercu": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder PDF atelier INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm · marge 100 mm (marge en début de barre) · trait de scie 3 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres Modifier PIÈCES À COUPER Liste des pièces et quantités requis"
+    },
+    "limite:zero-negatif": {
+      "ms": 41537,
+      "apercu": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder PDF atelier INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm · marge 100 mm (marge en début de barre) · trait de scie 3 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres Modifier PIÈCES À COUPER Liste des pièces et quantités requis"
+    },
+    "limite:quantite-folle": {
+      "ms": 44368,
+      "apercu": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm · marge 100 mm (marge en début de barre) · trait de scie 3 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres Modifier PIÈCES À COUPER Liste des pièces et quantités requises Coller de"
+    },
+    "limite:cent-cinquante-pieces": {
+      "ms": 1927,
+      "apercu": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder PDF atelier INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm · marge 100 mm (marge en début de barre) · trait de scie 3 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres Modifier PIÈCES À COUPER Liste des pièces et quantités requis"
+    },
+    "limite:quatre-cents-pieces": {
+      "ms": 5224,
+      "apercu": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder PDF atelier INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm · marge 100 mm (marge en début de barre) · trait de scie 3 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres Modifier PIÈCES À COUPER Liste des pièces et quantités requis"
+    },
+    "limite:marge-superieure-barre": {
+      "ms": 41556,
+      "apercu": "Linear Optimisation de découpe 1D Mes projets Nouveau Sauvegarder PDF atelier INFORMATIONS DU PROJET Ces informations apparaîtront en haut de la fiche de débit PDF et identifient votre projet sauvegardé. Chantier Numéro de tâche Client Date Statut de la matière À commander PARAMÈTRES DU PROFILÉ Barre 6'000 mm · marge 7'000 mm (marge en début de barre) · trait de scie 3 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres Modifier PIÈCES À COUPER Liste des pièces et quantités requ"
+    },
+    "champs-visibles": [
+      "text#chantier||Chantier démo",
+      "text#numTache||T-01",
+      "text#client||Client démo",
+      "date#date||2026-10-27"
+    ],
+    "mesures:mobile": {
+      "titre": "Linear · Optimisation de découpe en atelier",
+      "lang": "fr",
+      "viewportMeta": true,
+      "h1": 1,
+      "h2": 0,
+      "debordementHorizontal": true,
+      "largeurDoc": 563,
+      "largeurFenetre": 390,
+      "champs": 4,
+      "champsSansEtiquette": [],
+      "interactifs": 16,
+      "sansNom": [],
+      "cibles_sous_24px": 3,
+      "taillesTexte": {
+        "11": 3,
+        "12": 14,
+        "13": 3,
+        "14": 11,
+        "16": 1,
+        "17": 1
+      },
+      "tailleMin": 11,
+      "octetsTransferes": 1210002,
+      "octetsJS": 1116119,
+      "nbRequetes": 4,
+      "domContentLoaded": 369,
+      "load": 694,
+      "chargement_ms": 1900
+    },
+    "mesures:tablette": {
+      "titre": "Linear · Optimisation de découpe en atelier",
+      "lang": "fr",
+      "viewportMeta": true,
+      "h1": 1,
+      "h2": 0,
+      "debordementHorizontal": false,
+      "largeurDoc": 768,
+      "largeurFenetre": 768,
+      "champs": 4,
+      "champsSansEtiquette": [],
+      "interactifs": 16,
+      "sansNom": [],
+      "cibles_sous_24px": 4,
+      "taillesTexte": {
+        "11": 3,
+        "12": 14,
+        "13": 3,
+        "14": 11,
+        "16": 1,
+        "17": 1
+      },
+      "tailleMin": 11,
+      "octetsTransferes": 1210002,
+      "octetsJS": 1116119,
+      "nbRequetes": 4,
+      "domContentLoaded": 337,
+      "load": 468,
+      "chargement_ms": 1674
+    },
+    "axe:sombre": [
+      {
+        "regle": "color-contrast",
+        "impact": "serious",
+        "aide": "Elements must meet minimum color contrast ratio thresholds",
+        "occurrences": 1,
+        "exemple": "<button class=\"inline-flex items-ce...\" aria-busy=\"false\">",
+        "cible": ".h-10"
+      },
+      {
+        "regle": "empty-table-header",
+        "impact": "minor",
+        "aide": "Table header text should not be empty",
+        "occurrences": 1,
+        "exemple": "<th class=\"h-9 px-3 text-left align-middle font-sans text-xs font-semibold text-piece-ink [&amp;:has([role=checkbox])]:pr-0 [&amp;>[role=che",
+        "cible": ".w-\\[10\\%\\]"
+      },
+      {
+        "regle": "label-content-name-mismatch",
+        "impact": "serious",
+        "aide": "Elements must have their visible text as part of their accessible name",
+        "occurrences": 8,
+        "exemple": "<button type=\"button\" id=\"radix-_r_0_\" aria-haspopup=\"menu\" aria-expanded=\"false\" data-state=\"closed\" class=\"flex items-center gap-1 rounded",
+        "cible": "#radix-_r_0_"
+      }
+    ]
+  }
+}
