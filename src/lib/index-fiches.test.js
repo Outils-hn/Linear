@@ -11,4 +11,4 @@ test("liens vers Index : recherche mot par mot, sans accents", () => {
   expect(chercherFiches(F, "profile 50").map((f) => f.id)).toEqual(["2"]);
   expect(chercherFiches(F, "etancheite").map((f) => f.id)).toEqual(["3"]);
 });
-test("liens vers Index : lien direct", () => expect(lienFiche("x")).toBe("https://index-hn.lovable.app/?fiche=x"));
+test("liens vers Index : lien direct", () => expect(lienFiche("x")).toBe("https://outils-hn.github.io/Index/?fiche=x"));
