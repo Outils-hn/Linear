@@ -41,7 +41,9 @@ await tenter("saisie", async () => {
 p = await ouvrir(b, "saisie", { init: semer(projet([])) }); await ouvrirProjet(p);
 const champs = await p.locator("input").evaluateAll((els) => els.filter((e) => e.offsetParent).map((e) => `${e.type}#${e.id}|${e.getAttribute("aria-label") || ""}|${e.value}`));
 note("champs-visibles", champs);
-for (const [nom, w, h] of [["mobile", 390, 844], ["tablette", 768, 1024]]) { const m = await ouvrir(b, nom, { w, h, init: semer(projet(piecesDemo)) }); await ouvrirProjet(m); await photo(m, `08-${nom}`); await mesures(m, nom); await lancerCalcul(m); await photo(m, `08-${nom}-resultats`); }
+for (const [nom, w, h] of [["mobile", 390, 844], ["tablette", 768, 1024]]) await tenter(nom, async () => { const m = await ouvrir(b, nom, { w, h, init: semer(projet(piecesDemo)) }); await photo(m, `08-${nom}-ouverture`); await mesures(m, nom); await ouvrirProjet(m); await photo(m, `08-${nom}`); await lancerCalcul(m); await photo(m, `08-${nom}-resultats`); });
+await tenter("sombre", async () => {
 const d = await ouvrir(b, "sombre", { dark: true, init: async (pg) => { await semer(projet(piecesDemo))(pg); await pg.addInitScript(() => localStorage.setItem("linear-theme", "dark")); } }); await ouvrirProjet(d); await lancerCalcul(d); await photo(d, "09-sombre-resultats", false); await axe(d, "sombre");
+});
 });
 ecrire(); await b.close();
