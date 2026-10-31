@@ -59,7 +59,12 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     if (s.type === "piece") {
       elements.push(`<path d="M${left} 0V${h}M${left + w} 0V${h}" stroke="${PDF_INK.paper}" stroke-width="0.53" fill="none"/>`);
     } else if ((s.type === "reutilisable" || s.type === "dechet") && w > 14) {
-      elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">Chute ${formatNombre(s.longueur)} mm</text>`);
+      // Etiquette sur fond blanc : sinon les hachures (surtout les bleues) rendent le texte illisible
+      const texte = `Chute ${formatNombre(s.longueur)} mm`;
+      doc.setFontSize(7); // 2,47 mm = 7 pt : meme taille que le texte du dessin
+      const lt = doc.getTextWidth(texte) + 2;
+      elements.push(`<rect x="${left + w / 2 - lt / 2}" y="5.6" width="${lt}" height="3.4" rx="0.6" fill="${PDF_INK.paper}"/>`);
+      elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">${texte}</text>`);
     }
     if (s.type === "reutilisable" && conserver) elements.push(`<rect x="${left + 0.35}" y="0.35" width="${Math.max(0, w - 0.7)}" height="${h - 0.7}" fill="none" stroke="${themeHex("pdf-print-ink")}" stroke-width="0.7"/>`);
   }
