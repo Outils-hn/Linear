@@ -11,7 +11,7 @@ const semer = (pr) => async (p) => p.addInitScript((proj) => {
 }, pr);
 const txt = async (p, sel = "body") => (await p.locator(sel).first().innerText().catch(() => "")).replace(/\s+/g, " ");
 const ouvrirProjet = async (p) => { await p.getByRole("button", { name: /Mes projets/ }).click(); await p.getByText("Chantier démo").first().click(); await p.keyboard.press("Escape"); await p.waitForTimeout(500); };
-const lancerCalcul = async (p) => { const t0 = Date.now(); await p.getByRole("button", { name: /Lancer l'optimisation/ }).click(); await p.waitForTimeout(1500); await p.getByText(/barres? (à|a) commander|Barres utilisées|Plans? de coupe/i).first().waitFor({ timeout: 60000 }).catch(() => {}); return Date.now() - t0; };
+const lancerCalcul = async (p) => { const t0 = Date.now(); await p.getByRole("button", { name: /Lancer l'optimisation/ }).click(); await p.waitForTimeout(1500); await p.getByText(/barres? (à|a) commander|Barres utilisées|Plans? de coupe/i).first().waitFor({ timeout: 40000 }).catch(() => {}); return Date.now() - t0; };
 
 let p = await ouvrir(b, "vide");
 await photo(p, "01-premier-lancement"); await mesures(p, "vide"); await axe(p, "vide"); note("vide:texte", (await txt(p)).slice(0, 700));
@@ -27,16 +27,18 @@ const limites = {
   "piece-trop-longue": [{ id: "a", nom: "Trop longue", longueur: 7000, quantite: 1, profil: "Profil A" }],
   "zero-negatif": [{ id: "a", nom: "Zéro", longueur: 0, quantite: 3, profil: "" }, { id: "b", nom: "Neg", longueur: -500, quantite: 2, profil: "" }, { id: "c", nom: "", longueur: 800, quantite: 0, profil: "" }],
   "quantite-folle": [{ id: "a", nom: "Q", longueur: 300, quantite: 100000, profil: "" }],
+  "cent-cinquante-pieces": Array.from({ length: 150 }, (_, i) => ({ id: "g" + i, nom: "G" + i, longueur: 150 + ((i * 97) % 3200), quantite: 1 + (i % 5), profil: "Profil " + "ABCD"[i % 4] })),
+  "quatre-cents-pieces": Array.from({ length: 400 }, (_, i) => ({ id: "g" + i, nom: "G" + i, longueur: 150 + ((i * 97) % 3200), quantite: 1 + (i % 5), profil: "Profil " + "ABCD"[i % 4] })),
   "mille-pieces": Array.from({ length: 1000 }, (_, i) => ({ id: "g" + i, nom: "G" + i, longueur: 150 + ((i * 97) % 3200), quantite: 1 + (i % 5), profil: "Profil " + "ABCD"[i % 4] })),
   "marge-superieure-barre": null,
 };
-for (const [nom, pieces] of Object.entries(limites)) {
+for (const [nom, pieces] of Object.entries(limites)) await tenter("limite-"+nom, async () => {
   const q = await ouvrir(b, `lim-${nom}`, { init: semer(nom === "marge-superieure-barre" ? projet(piecesDemo, { marge_securite: 7000 }) : projet(pieces)) });
   await ouvrirProjet(q); await photo(q, `04-${nom}-avant`, false);
-  const ms = await Promise.race([lancerCalcul(q), q.waitForTimeout(95000).then(() => -1)]);
+  const ms = await Promise.race([lancerCalcul(q), new Promise((r) => setTimeout(() => r(-1), 70000)).then(() => -1)]);
   note(`limite:${nom}`, { ms, apercu: (await txt(q)).slice(0, 500) }); await photo(q, `04-${nom}-apres`, nom !== "mille-pieces");
   await q.context().close();
-}
+});
 await tenter("saisie", async () => {
 p = await ouvrir(b, "saisie", { init: semer(projet([])) }); await ouvrirProjet(p);
 const champs = await p.locator("input").evaluateAll((els) => els.filter((e) => e.offsetParent).map((e) => `${e.type}#${e.id}|${e.getAttribute("aria-label") || ""}|${e.value}`));
