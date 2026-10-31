@@ -61,8 +61,8 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     } else if ((s.type === "reutilisable" || s.type === "dechet") && w > 14) {
       // Etiquette sur fond blanc : sinon les hachures (surtout les bleues) rendent le texte illisible
       const texte = `Chute ${formatNombre(s.longueur)} mm`;
-      doc.setFontSize(7); // 2,47 mm = 7 pt : meme taille que le texte du dessin
-      const lt = doc.getTextWidth(texte) + 2;
+      // Largeur mesuree comme les autres etiquettes du dessin (meme conversion px -> mm)
+      const lt = measure(texte, 2.47 / MM_PER_PX) * MM_PER_PX * 1.08 + 2.4;
       elements.push(`<rect x="${left + w / 2 - lt / 2}" y="5.6" width="${lt}" height="3.4" rx="0.6" fill="${PDF_INK.paper}"/>`);
       elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">${texte}</text>`);
     }
