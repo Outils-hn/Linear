@@ -1,5 +1,5 @@
 // Audit UX de Linear (donnees fictives).
-import { lancer, ouvrir, photo, mesures, axe, tabsJusqua, focusVisible, note, ecrire } from "./audit-lib.mjs";
+import { lancer, ouvrir, photo, mesures, axe, tabsJusqua, focusVisible, note, ecrire, tenter } from "./audit-lib.mjs";
 const b = await lancer();
 const P = [["Montant", 2450, 12, "Profil A"], ["Traverse", 1180, 18, "Profil A"], ["Renfort", 437.5, 10, "Profil A"], ["Lisse", 3125, 6, "Profil B"], ["Cale", 260, 20, "Profil B"]];
 const projet = (pieces, extra = {}) => ({ id: "demo", chantier: "Chantier démo", numero_tache: "T-01", client: "Client démo", date_projet: "2026-10-27", longueur_barre: 6000, marge_securite: 100, trait_scie: 3, strategie: "min-barres", pieces, stock: [{ id: "s1", longueur: 4200, quantite: 3 }, { id: "s2", longueur: 1500, quantite: 2 }], created_at: "2026-10-27T00:00:00Z", updated_at: "2026-10-27T00:00:00Z", ...extra });
@@ -37,9 +37,11 @@ for (const [nom, pieces] of Object.entries(limites)) {
   note(`limite:${nom}`, { ms, apercu: (await txt(q)).slice(0, 500) }); await photo(q, `04-${nom}-apres`, nom !== "mille-pieces");
   await q.context().close();
 }
+await tenter("saisie", async () => {
 p = await ouvrir(b, "saisie", { init: semer(projet([])) }); await ouvrirProjet(p);
 const champs = await p.locator("input").evaluateAll((els) => els.filter((e) => e.offsetParent).map((e) => `${e.type}#${e.id}|${e.getAttribute("aria-label") || ""}|${e.value}`));
 note("champs-visibles", champs);
 for (const [nom, w, h] of [["mobile", 390, 844], ["tablette", 768, 1024]]) { const m = await ouvrir(b, nom, { w, h, init: semer(projet(piecesDemo)) }); await ouvrirProjet(m); await photo(m, `08-${nom}`); await mesures(m, nom); await lancerCalcul(m); await photo(m, `08-${nom}-resultats`); }
 const d = await ouvrir(b, "sombre", { dark: true, init: async (pg) => { await semer(projet(piecesDemo))(pg); await pg.addInitScript(() => localStorage.setItem("linear-theme", "dark")); } }); await ouvrirProjet(d); await lancerCalcul(d); await photo(d, "09-sombre-resultats", false); await axe(d, "sombre");
+});
 ecrire(); await b.close();
