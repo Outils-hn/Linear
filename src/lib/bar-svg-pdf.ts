@@ -59,7 +59,16 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     if (s.type === "piece") {
       elements.push(`<path d="M${left} 0V${h}M${left + w} 0V${h}" stroke="${PDF_INK.paper}" stroke-width="0.53" fill="none"/>`);
     } else if ((s.type === "reutilisable" || s.type === "dechet") && w > 14) {
-      elements.push(`<text x="${left + w / 2}" y="8" font-size="2.47" fill="${PDF_INK.text}" text-anchor="middle">Chute ${formatNombre(s.longueur)} mm</text>`);
+      // Etiquette sur fond blanc : sinon les hachures (surtout les bleues) rendent le texte illisible
+      const texte = `Chute ${formatNombre(s.longueur)} mm`;
+      // Largeur mesuree comme les autres etiquettes du dessin (meme conversion px -> mm)
+      // Le texte part du bord gauche du fond (et non « centre » par le moteur PDF, qui se decalait) :
+      // meme marge de chaque cote.
+      const marge = 1.1;
+      const lt = measure(texte, 2.47 / MM_PER_PX) * MM_PER_PX + 2 * marge;
+      const xFond = left + w / 2 - lt / 2;
+      elements.push(`<rect x="${xFond}" y="5.6" width="${lt}" height="3.4" rx="0.6" fill="${PDF_INK.paper}"/>`);
+      elements.push(`<text x="${xFond + marge}" y="8" font-size="2.47" fill="${PDF_INK.text}">${texte}</text>`);
     }
     if (s.type === "reutilisable" && conserver) elements.push(`<rect x="${left + 0.35}" y="0.35" width="${Math.max(0, w - 0.7)}" height="${h - 0.7}" fill="none" stroke="${themeHex("pdf-print-ink")}" stroke-width="0.7"/>`);
   }
