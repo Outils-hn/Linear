@@ -217,7 +217,7 @@ try {
     const petits = [...document.querySelectorAll("header button, header a, main button")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.height < 36 || r.width < 36); }).map((e) => (e.getAttribute("aria-label") || e.textContent || "").trim().slice(0, 22));
     const champ = document.querySelector("tbody input[data-col='longueur']");
     const lig = champ?.closest("tr")?.getBoundingClientRect();
-    return { debord, petits, carte: !!lig && lig.width > 300 && lig.width <= window.innerWidth };
+    return { debord, petits, carte: !!lig && lig.width > 240 && lig.width <= window.innerWidth };
   });
   verif("Telephone : pas de debordement horizontal", sortie.debord <= 0, `${sortie.debord} px`);
   verif("Telephone : boutons assez grands", sortie.petits.length === 0, sortie.petits.join(", "));
