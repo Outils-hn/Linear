@@ -271,3 +271,29 @@ body { border-top: 3px solid var(--app); }
 .bandeau-statut.ouvert { border-color: var(--app); color: var(--app-ink); }
 .bandeau-marque > svg:first-child { width: 22px; height: 22px; }
 .page { width: 100%; max-width: 1440px; margin-left: auto; margin-right: auto; padding-left: 32px; padding-right: 32px; }
+
+/* ===== Telephone ===== */
+@media (max-width: 640px) { .bandeau-bureau { display: none !important; } }
+@media (min-width: 641px) { .bandeau-mobile { display: none !important; } }
+@media (max-width: 640px) {
+  .bandeau-in { padding: 0 12px; gap: 8px; }
+  .bandeau-marque { gap: 6px; }
+  .bandeau-nav { flex: 1 1 0; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .bandeau-droite { flex-shrink: 0; }
+  .bandeau-statut { display: none; }
+  .bandeau-btn { height: 40px; }
+  .bandeau-icone { width: 40px; height: 40px; }
+  .bandeau-onglet { min-height: 40px; }
+  .bandeau-marque button, .bandeau-marque a { min-height: 40px; }
+  /* Pieces : une carte par ligne */
+  .pieces-table, .pieces-table tbody { display: block; min-width: 0; width: 100%; }
+  .pieces-table thead { display: none; }
+  .pieces-table tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; height: auto; position: relative; padding: 12px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px; }
+  .pieces-table td { display: block; width: auto; padding: 0; }
+  .pieces-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 2px; font-size: 12px; color: var(--muted-foreground); }
+  .pieces-table td[colspan] { grid-column: 1 / -1; }
+  .pieces-table td input { height: 44px; border-color: var(--input); }
+  .pieces-table td:last-child:not([colspan]) { position: absolute; top: 2px; right: 2px; }
+  .pieces-table td:last-child button { width: 44px; height: 44px; }
+  .btn-mobile, main button, main [role="combobox"] { min-height: 40px; }
+}

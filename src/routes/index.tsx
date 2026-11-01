@@ -9,6 +9,7 @@ import { ParametresProfile } from "@/components/linear/ParametresProfile";
 import { PiecesACouper } from "@/components/linear/PiecesACouper";
 import { StockBarres } from "@/components/linear/StockBarres";
 import { Resultats } from "@/components/linear/Resultats";
+import { ResumeCollant } from "@/components/linear/ResumeCollant";
 import { DialoguesProjet } from "@/components/linear/DialoguesProjet";
 
 export const Route = createFileRoute("/")({
@@ -71,7 +72,9 @@ function App({ profileId }: { profileId: string }) {
     <div className="rail-page flex-1">
       <EnTete app={app} />
 
-      <main className="page space-y-6 py-8">
+      <main className="page space-y-6 pt-8 pb-24">
+        <a href="#lancer" className="sr-only focus:not-sr-only focus:inline-block focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:shadow"
+          onClick={(e) => { e.preventDefault(); document.getElementById("lancer")?.focus(); }}>Aller à « Lancer l'optimisation »</a>
         <InfosProjet app={app} />
 
         {/* Parametres replies en une ligne au-dessus, les pieces prennent toute la largeur */}
@@ -95,12 +98,13 @@ function App({ profileId }: { profileId: string }) {
         {resultat && resultat.nbBarres === 0 && (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              Aucune pièce valide à optimiser. Vérifiez que les longueurs ne dépassent pas celle de la barre.
+              Aucune pièce n'a pu être placée. Vérifiez la longueur (plus de 0 mm) et la quantité de chaque pièce, et que la marge reste plus petite que la barre.
             </CardContent>
           </Card>
         )}
       </main>
 
+      <ResumeCollant app={app} />
       <DialoguesProjet app={app} />
     </div>
   );

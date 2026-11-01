@@ -4,6 +4,13 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.5 — 1er novembre 2026
+
+- Nouveauté : sur téléphone, Linear s'affiche sans déborder, chaque pièce est une carte facile à remplir, et une pastille « Voir le résultat » apparaît après un calcul.
+- Les actions du bandeau (Mes projets, Nouveau, Sauvegarder, PDF atelier) sont regroupées dans un menu « ⋯ » sur téléphone ; boutons de 40 px minimum.
+- Message plus précis quand aucune pièce n'a pu être placée.
+- Lien « Aller à Lancer l'optimisation » au clavier ; colonne d'actions nommée pour les lecteurs d'écran.
+
 ## 3.4 — 1er novembre 2026
 
 - Nouveauté : le mode clair ou sombre que tu choisis dans une appli est repris dans toutes les autres.
