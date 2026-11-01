@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 type Theme = "light" | "dark";
 
 const STORAGE_KEY = "linear-theme";
+// Reglage commun a toutes les applis (meme site) : le choix clair / sombre suit d'une appli a l'autre.
+const SHARED_KEY = "outils-theme";
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
@@ -14,7 +16,7 @@ function applyTheme(theme: Theme) {
 
 export function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "light";
-  const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
+  const stored = (window.localStorage.getItem(SHARED_KEY) || window.localStorage.getItem(STORAGE_KEY)) as Theme | null;
   if (stored === "light" || stored === "dark") return stored;
   return "light";
 }
@@ -34,6 +36,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     applyTheme(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
+      window.localStorage.setItem(SHARED_KEY, next);
     } catch {
       /* ignore */
     }
