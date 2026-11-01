@@ -118,7 +118,7 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
               <TableHead className="w-[24%] sm:w-[35%]">Profilé</TableHead>
               <TableHead className="numeric w-[26%] sm:w-[20%]">Longueur (mm)</TableHead>
               <TableHead className="numeric w-[16%] sm:w-[15%]"><span className="sm:hidden">Qté</span><span className="hidden sm:inline">Quantité</span></TableHead>
-              <TableHead className="w-[10%]"></TableHead>
+              <TableHead className="w-[10%]"><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           {/* Comme dans Excel : Tab passe a la cellule suivante (corbeille ignoree),
@@ -146,6 +146,7 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
         </Table>
         <div className="mt-6 flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between">
           <Button
+            id="lancer"
             onClick={lancer}
             size="lg"
             className="optimization-launch gap-2 sm:self-end"
@@ -171,10 +172,10 @@ const LignePiece = memo(function LignePiece({ p, erreurLongueur, erreurQuantite,
 }) {
   return (
     <TableRow key={p.id}>
-      <TableCell>
+      <TableCell data-label="Repère">
         <Input data-col="nom" aria-label={`Repère de ${p.nom || "la pièce"}`} value={p.nom} onChange={(e) => updatePiece(p.id, { nom: e.target.value })} />
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Profilé">
         <Input
           data-col="profil"
           aria-label={`Profilé de ${p.nom || "la pièce"}`}
@@ -184,7 +185,7 @@ const LignePiece = memo(function LignePiece({ p, erreurLongueur, erreurQuantite,
           onChange={(e) => updatePiece(p.id, { profil: e.target.value })}
         />
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Longueur (mm)">
         <ChampNombre
           data-col="longueur"
           aria-label={`Longueur de ${p.nom || "la pièce"}`}
@@ -194,7 +195,7 @@ const LignePiece = memo(function LignePiece({ p, erreurLongueur, erreurQuantite,
           erreur={erreurLongueur}
         />
       </TableCell>
-      <TableCell>
+      <TableCell data-label="Quantité">
         <ChampNombre
           data-col="quantite"
           aria-label={`Quantité de ${p.nom || "la pièce"}`}

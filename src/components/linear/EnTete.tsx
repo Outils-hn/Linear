@@ -1,5 +1,6 @@
-import { Trash2, FileDown, History, Save, FilePlus, Download, Upload } from "lucide-react";
+import { MoreHorizontal, Trash2, FileDown, History, Save, FilePlus, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LinearMark } from "@/components/LinearMark";
@@ -24,7 +25,7 @@ export function EnTete({ app }: { app: LinearApp }) {
       actions={<>
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" className="bandeau-btn">
+              <Button variant="outline" className="bandeau-btn bandeau-bureau">
                 <History /> Mes projets
               </Button>
             </SheetTrigger>
@@ -120,17 +121,29 @@ export function EnTete({ app }: { app: LinearApp }) {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" onClick={nouveauProjet} className="bandeau-btn">
+          <Button variant="outline" onClick={nouveauProjet} className="bandeau-btn bandeau-bureau">
             <FilePlus /> Nouveau
           </Button>
-          <Button variant="outline" onClick={ouvrirSauvegarde} disabled={saving} className="bandeau-btn">
+          <Button variant="outline" onClick={ouvrirSauvegarde} disabled={saving} className="bandeau-btn bandeau-bureau">
             <Save /> {saving ? "Sauvegarde…" : "Sauvegarder"}
           </Button>
           {resultat && (
-            <Button onClick={() => exporter()} className="bandeau-btn primaire" disabled={!!pdfBloque} title={pdfBloque || undefined}>
+            <Button onClick={() => exporter()} className="bandeau-btn primaire bandeau-bureau" disabled={!!pdfBloque} title={pdfBloque || undefined}>
               <FileDown /> PDF atelier
             </Button>
           )}
+          {/* Telephone : les actions du bandeau dans un seul menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="bandeau-icone bandeau-mobile" aria-label="Plus d'actions"><MoreHorizontal /></button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[220px]">
+              <DropdownMenuItem onSelect={() => setSidebarOpen(true)}><History className="h-4 w-4" /> Mes projets</DropdownMenuItem>
+              <DropdownMenuItem onSelect={nouveauProjet}><FilePlus className="h-4 w-4" /> Nouveau</DropdownMenuItem>
+              <DropdownMenuItem onSelect={ouvrirSauvegarde} disabled={saving}><Save className="h-4 w-4" /> Sauvegarder</DropdownMenuItem>
+              {resultat && <DropdownMenuItem onSelect={() => exporter()} disabled={!!pdfBloque}><FileDown className="h-4 w-4" /> PDF atelier</DropdownMenuItem>}
+            </DropdownMenuContent>
+          </DropdownMenu>
       </>}
     />
   );

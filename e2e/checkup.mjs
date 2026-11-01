@@ -206,6 +206,29 @@ try {
   verif("Sauvegarde complete : reglages, theme et projet en cours inclus", json.app === "linear" && "linear:reglages:v1" in json.data && "linear-theme" in json.data && Object.keys(json.data).some((k) => k.startsWith("linear:courant:v1:")), Object.keys(json.data).join(", "));
   await c2.close();
 } catch (e) { verif("Deroulement du check-up reglages", false, e.message.split("\n")[0]); }
+// Telephone (390 px) : pas de debordement, cibles assez grandes, menu « ⋯ », pieces en cartes, resume apres calcul
+try {
+  const cm = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const pm = await cm.newPage();
+  await pm.goto(BASE, { waitUntil: "networkidle" }); await pm.waitForTimeout(500);
+  await pm.getByRole("button", { name: "Ajouter", exact: true }).click(); await pm.waitForTimeout(300);
+  const sortie = await pm.evaluate(() => {
+    const debord = document.documentElement.scrollWidth - window.innerWidth;
+    const petits = [...document.querySelectorAll("header button, header a, main button")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.height < 36 || r.width < 36); }).map((e) => (e.getAttribute("aria-label") || e.textContent || "").trim().slice(0, 22));
+    const champ = document.querySelector("tbody input[data-col='longueur']");
+    const lig = champ?.closest("tr")?.getBoundingClientRect();
+    return { debord, petits, carte: !!lig && lig.width > 300 && lig.width <= window.innerWidth };
+  });
+  verif("Telephone : pas de debordement horizontal", sortie.debord <= 0, `${sortie.debord} px`);
+  verif("Telephone : boutons assez grands", sortie.petits.length === 0, sortie.petits.join(", "));
+  verif("Telephone : une piece s'affiche en carte", sortie.carte);
+  await pm.getByRole("button", { name: "Plus d'actions" }).click();
+  const items = await pm.getByRole("menuitem").allTextContents();
+  verif("Telephone : menu ⋯ avec Mes projets, Nouveau, Sauvegarder", ["Mes projets", "Nouveau", "Sauvegarder"].every((t) => items.some((i) => i.includes(t))), items.join(" / "));
+  await pm.keyboard.press("Escape");
+  await pm.screenshot({ path: `${OUT}/check-50-telephone.png` });
+  await cm.close();
+} catch (e) { verif("Telephone", false, e.message.split("\n").slice(0, 6).join(" | ")); }
 await browser.close();
 writeFileSync(`${OUT}/checkup.txt`, lignes.join("\n"));
 console.log(lignes.join("\n"));
