@@ -7,7 +7,7 @@ import { LinearMark } from "@/components/LinearMark";
 import { SelecteurApplis } from "@/components/SelecteurApplis";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Bandeau } from "@/components/Bandeau";
-import { CompteBandeau, ConnexionDialog, autoriserExport } from "@/components/Compte";
+import { CompteBandeau, ConnexionDialog, autoriserExport, jsonPermis } from "@/components/Compte";
 import { exporterProjetJson, exporterTousJson } from "@/lib/backup";
 import type { LinearApp } from "@/hooks/use-linear-app";
 
@@ -40,11 +40,11 @@ export function EnTete({ app }: { app: LinearApp }) {
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="gap-2" disabled={projects.length === 0} onClick={async () => { if (await autoriserExport(() => setSidebarOpen(false))) exporterTousJson(projects); }}>
+                <Button variant="outline" size="sm" className="gap-2" disabled={projects.length === 0} onClick={() => { if (jsonPermis()) exporterTousJson(projects); }}>
                   <Download className="h-4 w-4" /> Exporter tous les projets (.json)
                 </Button>
                 <Button variant="outline" size="sm" className="gap-2" asChild>
-                  <label className="cursor-pointer">
+                  <label className="cursor-pointer" onClickCapture={(e) => { if (!jsonPermis()) e.preventDefault(); }}>
                     <Upload className="h-4 w-4" /> Importer (.json)
                     <input
                       type="file"
@@ -52,7 +52,7 @@ export function EnTete({ app }: { app: LinearApp }) {
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (f) void importerJson(f);
+                        if (f && jsonPermis()) void importerJson(f);
                         e.target.value = "";
                       }}
                     />
@@ -90,7 +90,7 @@ export function EnTete({ app }: { app: LinearApp }) {
                       size="icon"
                       title="Exporter ce projet (.json)"
                       aria-label="Exporter ce projet (.json)"
-                      onClick={async () => { if (await autoriserExport(() => setSidebarOpen(false))) exporterProjetJson(p); }}
+                      onClick={() => { if (jsonPermis()) exporterProjetJson(p); }}
                       className="text-muted-foreground"
                     >
                       <Download className="h-4 w-4" />
