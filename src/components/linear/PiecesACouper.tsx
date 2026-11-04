@@ -13,6 +13,7 @@ import { longueurPourProfil } from "@/lib/multi-profil";
 import { ExcelPasteDialog } from "@/components/ExcelPasteDialog";
 import { ChampNombre } from "@/components/ChampNombre";
 import { copierPourExcel, telechargerExcel } from "@/lib/export-excel";
+import { autoriserExport } from "@/components/Compte";
 import { nextId } from "@/hooks/use-linear-app";
 import type { LinearApp } from "@/hooks/use-linear-app";
 
@@ -77,6 +78,7 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
             disabled={pieces.length === 0 || enCours}
             aria-busy={enCours}
             onClick={async () => {
+              if (!(await autoriserExport())) return;
               try {
                 // Resultat perime : on n'exporte que la liste, pas un calcul qui ne lui correspond plus
                 await telechargerExcel(pieces, perime ? null : resultat, { chantier, numeroTache, date: dateProjet });
