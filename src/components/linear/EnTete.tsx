@@ -7,6 +7,7 @@ import { LinearMark } from "@/components/LinearMark";
 import { SelecteurApplis } from "@/components/SelecteurApplis";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Bandeau } from "@/components/Bandeau";
+import { CompteBandeau, ConnexionDialog, autoriserExport } from "@/components/Compte";
 import { exporterProjetJson, exporterTousJson } from "@/lib/backup";
 import type { LinearApp } from "@/hooks/use-linear-app";
 
@@ -15,12 +16,14 @@ export function EnTete({ app }: { app: LinearApp }) {
   const { chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, perime, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet, verification } = app;
   const pdfBloque = perime ? "Relancez d'abord l'optimisation : la saisie a changé" : verification && !verification.ok ? "PDF bloqué : la vérification a trouvé des erreurs" : "";
   return (
+    <>
     <Bandeau
       marque={<>
         <LinearMark />
         <SelecteurApplis />
         <span className="sr-only">Optimisation de découpe 1D</span>
       </>}
+      statut={<CompteBandeau />}
       theme={<ThemeToggle className="bandeau-icone" />}
       actions={<>
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -37,7 +40,7 @@ export function EnTete({ app }: { app: LinearApp }) {
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="gap-2" disabled={projects.length === 0} onClick={() => exporterTousJson(projects)}>
+                <Button variant="outline" size="sm" className="gap-2" disabled={projects.length === 0} onClick={async () => { if (await autoriserExport(() => setSidebarOpen(false))) exporterTousJson(projects); }}>
                   <Download className="h-4 w-4" /> Exporter tous les projets (.json)
                 </Button>
                 <Button variant="outline" size="sm" className="gap-2" asChild>
@@ -87,7 +90,7 @@ export function EnTete({ app }: { app: LinearApp }) {
                       size="icon"
                       title="Exporter ce projet (.json)"
                       aria-label="Exporter ce projet (.json)"
-                      onClick={() => exporterProjetJson(p)}
+                      onClick={async () => { if (await autoriserExport(() => setSidebarOpen(false))) exporterProjetJson(p); }}
                       className="text-muted-foreground"
                     >
                       <Download className="h-4 w-4" />
@@ -128,7 +131,7 @@ export function EnTete({ app }: { app: LinearApp }) {
             <Save /> {saving ? "Sauvegarde…" : "Sauvegarder"}
           </Button>
           {resultat && (
-            <Button onClick={() => exporter()} className="bandeau-btn primaire bandeau-bureau" disabled={!!pdfBloque} title={pdfBloque || undefined}>
+            <Button onClick={async () => { if (await autoriserExport()) exporter(); }} className="bandeau-btn primaire bandeau-bureau" disabled={!!pdfBloque} title={pdfBloque || undefined}>
               <FileDown /> PDF atelier
             </Button>
           )}
@@ -141,10 +144,12 @@ export function EnTete({ app }: { app: LinearApp }) {
               <DropdownMenuItem onSelect={() => setSidebarOpen(true)}><History className="h-4 w-4" /> Mes projets</DropdownMenuItem>
               <DropdownMenuItem onSelect={nouveauProjet}><FilePlus className="h-4 w-4" /> Nouveau</DropdownMenuItem>
               <DropdownMenuItem onSelect={ouvrirSauvegarde} disabled={saving}><Save className="h-4 w-4" /> Sauvegarder</DropdownMenuItem>
-              {resultat && <DropdownMenuItem onSelect={() => exporter()} disabled={!!pdfBloque}><FileDown className="h-4 w-4" /> PDF atelier</DropdownMenuItem>}
+              {resultat && <DropdownMenuItem onSelect={async () => { if (await autoriserExport()) exporter(); }} disabled={!!pdfBloque}><FileDown className="h-4 w-4" /> PDF atelier</DropdownMenuItem>}
             </DropdownMenuContent>
           </DropdownMenu>
       </>}
     />
+    <ConnexionDialog />
+    </>
   );
 }

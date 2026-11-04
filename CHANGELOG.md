@@ -4,6 +4,11 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.6 — 4 novembre 2026
+
+- Nouveauté : « Se connecter » est maintenant en haut de la page, comme dans Index ; se connecter dans une appli connecte toutes les autres.
+- Nouveauté : sans compte, Linear reste utilisable (saisie, calcul, enregistrement local) et offre 3 exports de découverte (PDF atelier, Excel, projets .json, sauvegarde). Ensuite, les exports demandent de se connecter avec son compte Index.
+
 ## 3.5 — 1er novembre 2026
 
 - Nouveauté : sur téléphone, Linear s'affiche sans déborder, chaque pièce est une carte facile à remplir, et une pastille « Voir le résultat » apparaît après un calcul.
