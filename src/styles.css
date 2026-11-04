@@ -297,3 +297,6 @@ body { border-top: 3px solid var(--app); }
   .pieces-table td:last-child button { width: 44px; height: 44px; }
   .btn-mobile, main button, main [role="combobox"] { min-height: 40px; }
 }
+
+/* Mode sombre : les champs de date natifs (calendrier, chiffres) suivent le thème au lieu de rester noirs */
+.dark input[type="date"], .dark input[type="time"] { color-scheme: dark; }
