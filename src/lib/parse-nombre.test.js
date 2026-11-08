@@ -17,4 +17,15 @@ describe("collage Excel : separateurs de milliers", () => {
   test("seuil de longueur suspecte", () => {
     expect(LONGUEUR_SUSPECTE).toBe(10);
   });
+  test("nombres collés d'Excel ambigus : lus correctement ou refusés, jamais devinés", () => {
+    expect(parseLongueur("1.250,5")).toBe(1250.5);
+    expect(parseLongueur("1,250.5")).toBe(1250.5);
+    expect(parseLongueur("1'250,5")).toBe(1250.5);
+    expect(parseLongueur("12..5")).toBeNaN();
+    expect(parseLongueur("1,2,3")).toBeNaN();
+    expect(parseLongueur("1.250,5,2")).toBeNaN();
+    expect(parseNombre("1.250,5")).toBe(1250.5);
+    expect(parseNombre("1,2,3")).toBeNaN();
+    expect(parseQuantite("1,2,3")).toBeNaN();
+  });
 });

@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.16 — 9 novembre 2026
+
+- Nouveauté : les nombres collés d'Excel sont lus correctement (« 1.250,5 » donne 1250,5 mm) ; un nombre illisible (« 12..5 », « 1,2,3 ») est refusé au lieu d'être deviné.
+
 ## 3.15 — 9 novembre 2026
 
 - Nouveauté : un plan avec beaucoup de longueurs différentes (plus de 60 dans un même profilé) ne fait plus planter l'onglet : le calcul rapide est gardé au lieu du mode Ultra, qui manquait de mémoire.
