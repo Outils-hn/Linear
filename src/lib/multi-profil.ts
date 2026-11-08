@@ -1,5 +1,8 @@
 import { optimiser, type OptionsOptimisation, type Piece, type ResultatOptimisation } from "./optimizer";
 
+/** Nombre maximal de longueurs differentes pour lancer le mode Ultra (mesure : plus de ~100 depasse 1 Go). */
+export const MAX_LONGUEURS_ULTRA = 60;
+
 export interface ResultatProfil {
   profil: string;
   longueurBarre: number;
@@ -116,7 +119,9 @@ export function optimiserParProfil(
     const borne = borneMinimale(pp, Math.max(opts.longueurBarreUtileDefaut, ...stockUtiles), rest.traitScie);
     let r = optimiser(pp, opts);
     let smartCut = false;
-    if (r.nbBarres > borne && rest.strategie === "min-barres") {
+    // Ultra explose en memoire au-dela d'une centaine de longueurs differentes : on garde alors le calcul rapide.
+    const nbLongueurs = new Set(pp.map((p) => p.longueur)).size;
+    if (r.nbBarres > borne && rest.strategie === "min-barres" && nbLongueurs <= MAX_LONGUEURS_ULTRA) {
       smartCut = true;
       const u = optimiser(pp, { ...opts, modeUltra: true });
       if (u.nbBarres < r.nbBarres || (u.nbBarres === r.nbBarres && plusGrandeChuteReutilisable(u) > plusGrandeChuteReutilisable(r))) r = u;
