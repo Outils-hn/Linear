@@ -2,7 +2,7 @@
 // Mettre à jour la version ICI uniquement ; pied de page et fenêtre
 // « À propos » lisent ces constantes.
 export const APP_NAME = "Linear";
-export const APP_VERSION = "3.14";
+export const APP_VERSION = "3.15";
 export const APP_AUTHOR = "Hugo N.";
 export const APP_YEAR = "2026";
 export const APP_UPDATED = "7 novembre 2026";
