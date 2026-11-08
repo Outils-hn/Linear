@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.14 — 8 novembre 2026
+
+- Technique : nettoyage de la configuration, qui pointait encore vers d'anciens projets Supabase ; aucun changement visible.
+
 ## 3.13 — 8 novembre 2026
 
 - Technique : les données sont passées sur le nouveau serveur Supabase en Suisse (adresse, clé et mémoire de connexion mises à jour). Il faut se reconnecter une fois.
