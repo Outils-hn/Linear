@@ -11,5 +11,7 @@ export function formatNombre(value: number, decimales?: number): string {
     cache.set(cle, f);
   }
   // Format suisse de la famille d'applis : apostrophe pour les milliers (« 1'200 »), virgule decimale
-  return f.format(value).replace(/[\s\u00a0\u202f]/g, "'");
+  // Jamais « -0 » : une valeur qui s'arrondit a zero s'affiche 0
+  const v = decimales !== undefined && Math.abs(value) < 0.5 * 10 ** -decimales ? 0 : Object.is(value, -0) ? 0 : value;
+  return f.format(v).replace(/[\s\u00a0\u202f]/g, "'");
 }
