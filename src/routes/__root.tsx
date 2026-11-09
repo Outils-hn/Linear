@@ -140,7 +140,7 @@ function RootComponent() {
         </div>
         <AppFooter />
       </div>
-      <Toaster richColors position="top-right" />
+      <Toaster richColors position="bottom-center" />
     </QueryClientProvider>
   );
 }
