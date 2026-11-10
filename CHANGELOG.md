@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.23 — 10 novembre 2026
+
+- Nouveauté : « Mes projets » propose « Partager » (icône) : le calcul est enregistré sur la base commune, visible par l'équipe dans le dossier du chantier et ouvrable depuis n'importe quel ordinateur.
+
 ## 3.22 — 10 novembre 2026
 
 - Nouveauté : Ctrl+K ouvre la recherche de l'Accueil (applis, chantiers, fiches Index, notes Check) dans un nouvel onglet ; le menu de l'appli propose aussi « Rechercher ».
