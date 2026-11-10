@@ -128,27 +128,24 @@ export async function exporterPDF(
   const sansTypes = chutesPDF.mode === "none";
   const consigne = chutesPDF.mode === "instruction";
 
-  // En-tete (style Epure) : logo, nom de l'appli, titre du document, cartouche du projet
+  // En-tete commun aux PDF de la famille (comme Check) : nom de l'appli en petites capitales espacees, date a droite
   const ink = themeRgb("pdf-heading"), gris = themeRgb("pdf-muted");
-  doc.setDrawColor(...ink); doc.setLineWidth(0.35);
-  doc.rect(margin, 10.5, 6, 2.6); doc.line(margin + 2.2, 10.5, margin + 2.2, 13.1);
-  doc.setFillColor(...themeRgb("warning")); doc.rect(margin + 3.9, 11, 1.7, 1.6, "F");
-  doc.setTextColor(...ink); doc.setFont("PlexSans", "bold"); doc.setFontSize(13);
-  doc.text("Linear", margin + 8.5, 13.4);
-  doc.setFont("PlexSans", "normal"); doc.setFontSize(7); doc.setTextColor(...gris);
-  doc.text("FICHE DE DÉBIT — ATELIER", pageWidth - margin, 13.4, { align: "right", charSpace: 0.3 });
   const dateSrc = infos.date ? new Date(infos.date) : new Date();
   const date = (isNaN(dateSrc.getTime()) ? new Date() : dateSrc).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
+  doc.setFont("PlexSans", "bold"); doc.setFontSize(8); doc.setTextColor(...gris);
+  doc.text("LINEAR", margin, 13.4, { charSpace: 0.5 });
+  doc.setFont("PlexSans", "normal");
+  doc.text(`Fiche de débit · ${date}`, pageWidth - margin, 13.4, { align: "right" });
   const chantier = infos.chantier?.trim() || "—";
   const numTache = infos.numeroTache?.trim() || "—";
   const clientStr = infos.client?.trim();
   doc.setTextColor(...ink); doc.setFont("PlexSans", "bold"); doc.setFontSize(22);
   doc.text(chantier, margin, 30, { maxWidth: pageWidth - 2 * margin });
-  const champs: [string, string][] = [["TÂCHE", numTache], ["CLIENT", clientStr || "—"], ["DATE", date]];
+  const champs: [string, string][] = [["TÂCHE", numTache], ["CLIENT", clientStr || "—"]];
   const largeurChamp = (pageWidth - 2 * margin) / 4;
   champs.forEach(([l, v], i) => {
     doc.setFont("PlexSans", "normal"); doc.setFontSize(6.5); doc.setTextColor(...gris);
@@ -588,12 +585,12 @@ export async function exporterPDF(
       align: "right",
     });
     const pied = [
-      "Fiche de débit — Optimisation linéaire",
-      infos.chantier?.trim() ? `Chantier : ${infos.chantier.trim()}` : null,
-      infos.numeroTache?.trim() ? `Tâche : ${infos.numeroTache.trim()}` : null,
+      "Linear",
+      infos.chantier?.trim() || null,
+      infos.numeroTache?.trim() ? `tâche ${infos.numeroTache.trim()}` : null,
     ]
       .filter(Boolean)
-      .join("  ·  ");
+      .join(" · ");
     doc.text(pied, margin, pageHeight - 8);
   }
 
