@@ -1,4 +1,4 @@
-import { MoreHorizontal, Trash2, FileDown, History, Save, FilePlus, Download, Upload } from "lucide-react";
+import { Share2, MoreHorizontal, Trash2, FileDown, History, Save, FilePlus, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -9,11 +9,12 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Bandeau } from "@/components/Bandeau";
 import { CompteBandeau, ConnexionDialog, autoriserExport, jsonPermis } from "@/components/Compte";
 import { exporterProjetJson, exporterTousJson } from "@/lib/backup";
+import { BaseCommune, partagerProjet } from "@/components/linear/BaseCommune";
 import type { LinearApp } from "@/hooks/use-linear-app";
 
 /** En-tete : titre, projets enregistres, import/export, sauvegarde, PDF. */
 export function EnTete({ app }: { app: LinearApp }) {
-  const { chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, perime, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet, verification } = app;
+  const { ouvrirDepuisBase, chargerProjet, currentProjectId, enregistrerImport, exporter, importConflits, importerJson, nouveauProjet, ouvrirSauvegarde, perime, projects, resultat, saving, setImportConflits, setSidebarOpen, sidebarOpen, supprimerProjet, verification } = app;
   const pdfBloque = perime ? "Relancez d'abord l'optimisation : la saisie a changé" : verification && !verification.ok ? "PDF bloqué : la vérification a trouvé des erreurs" : "";
   return (
     <>
@@ -59,6 +60,7 @@ export function EnTete({ app }: { app: LinearApp }) {
                   </label>
                 </Button>
               </div>
+              <BaseCommune onOuvrir={ouvrirDepuisBase} />
               <div className="mt-4 space-y-2 overflow-y-auto pr-1" style={{ maxHeight: "calc(100vh - 200px)" }}>
                 {projects.length === 0 && (
                   <p className="py-8 text-center text-sm text-muted-foreground">
@@ -85,6 +87,16 @@ export function EnTete({ app }: { app: LinearApp }) {
                         })}
                       </div>
                     </button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Partager sur la base commune (visible dans le dossier du chantier)"
+                      aria-label="Partager sur la base commune"
+                      onClick={() => void partagerProjet(p)}
+                      className="text-muted-foreground"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

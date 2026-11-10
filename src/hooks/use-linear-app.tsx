@@ -14,6 +14,7 @@ import { exporterPDF } from "@/lib/export-pdf";
 import { optimiserEnArrierePlan } from "@/lib/optimiser-async";
 import { verifierResultat } from "@/lib/verification";
 import { lireJson } from "@/lib/backup";
+import { lire as lireCalculBase } from "@/lib/calculs-base";
 import { listProjects, upsertProject, deleteProject, type LocalProject } from "@/lib/local-store";
 import { raisonRefus, type TypeChamp } from "@/lib/controle-saisie";
 import { CLE_PROJET_COURANT, empreinteCalcul, lireProjetCourant, type ProjetCourant } from "@/lib/projet-courant";
@@ -517,6 +518,29 @@ export function useLinearApp(profileId: string) {
     }
   };
 
+  /** Calcul pris sur la base commune : copie locale (nouvel identifiant), puis ouverture. */
+  const ouvrirDepuisBase = (p: LocalProject) => {
+    const { id: _id, created_at: _c, updated_at: _u, ...data } = p;
+    void _id; void _c; void _u;
+    const saved = upsertProject(profileId, { ...data, id: null });
+    refreshProjects();
+    chargerProjet(saved);
+  };
+
+  // Lien direct depuis l'Accueil : Linear/?calcul=<id>
+  const lienFait = useRef(false);
+  useEffect(() => {
+    if (lienFait.current) return;
+    const id = new URLSearchParams(window.location.search).get("calcul");
+    if (!id) return;
+    lienFait.current = true;
+    history.replaceState(null, "", window.location.pathname + window.location.hash);
+    void lireCalculBase(id)
+      .then((c) => (c?.donnees && Array.isArray(c.donnees.pieces) ? ouvrirDepuisBase(c.donnees) : toast.error("Calcul introuvable (supprimé ou non accessible).")))
+      .catch((e) => toast.error(e instanceof Error ? e.message : "Ouverture impossible"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const supprimerProjet = (id: string) => {
     const supprime = listProjects(profileId).find((p) => p.id === id);
     deleteProject(profileId, id);
@@ -632,6 +656,7 @@ export function useLinearApp(profileId: string) {
     chargerProjet,
     enregistrerImport,
     importerJson,
+    ouvrirDepuisBase,
     supprimerProjet,
   };
 }
