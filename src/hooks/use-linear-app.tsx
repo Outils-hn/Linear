@@ -1,4 +1,5 @@
 // Logique de l'ecran principal de Linear, sortie de src/routes/index.tsx sans modification.
+import { chantierAccueil } from "@/lib/chantier-accueil";
 import { formatNombre as fmt } from "@/lib/format-number";
 import { bilanMatiere } from "@/lib/material-summary";
 import { lireStatutMatiere, type StatutMatiere } from "@/lib/material-status";
@@ -41,7 +42,7 @@ export const DEFAULT_PIECES: Piece[] = [];
  * et ne font qu'afficher : la logique reste a un seul endroit.
  */
 export function useLinearApp(profileId: string) {
-  const [chantier, setChantier] = useState("");
+  const [chantier, setChantier] = useState(chantierAccueil);
   const [numeroTache, setNumeroTache] = useState("");
   const [client, setClient] = useState("");
   const [dateProjet, setDateProjet] = useState(() => new Date().toISOString().slice(0, 10));
@@ -371,7 +372,7 @@ export function useLinearApp(profileId: string) {
     // Saisie precedente gardee 10 s : « Annuler » la remet telle quelle
     const avant = photo();
     setCurrentProjectId(null);
-    setChantier("");
+    setChantier(chantierAccueil());
     setNumeroTache("");
     setClient("");
     setDateProjet(new Date().toISOString().slice(0, 10));
