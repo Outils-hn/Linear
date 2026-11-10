@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.21 — 10 novembre 2026
+
+- Nouveauté : le chantier choisi dans l'onglet « Chantiers » de l'Accueil est proposé automatiquement dans le champ « Chantier » d'un nouveau projet.
+
 ## 3.20 — 9 novembre 2026
 
 - Nouveauté : les messages de confirmation s'affichent en bas de l'écran et ne cachent plus les boutons de l'en-tête.
