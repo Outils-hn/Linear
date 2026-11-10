@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { CloudDownload, Trash2 } from "lucide-react";
+import { CloudDownload, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { lire, lister, monId, partager, retirer, chantierDe, type CalculBase } from "@/lib/calculs-base";
+import { corbeille, lire, lister, restaurer, monId, partager, retirer, chantierDe, type CalculBase } from "@/lib/calculs-base";
 import { chantierAccueil } from "@/lib/chantier-accueil";
 import type { LocalProject } from "@/lib/local-store";
 
@@ -15,6 +15,7 @@ export async function partagerProjet(p: LocalProject) {
 export function BaseCommune({ onOuvrir }: { onOuvrir: (p: LocalProject) => void }) {
   const [liste, setListe] = useState<CalculBase[] | null>(null);
   const [charge, setCharge] = useState(false);
+  const [corb, setCorb] = useState<CalculBase[] | null>(null);
   const numero = chantierDe(chantierAccueil()).numero;
 
   const actualiser = async (tous: boolean) => {
@@ -29,6 +30,14 @@ export function BaseCommune({ onOuvrir }: { onOuvrir: (p: LocalProject) => void 
       if (c?.donnees && Array.isArray(c.donnees.pieces)) onOuvrir(c.donnees); else toast.error("Calcul illisible.");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Ouverture impossible"); }
   };
+  const ouvrirCorbeille = async () => {
+    setCharge(true);
+    try { setCorb(await corbeille()); } catch (e) { toast.error(e instanceof Error ? e.message : "Lecture impossible"); } finally { setCharge(false); }
+  };
+  const remettre = async (id: string) => {
+    try { await restaurer(id); setCorb((l) => l && l.filter((x) => x.id !== id)); toast.success("Calcul restauré"); if (liste) void actualiser(!numero); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Restauration impossible"); }
+  };
   const enlever = async (id: string) => {
     try { await retirer(id); setListe((l) => l && l.filter((x) => x.id !== id)); toast.success("Retiré de la base (corbeille 30 jours)"); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Suppression impossible"); }
@@ -42,7 +51,20 @@ export function BaseCommune({ onOuvrir }: { onOuvrir: (p: LocalProject) => void 
           <CloudDownload className="h-4 w-4" /> {numero ? `Chantier ${numero}` : "Tous"}
         </Button>
         {numero && <Button variant="ghost" size="sm" disabled={charge} onClick={() => void actualiser(true)}>Tous</Button>}
+        <Button variant="ghost" size="sm" disabled={charge} onClick={() => (corb ? setCorb(null) : void ouvrirCorbeille())}>Corbeille</Button>
       </div>
+      {corb && (
+        <ul className="mt-2 space-y-1 rounded border border-dashed border-border p-2">
+          <li className="text-xs text-muted-foreground">Corbeille : vos calculs retirés depuis moins de 30 jours.</li>
+          {corb.length === 0 && <li className="py-1 text-center text-xs text-muted-foreground">Corbeille vide.</li>}
+          {corb.map((c) => (
+            <li key={c.id} className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-sm">{c.nom || "Sans nom"}</span>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => void remettre(c.id)}><RotateCcw className="h-3.5 w-3.5" /> Restaurer</Button>
+            </li>
+          ))}
+        </ul>
+      )}
       {liste && (
         <ul className="mt-2 space-y-1">
           {liste.length === 0 && <li className="py-2 text-center text-xs text-muted-foreground">Rien de partagé pour l'instant.</li>}
