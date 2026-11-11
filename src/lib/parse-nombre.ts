@@ -31,11 +31,12 @@ export function parseNombre(s: string): number {
   return Number(c);
 }
 
-// Extrait le nombre d'une cellule en ignorant le texte autour (unités, espaces insécables)
+// Lit « nombre + unite » (« 1250 mm », « 103 Pces ») : la cellule doit COMMENCER par le nombre,
+// sinon un code comme « E04 » serait pris pour 4
 function extraireNombre(s: string): { valeur: number; unite: string } | null {
   const c = normaliser(s);
   if (c === null) return null;
-  const m = c.match(/(-?\d*\.?\d+)([a-zA-Z]*)/);
+  const m = c.match(/^(-?\d*\.?\d+)([a-zA-Z]*)\.?$/);
   if (!m) return null;
   return { valeur: Number(m[1]), unite: (m[2] ?? "").toLowerCase() };
 }

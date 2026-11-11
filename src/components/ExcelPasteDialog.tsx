@@ -47,20 +47,26 @@ function detect(rows: string[][], nCols: number): { header: boolean; roles: ColR
     const data = header ? rows.slice(1) : rows;
     const stats = Array.from({ length: nCols }, (_, i) => {
       const vals = data.map((r) => r[i] ?? "").filter((v) => v !== "");
-      const nums = vals.map((v) => { const n = parseLongueur(v); return isNaN(n) ? parseNombre(v) : n; }).filter((n) => !isNaN(n));
-      const numeric = vals.length > 0 && nums.length / vals.length > 0.8;
-      const avg = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
-      const ints = nums.every((n) => Number.isInteger(n));
-      return { i, numeric, avg, ints, has: vals.length > 0 };
+      // Colonne de longueurs (« 1000 », « 1,2 m ») ou de quantites (« 103 », « 103 Pces ») : lues separement
+      const lus = (f: (v: string) => number) => vals.map(f).filter((n) => !isNaN(n));
+      const longueurs = lus(parseLongueur), quantites = lus(parseQuantite);
+      const assez = (n: number[]) => vals.length > 0 && n.length / vals.length > 0.8;
+      const moy = (n: number[]) => (n.length ? n.reduce((a, b) => a + b, 0) / n.length : 0);
+      return {
+        i, has: vals.length > 0,
+        numeric: assez(longueurs) || assez(quantites),
+        estLongueur: assez(longueurs), avg: moy(longueurs),
+        estQuantite: assez(quantites) && quantites.every((n) => Number.isInteger(n)), avgQ: moy(quantites),
+      };
     });
     const free = stats.filter((s) => roles[s.i] === "ignorer" && s.has);
     if (!used.has("longueur")) {
-      const c = free.filter((s) => s.numeric).sort((a, b) => b.avg - a.avg)[0];
+      const c = free.filter((s) => s.estLongueur).sort((a, b) => b.avg - a.avg)[0];
       if (c) { roles[c.i] = "longueur"; used.add("longueur"); }
     }
     if (!used.has("quantite")) {
-      const c = free.filter((s) => roles[s.i] === "ignorer" && s.numeric && s.ints && s.avg < 1000)
-        .sort((a, b) => a.avg - b.avg)[0];
+      const c = free.filter((s) => roles[s.i] === "ignorer" && s.estQuantite && s.avgQ < 1000)
+        .sort((a, b) => a.avgQ - b.avgQ)[0];
       if (c) { roles[c.i] = "quantite"; used.add("quantite"); }
     }
     if (!used.has("repere")) {
@@ -99,7 +105,9 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
     let r = d.roles;
     try {
       const saved = JSON.parse(localStorage.getItem(MAP_KEY) || "null");
-      if (saved && Array.isArray(saved.roles) && saved.roles.length === nCols) r = saved.roles;
+      // Colonnes choisies a la main la derniere fois : reprises seulement si elles donnent une longueur
+      // (sinon un ancien reglage incomplet bloquait la detection automatique)
+      if (saved && Array.isArray(saved.roles) && saved.roles.length === nCols && saved.roles.includes("longueur")) r = saved.roles;
     } catch { /* ignore */ }
     setRoles(r);
     // eslint-disable-next-line react-hooks/exhaustive-deps

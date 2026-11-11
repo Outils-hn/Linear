@@ -29,3 +29,15 @@ describe("collage Excel : separateurs de milliers", () => {
     expect(parseQuantite("1,2,3")).toBeNaN();
   });
 });
+
+describe("collage Excel : codes et unites de quantite", () => {
+  test("un code comme « E04 » n'est pas un nombre", () => {
+    expect(parseLongueur("E04")).toBeNaN();
+    expect(parseQuantite("E04")).toBeNaN();
+  });
+  test("« 103 Pces » est une quantite, pas une longueur", () => {
+    expect(parseQuantite("103 Pces")).toBe(103);
+    expect(parseQuantite("8 Pces")).toBe(8);
+    expect(parseLongueur("103 Pces")).toBeNaN();
+  });
+});
