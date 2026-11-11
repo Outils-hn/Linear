@@ -101,14 +101,6 @@ export function PiecesACouper({ app }: { app: LinearApp }) {
           longueurBarre={longueurBarre}
           longueurMax={(pr) => Math.max(0, longueurPourProfil(pr, longueursProfils, longueurBarre) - margeSecurite)}
           onSetBarre={(v) => { setLongueurBarre(v); toast.success(`Barre de base réglée sur ${fmt(v)} mm`); }}
-          nbPieces={pieces.length}
-          onRemplir={(valeurs, info) => {
-            setPieces((p) => p.map((pc, i) => (i < valeurs.length ? { ...pc, ...valeurs[i] } : pc)));
-            toast.success(
-              `Mise à jour des ${info.colonnes.join(" et ")} sur ${fmt(valeurs.length)} pièce${valeurs.length > 1 ? "s" : ""}` +
-                (info.ignorees ? `, ${fmt(info.ignorees)} ligne${info.ignorees > 1 ? "s" : ""} ignorée${info.ignorees > 1 ? "s" : ""}` : ""),
-            );
-          }}
           onImport={(list, mode, info) => {
             const nouvelles = list.map((x) => ({ ...x, id: nextId() }));
             setPieces((p) => (mode === "replace" ? nouvelles : [...p, ...nouvelles]));

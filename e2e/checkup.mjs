@@ -37,24 +37,6 @@ try {
   await page.waitForTimeout(600);
   verif("Rechargement : chantier garde", (await page.locator("#chantier").inputValue()) === "Chantier démo");
   verif("Rechargement : pieces gardees", (await page.locator("tbody input[data-col='nom']").count()) === 2);
-  // Coller une seule colonne : remplit les pieces existantes, dans l'ordre, sans en creer
-  const remplir = async (tsv) => {
-    await page.getByRole("button", { name: "Coller depuis Excel" }).click();
-    await page.locator("textarea").fill(tsv); await page.waitForTimeout(300);
-    await page.getByRole("button", { name: "Remplir les pièces existantes" }).click(); await page.waitForTimeout(400);
-  };
-  await remplir("5\n7\n9");
-  verif("Coller des quantites seules : pieces existantes remplies, rien de cree",
-    (await page.locator("tbody input[data-col='nom']").count()) === 2 &&
-    (await page.locator("tbody input[data-col='quantite']").nth(0).inputValue()) === "5" &&
-    (await page.locator("tbody input[data-col='quantite']").nth(1).inputValue()) === "7");
-  await remplir("Poteau A\nLisse B");
-  verif("Coller des reperes seuls : reperes remplaces, longueurs gardees",
-    (await page.locator("tbody input[data-col='nom']").nth(0).inputValue()) === "Poteau A" &&
-    (await page.locator("tbody input[data-col='nom']").nth(1).inputValue()) === "Lisse B" &&
-    (await page.locator("tbody input[data-col='longueur']").count()) === 2);
-  await remplir("12\n18");
-  await remplir("Montant\nTraverse");
   await page.getByRole("button", { name: /Ajouter/ }).click();
   const ids = await page.locator("tbody input[data-col='nom']").evaluateAll((els) => els.map((e) => e.value));
   verif("Piece ajoutee apres rechargement : ligne distincte", ids.length === 3, ids.join(", "));
