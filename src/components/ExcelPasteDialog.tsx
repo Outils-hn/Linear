@@ -74,6 +74,13 @@ function detect(rows: string[][], nCols: number): { header: boolean; roles: ColR
       if (c) { roles[c.i] = "repere"; used.add("repere"); }
     }
   }
+  // Une seule colonne de petits nombres entiers (« 4 », « 12 », « 103 Pces ») : ce sont des quantites, pas des longueurs
+  if (nCols === 1 && roles[0] === "longueur") {
+    const vals = (header ? rows.slice(1) : rows).map((r) => r[0] ?? "").filter((v) => v !== "");
+    const q = vals.map(parseQuantite);
+    const avecUnite = vals.some((v) => /[a-z]/i.test(v)) && vals.every((v) => isNaN(parseLongueur(v)));
+    if (q.every((n) => Number.isInteger(n) && n > 0) && (avecUnite || Math.max(...q) < 100)) roles[0] = "quantite";
+  }
   return { header, roles };
 }
 
@@ -85,9 +92,13 @@ interface Props {
   longueurMax?: (profil: string) => number;
   onSetBarre: (v: number) => void;
   onImport: (pieces: Omit<Piece, "id">[], mode: "replace" | "append", info: { lignes: number; ignorees: number }) => void;
+  /** Nombre de pieces deja dans la liste (pour « Remplir les pieces existantes ») */
+  nbPieces: number;
+  /** Remplit les pieces existantes dans l'ordre : une valeur collee par piece, a partir de la premiere */
+  onRemplir: (valeurs: Partial<Omit<Piece, "id">>[], info: { colonnes: string[]; ignorees: number }) => void;
 }
 
-export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarre, longueurMax, onSetBarre, onImport }: Props) {
+export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarre, longueurMax, onSetBarre, onImport, nbPieces, onRemplir }: Props) {
   const [text, setText] = useState("");
   const [roles, setRoles] = useState<ColRole[]>([]);
   const [header, setHeader] = useState(false);
@@ -153,13 +164,53 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
     return { out, erreurs, nValides: valides.length, barreUnique, barreVariee };
   }, [rows, roles, header, fusion, longueurBarre, longueurMax]);
 
+  // « Remplir les pieces existantes » : chaque colonne choisie (repere, longueur, quantite, profile) remplace,
+  // ligne par ligne, la valeur des pieces deja saisies. Rien n'est cree : une colonne seule suffit.
+  const NOMS: Record<string, string> = { repere: "repères", longueur: "longueurs", quantite: "quantités", profil: "profilés" };
+  const remplissage = useMemo(() => {
+    const champs = (["repere", "longueur", "quantite", "profil"] as const).filter((r) => roles.includes(r));
+    const data = (header ? rows.slice(1) : rows).map((r, k) => ({ r, ligne: k + 1 + (header ? 1 : 0) }));
+    const valeurs: Partial<Omit<Piece, "id">>[] = [];
+    const erreurs: { ligne: number; msg: string }[] = [];
+    data.forEach(({ r, ligne }, k) => {
+      if (k >= nbPieces) return;
+      const v: Partial<Omit<Piece, "id">> = {};
+      for (const c of champs) {
+        const brut = (r[roles.indexOf(c)] ?? "").trim();
+        if (c === "repere") v.nom = brut;
+        if (c === "profil") v.profil = brut || undefined;
+        if (c === "longueur") {
+          const L = parseLongueur(brut);
+          if (isNaN(L) || L < LONGUEUR_SUSPECTE) { erreurs.push({ ligne, msg: "longueur vide ou non numérique : pièce laissée telle quelle" }); continue; }
+          v.longueur = L;
+        }
+        if (c === "quantite") {
+          const Q = parseQuantite(brut);
+          if (isNaN(Q) || !Number.isInteger(Q) || Q <= 0) { erreurs.push({ ligne, msg: "quantité non entière ou nulle : pièce laissée telle quelle" }); continue; }
+          v.quantite = Q;
+        }
+      }
+      valeurs.push(v);
+    });
+    const enTrop = Math.max(0, data.length - nbPieces);
+    return { champs, valeurs, erreurs, enTrop };
+  }, [rows, roles, header, nbPieces]);
+  const sansLongueur = !roles.includes("longueur");
+  const peutRemplir = nbPieces > 0 && remplissage.champs.length > 0 && remplissage.valeurs.length > 0;
+  const doRemplir = () => {
+    onRemplir(remplissage.valeurs, { colonnes: remplissage.champs.map((c) => NOMS[c]), ignorees: remplissage.erreurs.length + remplissage.enTrop });
+    onOpenChange(false);
+  };
+
   const doImport = (mode: "replace" | "append") => {
     onImport(analyse.out, mode, { lignes: analyse.nValides, ignorees: analyse.erreurs.length });
     onOpenChange(false);
   };
 
   const preview = rows.slice(0, 5);
-  const errLines = new Set(analyse.erreurs.map((e) => e.ligne));
+  // Sans colonne de longueurs, on ne peut que remplir les pieces existantes : les erreurs affichees sont celles du remplissage
+  const erreursVues = sansLongueur ? remplissage.erreurs : analyse.erreurs;
+  const errLines = new Set(erreursVues.map((e) => e.ligne));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -229,25 +280,45 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
             Attention : les longueurs de barre varient d'une ligne à l'autre — la barre de base du calcul n'a pas été modifiée.
           </div>
         )}
-        {analyse.erreurs.length > 0 && (
+        {sansLongueur && nCols > 0 && (
+          <div className="rounded-md border border-primary/40 bg-primary/5 p-2 text-xs">
+            {nbPieces > 0
+              ? <>Pas de colonne de longueurs : les {remplissage.champs.map((c) => NOMS[c]).join(" et ") || "valeurs"} collé(e)s vont remplir les {fmt(Math.min(nbPieces, remplissage.valeurs.length))} première(s) pièce(s) de la liste, dans l'ordre.{remplissage.enTrop > 0 ? ` ${fmt(remplissage.enTrop)} ligne(s) en trop seront ignorées (la liste a ${fmt(nbPieces)} pièce(s)).` : ""}</>
+              : <>La liste est vide : collez au moins une colonne de longueurs pour créer des pièces.</>}
+          </div>
+        )}
+        {erreursVues.length > 0 && (
           <div className="max-h-28 overflow-auto rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
-            {analyse.erreurs.map((e) => (
+            {erreursVues.map((e) => (
               <div key={e.ligne}>Ligne {fmt(e.ligne)} : {e.msg}</div>
             ))}
           </div>
         )}
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <Checkbox id="fusion" checked={fusion} onCheckedChange={(v) => setFusion(!!v)} />
-            <Label htmlFor="fusion">Fusionner les doublons</Label>
+        {!sansLongueur && (
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Checkbox id="fusion" checked={fusion} onCheckedChange={(v) => setFusion(!!v)} />
+              <Label htmlFor="fusion">Fusionner les doublons</Label>
+            </div>
+            <span className="text-muted-foreground">
+              {fmt(analyse.nValides)} ligne(s) valide(s) · {fmt(analyse.erreurs.length)} invalide(s)
+            </span>
           </div>
-          <span className="text-muted-foreground">
-            {fmt(analyse.nValides)} ligne(s) valide(s) · {fmt(analyse.erreurs.length)} invalide(s)
-          </span>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" disabled={!analyse.out.length} onClick={() => doImport("append")}>Ajouter à la liste</Button>
-          <Button disabled={!analyse.out.length} onClick={() => doImport("replace")}>Remplacer la liste</Button>
+        )}
+        <DialogFooter className="gap-2">
+          {sansLongueur ? (
+            <Button disabled={!peutRemplir} onClick={doRemplir}>Remplir les pièces existantes</Button>
+          ) : (
+            <>
+              {nbPieces > 0 && (
+                <Button variant="ghost" disabled={!peutRemplir} onClick={doRemplir} title="Met les valeurs collées dans les pièces déjà saisies, dans l'ordre, sans en créer">
+                  Remplir les pièces existantes
+                </Button>
+              )}
+              <Button variant="outline" disabled={!analyse.out.length} onClick={() => doImport("append")}>Ajouter à la liste</Button>
+              <Button disabled={!analyse.out.length} onClick={() => doImport("replace")}>Remplacer la liste</Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

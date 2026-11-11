@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.37 — 11 novembre 2026
+
+- Nouveauté : « Coller depuis Excel » peut remplir les pièces déjà saisies : collez juste une colonne (quantités, repères, longueurs ou profilés), les valeurs vont dans les pièces de la liste, dans l'ordre, sans en créer de nouvelles.
+
 ## 3.36 — 11 novembre 2026
 
 - Nouveauté : « Coller depuis Excel » reconnaît les quantités écrites avec leur unité (« 103 Pces ») et ne prend plus un code comme « E04 » pour un nombre : les colonnes longueur et quantité sont trouvées toutes seules.
