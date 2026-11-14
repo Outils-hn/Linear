@@ -26,14 +26,14 @@ export function AppFooter() {
 
   return (
     <footer className="py-4 text-center">
-      <p className="text-xs text-muted-foreground/60">
+      <p className="inline-block rounded-md bg-background px-2 py-0.5 text-xs text-muted-foreground">
         {APP_NAME} v{APP_VERSION} ·{" "}
         <button
           type="button"
           onClick={() => setOpen(true)}
           className="text-inherit underline-offset-2 transition-colors hover:text-foreground hover:underline"
         >
-          Conçu par {APP_AUTHOR}
+          À propos
         </button>{" "}
         · {APP_YEAR} · <BackupLink cfg={BACKUP_CONFIG} appName={APP_NAME} /> · <button type="button" onClick={() => setRaccourcis(true)} className="text-inherit underline-offset-2 transition-colors hover:text-foreground hover:underline">Raccourcis</button>{" "}
         · <LienRetour app="Linear" version={APP_VERSION} />

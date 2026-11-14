@@ -86,7 +86,7 @@ await session("sombre", { dark: true }, async (page) => {
   await shot(page, "08-mode-sombre");
 });
 await session("apropos", {}, async (page) => {
-  await page.getByRole("button", { name: /Conçu par/ }).first().click(); await page.waitForTimeout(500);
+  await page.getByRole("button", { name: /À propos/ }).first().click(); await page.waitForTimeout(500);
   await shot(page, "09-a-propos", false);
 });
 await browser.close();
