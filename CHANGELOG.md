@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.39 — 14 novembre 2026
+
+- Nouveauté : « Raccourcis » quitte le sélecteur d'applis et passe en pied de page, comme dans Check. La touche ? ouvre toujours la liste.
+
 ## 3.38 — 11 novembre 2026
 
 - Nouveauté : « Coller depuis Excel » revient comme avant (le remplissage des pièces existantes est retiré). La fenêtre explique maintenant qu'il faut au minimum une longueur et un nombre de pièces par ligne, et prévient quand aucune colonne n'est réglée sur « Longueur ».

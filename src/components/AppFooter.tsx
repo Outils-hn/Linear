@@ -1,4 +1,5 @@
 import { LienRetour } from "./LienRetour";
+import { RaccourcisApplis, useToucheAide } from "./RaccourcisApplis";
 import { useState } from "react";
 import { BackupLink, BackupReminder } from "@/components/BackupControls";
 import { BACKUP_CONFIG } from "@/lib/backup-config";
@@ -20,6 +21,8 @@ import {
  */
 export function AppFooter() {
   const [open, setOpen] = useState(false);
+  const [raccourcis, setRaccourcis] = useState(false);
+  useToucheAide(() => setRaccourcis(true));
 
   return (
     <footer className="py-4 text-center">
@@ -32,7 +35,8 @@ export function AppFooter() {
         >
           Conçu par {APP_AUTHOR}
         </button>{" "}
-        · {APP_YEAR} · <BackupLink cfg={BACKUP_CONFIG} appName={APP_NAME} /> · <LienRetour app="Linear" version={APP_VERSION} />
+        · {APP_YEAR} · <BackupLink cfg={BACKUP_CONFIG} appName={APP_NAME} /> · <button type="button" onClick={() => setRaccourcis(true)} className="text-inherit underline-offset-2 transition-colors hover:text-foreground hover:underline">Raccourcis</button>{" "}
+        · <LienRetour app="Linear" version={APP_VERSION} />
       </p>
       <BackupReminder cfg={BACKUP_CONFIG} />
 
@@ -55,6 +59,11 @@ export function AppFooter() {
           <p className="border-t border-border pt-3 text-xs text-muted-foreground">Dernière mise à jour : {APP_UPDATED}</p>
         </DialogContent>
       </Dialog>
+      <RaccourcisApplis app="Linear" open={raccourcis} onOpenChange={setRaccourcis} propres={[
+    { touches: ["Entrée"], texte: "Tableau des pièces : ligne suivante, même colonne (Maj + Entrée : précédente)" },
+    { touches: ["↓", "↑"], texte: "Tableau des pièces : ligne suivante / précédente" },
+    { touches: ["←", "→"], texte: "Tableau des pièces : colonne voisine, si le curseur est au bout du texte" },
+  ]} />
     </footer>
   );
 }
