@@ -166,7 +166,7 @@ export function ParametresProfile({ app }: { app: LinearApp }) {
         <div className="space-y-2">
           <Label>Stratégie d'optimisation</Label>
           <Select value={strategie} onValueChange={(v) => setStrategie(v as Strategie)}>
-            <SelectTrigger>
+            <SelectTrigger aria-label="Stratégie d'optimisation">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

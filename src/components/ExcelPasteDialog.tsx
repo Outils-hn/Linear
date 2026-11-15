@@ -187,7 +187,7 @@ export function ExcelPasteDialog({ open, onOpenChange, initialText, longueurBarr
                   {Array.from({ length: nCols }, (_, i) => (
                     <th key={i} className={`py-1 ${["longueur", "quantite", "barre"].includes(roles[i]) ? "text-right" : "text-left"}`}>
                       <Select value={roles[i] ?? "ignorer"} onValueChange={(v) => setRole(i, v as ColRole)}>
-                        <SelectTrigger className={`h-8 px-3 font-sans text-xs font-semibold text-piece-ink ${["longueur", "quantite", "barre"].includes(roles[i]) ? "[&>span]:flex-1 [&>span]:text-right" : "[&>span]:text-left"}`}><SelectValue /></SelectTrigger>
+                        <SelectTrigger aria-label={`Rôle de la colonne ${i + 1}`} className={`h-8 px-3 font-sans text-xs font-semibold text-piece-ink ${["longueur", "quantite", "barre"].includes(roles[i]) ? "[&>span]:flex-1 [&>span]:text-right" : "[&>span]:text-left"}`}><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="repere">Repère</SelectItem>
                           <SelectItem value="longueur">Longueur (mm)</SelectItem>
