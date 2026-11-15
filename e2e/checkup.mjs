@@ -3,6 +3,7 @@
 // curseur sur le champ en erreur, sauvegarde complete.
 // Resultat : checkup.txt (OK / ECHEC) + quelques captures. Donnees fictives uniquement.
 import { chromium } from "playwright";
+import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const BASE = process.env.APP_URL ?? "http://127.0.0.1:8080/";
@@ -209,6 +210,14 @@ try {
   await c2.close();
 } catch (e) { verif("Deroulement du check-up reglages", false, e.message.split("\n")[0]); }
 // Telephone (390 px) : pas de debordement, cibles assez grandes, menu « ⋯ », pieces en cartes, resume apres calcul
+try {
+  // Accessibilite (axe) sur l'ecran principal, ecran d'ordinateur
+  await page.goto(BASE, { waitUntil: "networkidle" }); await page.waitForTimeout(600);
+  const axe = await new AxeBuilder({ page }).analyze();
+  const graves = axe.violations.filter((v) => v.impact === "critical" || v.impact === "serious");
+  verif("Accessibilite : aucun defaut grave", !graves.length, graves.map((v) => `${v.id} ${v.nodes.length} : ${v.nodes.slice(0, 5).map((x) => x.target.join(" ") + " " + (x.any[0]?.data?.contrastRatio ?? "")).join(" ; ")}`).join(", "));
+} catch (e) { verif("Deroulement accessibilite (axe)", false, e.message.split("\n")[0]); }
+
 try {
   const cm = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const pm = await cm.newPage();
