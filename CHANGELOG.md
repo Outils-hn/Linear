@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.44 — 15 novembre 2026
+
+- Nouveauté : dans le menu des applis, Maquette passe en dernier.
+
 ## 3.43 — 15 novembre 2026
 
 - Nouveauté : les menus de choix (stratégie d'optimisation, rôle des colonnes à l'import Excel) ont maintenant un nom, pour les lecteurs d'écran et la navigation au clavier.
