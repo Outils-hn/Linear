@@ -231,7 +231,7 @@ try {
   await pm.screenshot({ path: `${OUT}/check-50-telephone.png` });
   await cm.close();
 } catch (e) { verif("Telephone", false, e.message.split("\n").slice(0, 6).join(" | ")); }
-// Comptes : « Se connecter » en haut de page, 3 exports gratuits, puis connexion demandee (sauvegarde)
+// Comptes : « Se connecter » en haut de page, sauvegarde refusee sans compte, puis connexion et sauvegarde
 try {
   const c9 = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   await c9.route(/supabase\.co/, async (route) => {
@@ -245,7 +245,6 @@ try {
     return route.fulfill({ json: true });
   });
   const p9 = await c9.newPage();
-  await p9.addInitScript(() => { if (!sessionStorage.getItem("s9")) { localStorage.setItem("outils.linear.exports", "3"); sessionStorage.setItem("s9", "1"); } });
   await p9.goto(BASE, { waitUntil: "networkidle" }); await p9.waitForTimeout(500);
   verif("Bandeau : « Se connecter » seul, plus de « Lecture seule »", !(await p9.getByRole("banner").getByText("Lecture seule").isVisible()) && await p9.getByRole("banner").getByRole("button", { name: "Se connecter" }).isVisible());
   await p9.getByRole("button", { name: /^Sauvegarde$/ }).click(); await p9.waitForTimeout(300);
