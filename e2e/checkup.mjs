@@ -11,6 +11,11 @@ const OUT = process.argv[2] ?? "captures";
 mkdirSync(OUT, { recursive: true });
 const lignes = [];
 const verif = (nom, ok, detail = "") => lignes.push(`${ok ? "OK    " : "ECHEC "} ${nom}${detail ? ` (${detail})` : ""}`);
+const controleAxe = async (p, nom) => {
+  const axe = await new AxeBuilder({ page: p }).analyze();
+  const graves = axe.violations.filter((v) => v.impact === "critical" || v.impact === "serious");
+  verif(`Accessibilite ${nom} : aucun defaut grave`, !graves.length, graves.map((v) => `${v.id} ${v.nodes.length} : ${v.nodes.slice(0, 5).map((x) => x.target.join(" ") + " " + (x.any[0]?.data?.contrastRatio ?? "")).join(" ; ")}`).join(", "));
+};
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
@@ -58,6 +63,7 @@ try {
   // 3. Resultat perime
   await lancer();
   verif("Calcul affiche", await page.locator("#resultats").isVisible());
+  await controleAxe(page, "resultat du calcul");
   verif("Bouton PDF actif apres calcul", await page.getByRole("button", { name: /PDF atelier/ }).isEnabled());
   await page.getByLabel("Quantité de Montant").fill("40");
   await page.waitForTimeout(400);
@@ -82,6 +88,7 @@ try {
   XLSX.writeFile(wb, `${OUT}/import-test.xlsx`);
   await page.locator('input[type="file"][aria-label="Fichier Excel à importer"]').setInputFiles(`${OUT}/import-test.xlsx`); await page.waitForTimeout(800);
   verif("Import .xlsx : fenetre de collage ouverte", await page.getByRole("dialog").getByText("Coller depuis Excel").isVisible());
+  await controleAxe(page, "fenetre de collage Excel");
   await page.screenshot({ path: `${OUT}/check-import-xlsx.png` });
   await page.getByRole("button", { name: "Ajouter à la liste" }).click(); await page.waitForTimeout(400);
   verif("Import .xlsx : pieces ajoutees (437,5 mm)", (await page.getByLabel("Longueur de X2").inputValue()) === "437,5", await page.getByLabel("Longueur de X2").inputValue().catch(() => "absent"));
@@ -185,6 +192,7 @@ try {
   await p2.getByRole("button", { name: /Modifier/ }).first().click();
   const ts = await p2.locator("#ts").inputValue();
   verif("Trait de scie retenu apres rechargement", ts === "4", `lu : ${ts}`);
+  await controleAxe(p2, "reglages ouverts");
   await p2.getByRole("button", { name: /Replier/ }).first().click();
   await p2.getByRole("button", { name: /^Nouveau$/ }).first().click(); await p2.waitForTimeout(400);
   const resume = await p2.getByText(/trait de scie/).first().textContent();
@@ -263,6 +271,7 @@ try {
   await p9.keyboard.press("Escape"); await p9.waitForTimeout(300);
   await p9.getByRole("banner").getByRole("button", { name: "Se connecter" }).click(); await p9.waitForTimeout(300);
   verif("La connexion s'ouvre depuis le bandeau", await p9.getByRole("heading", { name: "Connexion" }).isVisible());
+  await controleAxe(p9, "fenetre de connexion");
   await p9.getByLabel("Email").fill("hugo@test.fr"); await p9.getByLabel("Mot de passe").fill("mauvais");
   await p9.getByRole("button", { name: "Se connecter" }).last().click(); await p9.waitForTimeout(500);
   verif("Mauvais mot de passe : message clair", await p9.getByRole("alert").getByText("Email ou mot de passe incorrect.").isVisible());
