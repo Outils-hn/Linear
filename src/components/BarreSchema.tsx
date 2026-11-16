@@ -105,8 +105,10 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone, met
           <defs><clipPath id={`${id}-label-${i}`}><rect x={label.gauche + 4} y={top} width={Math.max(0, label.droite - label.gauche - 8)} height={barHeight}/></clipPath></defs>
           {/* Fond blanc derriere le texte (comme dans le PDF) : les traits de coupe serres le rendaient difficile a lire */}
           {label.lignes.map((line, j) => {
-            if (mesure.current) mesure.current.font = `400 ${label.taille}px "IBM Plex Sans"`;
-            const w = (mesure.current?.measureText(line).width ?? 0) + 8;
+            // Meme police que celle affichee (--font-sans) : sinon le fond est trop juste a gauche et a droite
+            if (mesure.current) mesure.current.font = `400 ${label.taille}px ${getComputedStyle(document.documentElement).getPropertyValue("--font-sans") || '"IBM Plex Sans"'}`;
+            // Marge laterale = marge verticale (hauteur du fond 1,4 x la taille, texte ~0,72 x la taille)
+            const w = (mesure.current?.measureText(line).width ?? 0) + label.taille * 0.68;
             const yLigne = top + barHeight / 2 + (j - (label.lignes.length - 1) / 2) * label.taille * 1.2;
             return <rect key={j} x={center - w / 2} y={yLigne - label.taille * 0.7} width={w} height={label.taille * 1.4} rx="3" className="fill-cut-separator" clipPath={`url(#${id}-label-${i})`}/>;
           })}

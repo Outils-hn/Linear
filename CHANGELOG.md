@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.48 — 16 novembre 2026
+
+- Nouveauté : le fond blanc des étiquettes de pièces a le même espace à gauche et à droite qu'en haut et en bas.
+
 ## 3.47 — 16 novembre 2026
 
 - Nouveauté : à l'écran aussi, les étiquettes des pièces (« Tube-001 · 133 x 85 ») ont un fond blanc pour rester lisibles sur les barres très découpées.
