@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.47 — 16 novembre 2026
+
+- Nouveauté : à l'écran aussi, les étiquettes des pièces (« Tube-001 · 133 x 85 ») ont un fond blanc pour rester lisibles sur les barres très découpées.
+
 ## 3.46 — 16 novembre 2026
 
 - Nouveauté : le bilan matière indique le nombre de coupes de scie, entre parenthèses après « traits de scie ».
