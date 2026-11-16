@@ -103,6 +103,13 @@ function BarreSVG({ barre, traitScie, pieceIds, zone, regle = false, onZone, met
         }
         return <g key={`label-${i}`} pointerEvents="none">
           <defs><clipPath id={`${id}-label-${i}`}><rect x={label.gauche + 4} y={top} width={Math.max(0, label.droite - label.gauche - 8)} height={barHeight}/></clipPath></defs>
+          {/* Fond blanc derriere le texte (comme dans le PDF) : les traits de coupe serres le rendaient difficile a lire */}
+          {label.lignes.map((line, j) => {
+            if (mesure.current) mesure.current.font = `400 ${label.taille}px "IBM Plex Sans"`;
+            const w = (mesure.current?.measureText(line).width ?? 0) + 8;
+            const yLigne = top + barHeight / 2 + (j - (label.lignes.length - 1) / 2) * label.taille * 1.2;
+            return <rect key={j} x={center - w / 2} y={yLigne - label.taille * 0.7} width={w} height={label.taille * 1.4} rx="3" className="fill-cut-separator" clipPath={`url(#${id}-label-${i})`}/>;
+          })}
           <text data-piece-label="true" data-row={label.ligneTableau} x={center} textAnchor="middle" dominantBaseline="middle" fontSize={label.taille} className="bar-piece-label fill-piece-ink" clipPath={`url(#${id}-label-${i})`}>
             {label.lignes.map((line, j) => <tspan key={j} x={center} y={top + barHeight / 2 + (j - (label.lignes.length - 1) / 2) * label.taille * 1.2}>{line}</tspan>)}
           </text>
