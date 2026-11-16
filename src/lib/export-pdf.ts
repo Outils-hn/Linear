@@ -287,7 +287,7 @@ export async function exporterPDF(
   }
   doc.setFont("PlexSans", "normal");
   doc.setFontSize(9);
-  const bilan = `${fmt(resultat.longueurTotale)} mm = ${fmt(resultat.longueurUtile)} pièces + ${fmt(resultat.longueurTraitsScie)} traits de scie + ${fmt(resultat.longueurMarges)} marges + ${fmt(resultat.longueurChutes)} chutes`;
+  const bilan = `${fmt(resultat.longueurTotale)} mm = ${fmt(resultat.longueurUtile)} pièces + ${fmt(resultat.longueurTraitsScie)} traits de scie (${matiere.libelleCoupes}) + ${fmt(resultat.longueurMarges)} marges + ${fmt(resultat.longueurChutes)} chutes`;
   const lignesBilan = doc.splitTextToSize(bilan, pageWidth - 2 * margin);
   doc.text(lignesBilan, margin, y);
   y += lignesBilan.length * 4 + 2;

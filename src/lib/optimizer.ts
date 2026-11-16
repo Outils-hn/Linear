@@ -37,6 +37,8 @@ export interface BarreOptimisee {
   longueurUtilisee: number;
   longueurTraitsScie: number;
   chute: number;
+  /** Une coupe finale est necessaire (la derniere piece n'arrive pas au bout de la barre). */
+  coupeFinale?: boolean;
   chuteReutilisable: boolean;
   margeDebut?: number;
   margeFin?: number;
@@ -745,6 +747,7 @@ export function optimiser(
     // Comptabilité après optimisation uniquement : les patrons et placements
     // restent inchangés. Si le reste est plus étroit que la lame, la partie
     // de lame hors barre ne consomme pas de matière.
+    b.coupeFinale = b.coupes.length > 0 && b.chute > 1e-9;
     const traitFinal = b.coupes.length > 0 ? Math.min(b.chute, Math.max(0, traitScie)) : 0;
     b.longueurTraitsScie += traitFinal;
     b.chute = Math.max(0, b.chute - traitFinal);

@@ -13,8 +13,12 @@ export function bilanMatiere(resultat: ResultatOptimisation) {
   const manquants = resultat.longueurTotale > 0 ? 1000 - dixiemes.reduce((s, v) => s + v, 0) : 0;
   for (let i = 0; i < Math.min(manquants, ordre.length); i++) dixiemes[ordre[i].i] += 1;
   const parts = valeurs.map((value, i) => ({ value, pourcentage: pourcentages[i], affiche: dixiemes[i] / 10 }));
+  // Nombre de coupes de scie : une entre chaque piece, plus la coupe finale quand il reste de la barre
+  const coupes = (resultat.barres ?? []).reduce((s, b) => s + Math.max(0, b.coupes.length - 1) + (b.coupeFinale ? 1 : 0), 0);
   return {
     perte,
+    coupes,
+    libelleCoupes: `${formatNombre(coupes)} coupe${coupes > 1 ? "s" : ""}`,
     parts,
     repartition: `${formatNombre(parts[0].affiche, 1)} % pièces + ${formatNombre(parts[1].affiche, 1)} % chutes réutilisables + ${formatNombre(parts[2].affiche, 1)} % perte définitive = ${resultat.longueurTotale > 0 ? "100" : "0"} %`,
   };

@@ -69,7 +69,7 @@ export function Resultats({ app }: { app: LinearApp }) {
       <ChutesAConserver resultat={resultat} options={chutesPDF} onChange={setChutesPDF} />
       <div className="border-y border-border py-4 text-sm tabular-nums">
         <h2 className="mb-1 font-semibold">Bilan matière</h2>
-        <p>{fmt(resultat.longueurTotale)} mm = {fmt(resultat.longueurUtile)} pièces + {fmt(resultat.longueurTraitsScie)} traits de scie + {fmt(resultat.longueurMarges)} marges + {fmt(resultat.longueurChutes)} chutes</p>
+        <p>{fmt(resultat.longueurTotale)} mm = {fmt(resultat.longueurUtile)} pièces + {fmt(resultat.longueurTraitsScie)} traits de scie{matiere ? ` (${matiere.libelleCoupes})` : ""} + {fmt(resultat.longueurMarges)} marges + {fmt(resultat.longueurChutes)} chutes</p>
         <p className="mt-2">{matiere?.repartition}</p>
         <div aria-label="Répartition du bilan matière" className="mt-4 flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full">
           {matiere?.parts.map((part, i) => <div key={i} title={`${["Pièces", "Chutes réutilisables", "Perte définitive"][i]} : ${fmt(part.value)} mm (${fmt(part.affiche, 1)} %)`} className={["bg-foreground", "bg-signal", "bg-[color:var(--hatch)]"][i]} style={{ width: `${part.pourcentage}%` }} />)}
