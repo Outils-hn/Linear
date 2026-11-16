@@ -120,7 +120,7 @@ export function Resultats({ app }: { app: LinearApp }) {
                       · {fmt(barre.longueurBrute)} mm
                       {barre.longueurBrute !== barre.longueurBarre
                         ? ` (utile ${fmt(barre.longueurBarre)} mm)`
-                        : ""}· {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
+                        : ""}{" "}· {barre.coupes.length} coupe{barre.coupes.length > 1 ? "s" : ""}
                     </span>
                   </h3>
                 </div>
