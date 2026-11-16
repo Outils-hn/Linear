@@ -1,0 +1,47 @@
+OK     Premier lancement : aucune piece d'exemple
+OK     Rechargement : chantier garde
+OK     Rechargement : pieces gardees
+OK     Piece ajoutee apres rechargement : ligne distincte (Montant, Traverse, Pièce 3)
+OK     Marge negative refusee (Optimisation impossible : La marge de sécurité ne peut pas être négative. | Pièce « Pièce 3 » supprimée Annuler)
+OK     Quantite decimale refusee (Optimisation impossible : La quantité de « Montant » doit être un nombre entier. | Optimisation impossible : La marge de sécurité ne peut pas être négative. | Pièce « Pièce 3 » supprimée Annuler)
+OK     Calcul affiche
+OK     Accessibilite resultat du calcul : aucun defaut grave
+OK     Bouton PDF actif apres calcul
+OK     Bandeau resultat perime
+OK     PDF bloque si perime
+OK     Relancer efface le bandeau
+OK     Suppression d'une piece : Annuler la remet a sa place (Montant, Traverse)
+OK     Import .xlsx : fenetre de collage ouverte
+OK     Accessibilite fenetre de collage Excel : aucun defaut grave
+OK     Import .xlsx : pieces ajoutees (437,5 mm) (437,5)
+OK     Nouveau : liste vide
+OK     Annuler apres Nouveau : saisie retablie
+OK     Diagnostic : profil du calcul et de l'affichage (Resultats components/linear/Resultats.tsx:15 103ms | (anonyme) components/linear/Resultats.tsx:278 101ms | (anonyme) components/linear/Resultats.tsx:314 100ms | (anonyme) components/linear/Resultats.tsx:317 96ms | (anonyme) components/linear/Resultats.tsx:426 41ms | BarreSVG components/BarreSchema.tsx:18 32ms | (anonyme) components/linear/PiecesACouper.tsx:306 17ms | PiecesACouper components/linear/PiecesACouper.tsx:19 17ms | (anonyme) components/BarreSchema.tsx:148 14ms | formatNombre lib/format-number.ts:1 10ms)
+OK     6 000 pieces : calcul termine (4967 ms)
+OK     Diagnostic : calcul dans un Web Worker (workers 1, erreur «  », taches longues 768 / 441 / 389 / 102 / 79 ms)
+OK     6 000 pieces : ecran jamais fige plus de 3 s pendant le calcul et l'affichage (blocage max 473 ms)
+OK     Diagnostic : profil d'une frappe (exports.jsxDEV react_jsx-dev-runtime.js?v=4832ce50:238 20ms | exports.jsx chunk-SZINW6JV.js?v=e472e8e1:238 7ms | createTask :-1 2ms | run :-1 2ms | (anonyme) @radix-ui_react-dialog.js?v=c6900f5b:203 2ms | exports.createElement chunk-BPGYRLWZ.js?v=e472e8e1:760 1ms | empreinteCalcul projet-courant.ts:25 1ms | pushHostContext react-dom_client.js?v=4832ce50:678 1ms)
+OK     300 lignes : saisie fluide (< 300 ms par frappe) (66 ms)
+OK     Champ nombre : format « 1'200 » a la sortie
+OK     Trait de scie retenu apres rechargement (lu : 4)
+OK     Accessibilite reglages ouverts : aucun defaut grave
+OK     Nouveau projet garde les reglages (Barre 6'000 mm · marge 100 mm (marge en début de barre) · trait de scie 4 mm · chute mini 500 mm · Butée (coupes en série) · minimum de barres)
+OK     Champ vide : le curseur va dessus (Longueur de Pièce 1)
+OK     Mode sombre retenu apres rechargement
+OK     Sauvegarde complete : reglages, theme et projet en cours inclus (linear-theme, linear:active-profile:v1, linear:courant:v1:Principal, linear:profiles:v1, linear:reglages:v1)
+OK     Accessibilite : aucun defaut grave
+OK     Telephone : pas de debordement horizontal (0 px)
+OK     Telephone : boutons assez grands
+OK     Telephone : une piece s'affiche en carte
+OK     Telephone : menu ⋯ avec Mes projets, Nouveau, Sauvegarder ( Mes projets /  Nouveau /  Sauvegarder)
+OK     Bandeau : « Se connecter » seul, plus de « Lecture seule »
+OK     Sans compte : pas de sauvegarde JSON, message « compte requis »
+OK     La connexion s'ouvre depuis le bandeau
+OK     Accessibilite fenetre de connexion : aucun defaut grave
+OK     Mauvais mot de passe : message clair
+OK     Apres connexion : la sauvegarde part
+OK     Bandeau : email seul
+OK     Deconnexion : retour au bouton Se connecter
+OK     Hors ligne : la copie de l'appli est installee
+OK     Installation : le manifeste est lisible
+OK     Hors ligne : l'appli s'affiche sans reseau (Linear · Optimisation de découpe en atelier)
