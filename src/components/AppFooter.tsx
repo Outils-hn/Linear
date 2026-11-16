@@ -55,7 +55,7 @@ export function AppFooter() {
             </div>
           </div>
           <p className="text-sm text-foreground">Conçu et développé par {APP_AUTHOR}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">{APP_TAGLINE}</p>
+          <p className="text-pretty text-sm leading-relaxed text-muted-foreground">{APP_TAGLINE}</p>
           <p className="border-t border-border pt-3 text-xs text-muted-foreground">Dernière mise à jour : {APP_UPDATED}</p>
         </DialogContent>
       </Dialog>

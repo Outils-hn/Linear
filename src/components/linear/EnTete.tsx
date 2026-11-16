@@ -36,7 +36,7 @@ export function EnTete({ app }: { app: LinearApp }) {
             <SheetContent side="right" className="w-full sm:max-w-md">
               <SheetHeader>
                 <SheetTitle>Mes projets / Historique</SheetTitle>
-                <SheetDescription>
+                <SheetDescription className="text-pretty">
                   Projets enregistrés dans ce navigateur. Cliquez pour recharger.
                 </SheetDescription>
               </SheetHeader>
