@@ -4,6 +4,10 @@ Le numéro de version se met à jour dans `src/lib/version.ts` (pied de page et 
 
 Chaque version qui change quelque chose de visible pour l'équipe a une puce « Nouveauté : … », en langage courant : c'est la seule phrase affichée sur la page « Nouveautés » de l'Accueil.
 
+## 3.49 — 16 novembre 2026
+
+- Nouveauté : dans le PDF aussi, le fond blanc des étiquettes de pièces a le même espace à gauche et à droite qu'en haut et en bas.
+
 ## 3.48 — 16 novembre 2026
 
 - Nouveauté : le fond blanc des étiquettes de pièces a le même espace à gauche et à droite qu'en haut et en bas.
