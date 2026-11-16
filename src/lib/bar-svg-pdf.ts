@@ -85,7 +85,11 @@ export function dessinBarrePDF(doc: jsPDF, barre: BarreOptimisee, traitScie: num
     elements.push(`<defs><clipPath id="piece-label-${i}"><rect x="${(label.gauche + 4) * MM_PER_PX}" y="0" width="${Math.max(0, label.droite - label.gauche - 8) * MM_PER_PX}" height="${h}"/></clipPath></defs>`);
     label.lignes.forEach((text, line) => {
       const y = h / 2 + (line - (label.lignes.length - 1) / 2) * size * 1.2 + size * 0.35;
-      const left = cx - measure(text, label.taille) * MM_PER_PX / 2;
+      const largeurTexte = measure(text, label.taille) * MM_PER_PX;
+      const left = cx - largeurTexte / 2;
+      // Fond blanc derriere le texte (comme pour « Chute ... mm ») : sinon les hachures bleues le rendent illisible
+      const marge = 1.1;
+      elements.push(`<rect x="${left - marge}" y="${y - size * 0.95}" width="${largeurTexte + 2 * marge}" height="${size * 1.35}" rx="0.6" fill="${PDF_INK.paper}" clip-path="url(#piece-label-${i})"/>`);
       elements.push(`<text x="${left}" y="${y}" font-size="${size}" letter-spacing="0" font-family="PlexSans" font-weight="normal" fill="${PDF_INK.text}" text-anchor="start" clip-path="url(#piece-label-${i})">${escapeXml(text)}</text>`);
     });
   });

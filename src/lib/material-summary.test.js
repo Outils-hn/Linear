@@ -21,3 +21,13 @@ test("arrondis à 100 % et total nul", () => {
   }
   expect(bilanMatiere({ longueurTotale: 0, longueurUtile: 0, longueurChutesReutilisables: 0, longueurDechets: 0, longueurTraitsScie: 0, longueurMarges: 0 }).parts.every(p => p.pourcentage === 0)).toBe(true);
 });
+test("nombre de coupes de scie : une entre chaque pièce + la coupe finale", () => {
+  const pieces = [1200, 800, 450].map((longueur, i) => ({ id: String(i), nom: `P${i}`, longueur, quantite: [4, 6, 8][i] }));
+  const r = optimiserParProfil(pieces, {}, { longueurBarreDefaut: 6000, margeSecurite: 100, positionMarge: "debut", traitScie: 3, strategie: "min-barres" });
+  const b = bilanMatiere(r);
+  // 18 pièces sur 3 barres : 15 coupes entre pièces + 3 coupes finales = 18 traits de 3 mm
+  expect(r.longueurTraitsScie).toBe(54);
+  expect(b.coupes).toBe(18);
+  expect(b.libelleCoupes).toBe("18 coupes");
+  expect(bilanMatiere({ longueurTotale: 10, longueurUtile: 10, longueurChutesReutilisables: 0, longueurDechets: 0, longueurTraitsScie: 0, longueurMarges: 0, barres: [{ coupes: [{}], chute: 0 }] }).libelleCoupes).toBe("0 coupe");
+});
